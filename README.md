@@ -5,6 +5,9 @@ two knobs: "amen" and "break"
 
 ## TODO
 
+- [ ] remove aubio go, just divide into 16 sections
+- [ ] add parameter about time per section
+- [ ] keep track of downbeat and toggle effects based on downbeat
 - [ ] implement "break chooser" that picks random amounts of sixteenth notes to play for, and counts down before emitting another one
 - [ ] get basics working with hardcoded splicepoints
 - [ ] add hpf

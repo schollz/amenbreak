@@ -1,5 +1,8 @@
 # Compiled Lua sources
 luac.out
+lib/oscnotify/oscnotify
+lib/aubiogo/aubiogo
+
 
 # luarocks build files
 *.src.rock

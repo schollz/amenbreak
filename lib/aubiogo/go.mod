@@ -1,4 +1,4 @@
-module github.com/schollz/zxcvbn/lib/aubiogo
+module github.com/schollz/amenbreak/lib/aubiogo
 
 go 1.18
 

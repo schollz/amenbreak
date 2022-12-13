@@ -28,7 +28,7 @@ in edit mode:
 - E1 changes kick
 - E2 zooms
 - E3 jogs slice
-- K2/K3 select slice
+- K2 select slice
 - K3 auditions slice
 
 ## Install

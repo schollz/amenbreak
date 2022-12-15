@@ -210,6 +210,7 @@ function toggle_clock(on)
   end
   clock_beat=-1
   local d={steps=0,ci=1}
+  local switched_direction=false
   params:set("clock_reset",1)
   clock_run=clock.run(function()
     while true do
@@ -254,11 +255,33 @@ function toggle_clock(on)
         if math.random()<easing_function2(params:get("break"),-3.1,-1.3,0.177,0.5) then
           d.rate=-1
         end
+
+        -- calculate the next position
         if d.beat%(track_beats*4)==0 then
-          d.ci=posit.beg
+          d.ci=ws[params:get("track")]:random_kick_pos()
         else
-          d.ci=d.ci+posit.inc[(d.beat%#posit.inc)+1]
+          -- switching directions
+          local p=easing_function3(params:get("amen"),2.1,5.9,1.4,0.8)
+          if switched_direction and math.random()>p then 
+            switched_direction=false 
+          elseif not switched_direction and math.random()<p then 
+            switched_direction=true
+          end
+          d.ci=d.ci+(switched_direction and -1 or 1)
+          -- jumping 
+          local p=easing_function3(params:get("amen"),0.8,12,1.1,0.8)
+          if math.random()<p then 
+            -- do a jump 
+            d.ci=d.ci+math.random(-1*track_beats,track_beats))
+          end
         end
+
+        -- do a small retrig sometimes based on amen
+        local p=easing_function3(params:get("amen"),2.6,7.6,1.8,1.2)
+        if d.retrig==0 and math.random()<p then 
+          d.retrig=math.random(1,3)*2-1
+        end
+
         print("d",json.encode(d))
         d.duration=d.steps*clock.get_beat_sec()/2
         ws[params:get("track")]:play(d)

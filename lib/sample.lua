@@ -163,6 +163,7 @@ function Sample:load_sample(path)
 
   self:get_onsets()
   self.loaded=true
+  self:get_render()
 end
 
 function Sample:get_onsets()

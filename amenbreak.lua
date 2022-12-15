@@ -47,6 +47,8 @@ function init()
     os.execute("mkdir -p ".._path.data.."amenbreak/dats/")
     os.execute("mkdir -p ".._path.data.."amenbreak/cursors/")
     os.execute("mkdir -p ".._path.data.."amenbreak/pngs/")
+    -- run installer
+    os.execute(_path.code.."amenbreak/lib/install.sh")
   end
 
   -- find all the amen files

@@ -5,6 +5,7 @@ two knobs: "amen" and "break".
 ## Requirements
 
 - norns
+- at least 200MB of disk space
 
 ## Documentation
 
@@ -16,20 +17,21 @@ there are two modes - performance and editor.
 
 in performance mode:
 
-- E1 changes sample
-- E2 changes amen
-- E3 changes breaks
+- K1 switches to edit mode
+- K2 switches parameters
 - K3 stops/starts
-
-K1+K2 toggles edit mode.
+- E1 changes volume
+- E2 changes amen/track
+- E3 changes break/punch
 
 in edit mode:
 
+- K1 switches to performance
+- K2 select slice
+- K3 auditions slice
 - E1 changes kick
 - E2 zooms
 - E3 jogs slice
-- K2 select slice
-- K3 auditions slice
 
 ## Install
 

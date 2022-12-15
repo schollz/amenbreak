@@ -425,7 +425,6 @@ function Sample:key(k,z)
     self.k1=z==1
   elseif k==2 and z==1 then
     self:sel_cursor(self.ci+1)
-  elseif k1_on and k==3 and z==1 then
   elseif k==3 and z==1 then
     self:audition()
   end

@@ -34,7 +34,6 @@ performance=true
 debounce_fn={}
 osc_fun={}
 screen_fade_in=15
-k1_on=false
 posit={
   beg=1,
   inc={1},
@@ -395,11 +394,7 @@ end
 
 
 function key(k,z)
-  if k==1 then
-    k1_on=z==1
-    do return end
-  end
-  if k1_on and k==2 and z==1 then
+  if k==1 and z==1 then
     performance=not performance
     if performance then
       ws[params:get("track")]:zoom(false,1000)

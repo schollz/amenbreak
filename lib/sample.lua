@@ -23,7 +23,6 @@ function Sample:init()
   -- parameterse
   params_menu={
     {id="beats",name="sample length",min=1,max=64,exp=false,div=1,default=16,unit="beats"},
-    {id="db",name="db",min=-48,max=12,exp=false,div=0.1,default=-6,unit="db"},
     {id="pan",name="pan",min=-1,max=1,exp=false,div=0.01,default=0},
     {id="filter",name="filter",min=24,max=135,exp=false,div=0.5,default=135,formatter=function(param) return musicutil.note_num_to_name(math.floor(param:get()),true)end},
     {id="probability",name="probability",min=0,max=100,exp=false,div=1,default=100,unit="%"},
@@ -298,7 +297,7 @@ function Sample:play(d)
   engine.slice_on(
     d.id,
     filename,
-    params:get(self.id.."db"),
+    params:get("db"),
     d.db,
     d.pan,
     d.rate,

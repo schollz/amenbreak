@@ -2,7 +2,8 @@
 luac.out
 lib/oscnotify/oscnotify
 lib/aubiogo/aubiogo
-
+*output*wav
+amenbreak/amenbreak/*
 
 # luarocks build files
 *.src.rock

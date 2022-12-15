@@ -107,54 +107,6 @@ function init()
       params:set_raw(i.."filter",easing_function(x,-5.5,10)+0.65)
     end
   end)
-  params:set_action("amen",function(x)
-    debounce_fn["amen"]={3,function()
-      -- calculate the new posit
-      -- posit.beg=util.round(16*easing_function3(x,-0.1,9.5,1.2,0.9))+1
-      -- local inc={1}
-      -- local pp=easing_function2(x,0.2,-0.8,0.208,0.64)-0.01
-      -- local minmax=math.floor(pp/2*16)+1
-      -- for i=1,math.random(1,math.floor(64*easing_function2(x,-2.2,-0.6,0.177,0.46))+1) do
-      --   local times=math.floor(16/params:get(params:get("track").."beats"))
-      --   times=times>0 and times or 1
-      --   local v=math.random(1,minmax)
-      --   if math.random()<0.1 then
-      --     v=v*-1
-      --   end
-      --   if math.random()<0.1 then
-      --     v=0
-      --   end
-      --   for j=1,times do
-      --     table.insert(inc,v)
-      --     if v==0 then
-      --       v=1
-      --     end
-      --   end
-      -- end
-      -- if x<0.02 then
-      --   inc={1}
-      --   posit.beg=1
-      -- end
-      -- posit.inc=inc
-      -- local dur={}
-      -- local durs={1,1,1,0.5,0.5,0.25,2,4}
-      -- local total_dur=0
-      -- pp=1+math.floor(easing_function2(x,-2.2,-0.6,0.177,0.66)*#durs)
-      -- print("pp",pp)
-      -- for i=1,64 do
-      --   local new_dur=durs[math.random(1,pp)]
-      --   if total_dur+new_dur<16 then
-      --     total_dur=total_dur+new_dur
-      --     table.insert(dur,new_dur)
-      --   end
-      -- end
-      -- if total_dur<16 then
-      --   table.insert(dur,16-total_dur)
-      -- end
-      -- posit.dur=dur
-      -- print("posit",json.encode(posit))
-    end}
-  end)
 
   -- setup ws
   ws={}

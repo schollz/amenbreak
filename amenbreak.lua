@@ -272,7 +272,7 @@ function toggle_clock(on)
           local p=easing_function3(params:get("amen"),0.8,12,1.1,0.8)
           if math.random()<p then 
             -- do a jump 
-            d.ci=d.ci+math.random(-1*track_beats,track_beats))
+            d.ci=d.ci+math.random(-1*track_beats,track_beats)
           end
         end
 

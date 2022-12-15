@@ -496,7 +496,7 @@ function Sample:get_render()
     if self.view[1]>self.view[2] then
       self.view[1],self.view[2]=self.view[2],self.view[1]
     end
-    local cmd=string.format("%s -q -i '%s' -o '%s' -s %2.4f -e %2.4f -w %2.0f -h %2.0f --background-color 000000 --waveform-color 757575 --no-axis-labels --compression 0 &",audiowaveform,self.path_to_dat,rendered,self.view[1],self.view[2],self.width,self.height)
+    local cmd=string.format("%s -q -i '%s' -o '%s' -s %2.4f -e %2.4f -w %2.0f -h %2.0f --background-color 000000 --waveform-color 757575 --no-axis-labels --compression 9 &",audiowaveform,self.path_to_dat,rendered,self.view[1],self.view[2],self.width,self.height)
     print(cmd)
     os.execute(cmd)
   end

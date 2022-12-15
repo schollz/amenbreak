@@ -3,7 +3,10 @@ luac.out
 lib/oscnotify/oscnotify
 lib/aubiogo/aubiogo
 *output*wav
-amenbreak/amenbreak/*
+*.wav
+*.flac
+amenbreak/amenbreak
+*.png
 
 # luarocks build files
 *.src.rock

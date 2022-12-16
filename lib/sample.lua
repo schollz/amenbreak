@@ -23,23 +23,6 @@ function Sample:init()
   -- parameterse
   params_menu={
     {id="beats",name="sample length",min=1,max=64,exp=false,div=1,default=16,unit="beats"},
-    {id="pan",name="pan",min=-1,max=1,exp=false,div=0.01,default=0},
-    {id="filter",name="filter",min=24,max=135,exp=false,div=0.5,default=135,formatter=function(param) return musicutil.note_num_to_name(math.floor(param:get()),true)end},
-    {id="probability",name="probability",min=0,max=100,exp=false,div=1,default=100,unit="%"},
-    {id="attack",name="attack",min=0,max=100,exp=false,div=1,default=5,unit="ms"},
-    {id="release",name="release",min=0,max=200,exp=false,div=1,default=15,unit="ms"},
-    {id="hold",name="hold",min=0,max=128,exp=false,div=1,default=0,unit="pulses"},
-    {id="decimate",name="decimate",min=0,max=0.4,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%d%%",util.round(100*param:get())) end},
-    {id="drive",name="drive",min=0,max=0.75,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%d%%",util.round(100*param:get())) end},
-    {id="compression",name="compression",min=0,max=0.4,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%d%%",util.round(100*param:get())) end},
-    {id="pitch",name="note",min=-24,max=24,exp=false,div=0.1,default=0.0,response=1,formatter=function(param) return string.format("%s%2.1f",param:get()>-0.01 and "+" or "",param:get()) end},
-    {id="rate",name="rate",min=-2,max=2,exp=false,div=0.01,default=1.0,response=1,formatter=function(param) return string.format("%s%2.1f",param:get()>-0.01 and "+" or "",param:get()*100) end},
-    {id="rotate",name="rotate",min=-127,max=127,exp=false,div=1,default=0.0,response=1,formatter=function(param) return string.format("%s%2.0f",param:get()>-0.01 and "+" or "",param:get()) end},
-    {id="stretch",name="stretch",min=0,max=5,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
-    {id="compressing",name="compressing",min=0,max=1,exp=false,div=1,default=0.0,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
-    {id="compressible",name="compressible",min=0,max=1,exp=false,div=1,default=1,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
-    {id="send_reverb",name="reverb send",min=0,max=1,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
-    {id="send_delay",name="delay send",min=0,max=1,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
   }
   self.params=params_menu
   for _,pram in ipairs(params_menu) do
@@ -250,27 +233,27 @@ function Sample:play(d)
   local filename=self.path
   d.id=d.id or self.id
   d.db=d.db or 0
-  d.pan=d.pan or params:get(self.id.."pan")
-  d.pitch=d.pitch or params:get(self.id.."pitch")
+  d.pan=d.pan or params:get("pan")
+  d.pitch=d.pitch or params:get("pitch")
   d.watch=d.watch or 1
   d.rate=d.rate or 1
-  d.rate=d.rate*clock.get_tempo()/params:get(self.id.."bpm")*params:get(self.id.."rate")
+  d.rate=d.rate*clock.get_tempo()/params:get(self.id.."bpm")*params:get("rate")
   d.ci=d.ci or self.ci
-  d.ci=(d.ci-1+params:get(self.id.."rotate"))%(#self.cursors)+1
+  d.ci=(d.ci-1+params:get("rotate"))%(#self.cursors)+1
   d.retrig=d.retrig or 0
   d.gate=d.gate or 1.0 -- vestigial, it should probably alwasy be 1
-  d.hold=d.hold or params:get(self.id.."hold")
-  d.compressing=d.compressing or params:get(self.id.."compressing")
-  d.compressible=d.compressible or params:get(self.id.."compressible")
-  d.filter=musicutil.note_num_to_freq(params:get(self.id.."filter"))
-  d.decimate=d.decimate or params:get(self.id.."decimate")
-  d.attack=d.attack or params:get(self.id.."attack")/1000
-  d.release=d.release or params:get(self.id.."release")/1000
-  d.reverb=d.reverb or params:get(self.id.."send_reverb")
-  d.delay=d.delay or params:get(self.id.."send_delay")
-  d.drive=d.drive or params:get(self.id.."drive")
-  d.compression=d.compression or params:get(self.id.."compression")
-  d.stretch=d.stretch or params:get(self.id.."stretch")
+  d.hold=d.hold or params:get("hold")
+  d.compressing=d.compressing or params:get("compressing")
+  d.compressible=d.compressible or params:get("compressible")
+  d.filter=musicutil.note_num_to_freq(params:get("filter"))
+  d.decimate=d.decimate or params:get("decimate")
+  d.attack=d.attack or params:get("attack")/1000
+  d.release=d.release or params:get("release")/1000
+  d.reverb=d.reverb or params:get("send_reverb")
+  d.delay=d.delay or params:get("send_delay")
+  d.drive=d.drive or params:get("drive")
+  d.compression=d.compression or params:get("compression")
+  d.stretch=d.stretch or params:get("stretch")
   d.send_tape=d.send_tape or 0
   local pos=self.cursors[d.ci]
   if d.duration==nil then

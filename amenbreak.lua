@@ -7,25 +7,27 @@
 --
 --    ▼ instructions below ▼
 --
--- E1 changes sample
--- E2 amens
--- E3 breaks
+-- in performance mode:
+-- K1 switches to edit mode
+-- K2 switches parameters
 -- K3 stops/starts
--- K1+K2 toggles edit mode
+-- E1 changes volume
+-- E2 changes amen/track
+-- E3 changes break/punch
 -- in edit mode:
+-- K1 switches to performance
+-- K2 select slice
+-- K3 auditions slice
 -- E1 changes kick
 -- E2 zooms
 -- E3 jogs slice
--- K2 select slice
--- K3 auditions slice
 
 if not string.find(package.cpath,"/home/we/dust/code/amenbreak/lib/") then
   package.cpath=package.cpath..";/home/we/dust/code/amenbreak/lib/?.so"
 end
-musicutil=require("musicutil")
 json=require("cjson")
+musicutil=require("musicutil")
 sample_=include("lib/sample")
-s=require("sequins")
 
 engine.name="AmenBreak1"
 
@@ -83,6 +85,23 @@ function init()
     {id="amen",name="amen",min=0,max=1,exp=false,div=0.01,default=0,unit="amens"},
     {id="break",name="break",min=0,max=1,exp=false,div=0.01,default=0,unit="break"},
     {id="track",name="track",min=1,max=#amen_files,exp=false,div=1,default=1},
+    {id="probability",name="probability",min=0,max=100,exp=false,div=1,default=100,unit="%"},
+    {id="pan",name="pan",min=-1,max=1,exp=false,div=0.01,default=0},
+    {id="filter",name="filter",min=24,max=135,exp=false,div=0.5,default=135,formatter=function(param) return musicutil.note_num_to_name(math.floor(param:get()),true)end},
+    {id="attack",name="attack",min=0,max=100,exp=false,div=1,default=5,unit="ms"},
+    {id="release",name="release",min=0,max=200,exp=false,div=1,default=15,unit="ms"},
+    {id="hold",name="hold",min=0,max=128,exp=false,div=1,default=0,unit="pulses"},
+    {id="decimate",name="decimate",min=0,max=0.4,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%d%%",util.round(100*param:get())) end},
+    {id="drive",name="drive",min=0,max=0.75,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%d%%",util.round(100*param:get())) end},
+    {id="compression",name="compression",min=0,max=0.4,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%d%%",util.round(100*param:get())) end},
+    {id="pitch",name="note",min=-24,max=24,exp=false,div=0.1,default=0.0,response=1,formatter=function(param) return string.format("%s%2.1f",param:get()>-0.01 and "+" or "",param:get()) end},
+    {id="rate",name="rate",min=-2,max=2,exp=false,div=0.01,default=1.0,response=1,formatter=function(param) return string.format("%s%2.1f",param:get()>-0.01 and "+" or "",param:get()*100) end},
+    {id="rotate",name="rotate",min=-127,max=127,exp=false,div=1,default=0.0,response=1,formatter=function(param) return string.format("%s%2.0f",param:get()>-0.01 and "+" or "",param:get()) end},
+    {id="stretch",name="stretch",min=0,max=5,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="compressing",name="compressing",min=0,max=1,exp=false,div=1,default=0.0,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
+    {id="compressible",name="compressible",min=0,max=1,exp=false,div=1,default=1,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
+    {id="send_reverb",name="reverb send",min=0,max=1,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="send_delay",name="delay send",min=0,max=1,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
   }
   for _,pram in ipairs(params_menu) do
     params:add{
@@ -99,12 +118,10 @@ function init()
     end
   end)
   params:set_action("punch",function(x)
-    for i=1,#amen_files do
-      params:set_raw(i.."drive",easing_function(x,0.1,2))
-      params:set_raw(i.."compression",easing_function(x,5.4,4))
-      params:set_raw(i.."decimate",easing_function(x,8.8,12))
-      params:set_raw(i.."filter",easing_function(x,-5.5,10)+0.65)
-    end
+    params:set_raw("drive",easing_function(x,0.1,2))
+    params:set_raw("compression",easing_function(x,5.4,4))
+    params:set_raw("decimate",easing_function(x,8.8,12))
+    params:set_raw("filter",easing_function(x,-5.5,10)+0.65)
   end)
 
   -- setup ws
@@ -169,7 +186,7 @@ function init()
       conn.event=function(data)
         local msg=midi.to_msg(data)
         if msg.type=="clock" then do return end end
-        -- OP-1 fix for transport
+-- OP-1 fix for transport
         if msg.type=='start' or msg.type=='continue' then
           toggle_clock(true)
         elseif msg.type=="stop" then
@@ -183,23 +200,23 @@ function init()
   clock.run(function()
     clock.sleep(1)
     --   params:set("amen",0)
-    params:set("break",0.6)
-    --   params:set("punch",0.5)
+    -- params:set("break",0.6)
+    params:set("punch",0.1)
     -- params:set("track",3)
     toggle_clock(true)
   end)
 end
 
-toggling_clock=false 
+toggling_clock=false
 
 function clock.transport.start()
-  if not toggling_clock then 
+  if clock_run==nil then
     toggle_clock(true)
   end
 end
 
 function clock.transport.stop()
-  if not toggling_clock then 
+  if clock_run~=nil then
     toggle_clock(false)
   end
 end
@@ -213,11 +230,10 @@ end
 
 -- https://www.desmos.com/calculator/3mmmijzncm
 function easing_function2(x,k,a,t,u)
-  return math.abs(
-    math.tanh(
-      a*math.exp(
-      -1*(x-u)^2/(2*t^2))+
-    (math.exp(k*x)-1)/(math.exp(k)-1)))
+  return math.abs(math.tanh(
+    a*math.exp(
+    -1*(x-u)^2/(2*t^2))+
+  (math.exp(k*x)-1)/(math.exp(k)-1)))
 end
 
 -- https://www.desmos.com/calculator/evz8ulsg7v
@@ -228,6 +244,9 @@ function easing_function3(x,k,n,b,a)
 end
 
 function toggle_clock(on)
+  if toggling_clock then
+    do return end
+  end
   toggling_clock=true
   if on==nil then
     on=clock_run==nil
@@ -295,24 +314,24 @@ function toggle_clock(on)
         else
           -- switching directions
           local p=easing_function3(params:get("amen"),2.1,5.9,1.4,0.8)
-          if switched_direction and math.random()>p then 
-            switched_direction=false 
-          elseif not switched_direction and math.random()<p then 
+          if switched_direction and math.random()>p then
+            switched_direction=false
+          elseif not switched_direction and math.random()<p then
             switched_direction=true
           end
-          d.ci=d.ci+(switched_direction and -1 or 1)
-          -- jumping 
+          d.ci=d.ci+(switched_direction and-1 or 1)
+          -- jumping
           local p=easing_function3(params:get("amen"),0.8,12,1.1,0.8)
-          if math.random()<p then 
-            -- do a jump 
+          if math.random()<p then
+            -- do a jump
             d.ci=d.ci+math.random(-1*track_beats,track_beats)
           end
         end
 
         -- do a small retrig sometimes based on amen
         local p=easing_function3(params:get("amen"),2.6,7.6,1.8,1.2)
-        if d.retrig==0 and math.random()<p then 
-          d.retrig=math.random(1,3)*2-1
+        if d.retrig==0 and math.random()<p then
+          d.retrig=math.random(1,2)*2-1
         end
 
         print("d",json.encode(d))
@@ -426,7 +445,6 @@ function enc(k,d)
   end
 end
 
-
 function key(k,z)
   if k==1 and z==1 then
     performance=not performance
@@ -438,7 +456,7 @@ function key(k,z)
   if performance then
     if k==3 and z==1 then
       toggle_clock()
-    elseif k==2 and z==1 then 
+    elseif k==2 and z==1 then
       param_switch=not param_switch
     end
   else
@@ -482,7 +500,7 @@ end
 function params_kick()
   -- kick
   local params_menu={
-    {id="db",name="db adj",min=-96,max=16,exp=false,div=1,default=0.0,unit="db"},
+    {id="db",name="db adj",min=-96,max=16,exp=false,div=1,default=-6,unit="db"},
     {id="preamp",name="preamp",min=0,max=4,exp=false,div=0.01,default=1,unit="amp"},
     {id="basenote",name="base note",min=10,max=200,exp=false,div=1,default=24,formatter=function(param) return musicutil.note_num_to_name(param:get(),true)end},
     {id="ratio",name="ratio",min=1,max=20,exp=false,div=1,default=6},

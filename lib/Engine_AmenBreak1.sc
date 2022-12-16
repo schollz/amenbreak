@@ -63,6 +63,10 @@ Engine_AmenBreak1 : CroneEngine {
         }).send(context.server);        
         SynthDef("set",{|out,val,slew=0.5|
             Out.kr(out,Lag.kr(val,slew));
+        }).send(context.server);        
+        SynthDef("tremolo",{|out,min=0.1,max=1,rate=0.5,duration=1|
+            FreeSelf.kr(TDelay.ar(Impulse.kr(0), duration));
+            Out.kr(out,PulseDPW.kr(rate).range(min,max));
         }).send(context.server);
 
         SynthDef("kick", { |basefreq = 40, ratio = 6, sweeptime = 0.05, preamp = 1, amp = 1,
@@ -196,6 +200,15 @@ Engine_AmenBreak1 : CroneEngine {
             this.synthChange(id,k,v);
         });
 
+        this.addCommand("tremolo","ffff",{ arg msg;
+            var min=msg[1];
+            var max=msg[2];
+            var duration=msg[3];
+            var rate=msg[4];
+            syns.at("filter").free;
+            syns.put("filter",Synth.new("tremolo",[\out,buses.at("filter"),\duration,duration,\min,min,\max,max,\rate,rate],s,\addToHead));
+            NodeWatcher.register(syns.at("filter"));
+        });
 
         this.addCommand("slice_on","ssffffffffffffffffffffffff",{ arg msg;
             var id=msg[1];
@@ -238,11 +251,14 @@ Engine_AmenBreak1 : CroneEngine {
                     db_first=db-(db_add*retrig);
                     db=db_first;
                 });
-
-                // create filter sweep
-                syns.at("filter").free;
-                syns.put("filter",Synth.new("rise",[\out,buses.at("filter"),\duration,duration_total,\min,200,\max,lpf],s,\addToHead));
-                NodeWatcher.register(syns.at("filter"));
+                if (retrig>3,{
+                    if (100.rand<25,{
+                        // create filter sweep
+                        syns.at("filter").free;
+                        syns.put("filter",Synth.new("rise",[\out,buses.at("filter"),\duration,duration_total,\min,200,\max,lpf],s,\addToHead));
+                        NodeWatcher.register(syns.at("filter"));
+                    });
+                });
             });
             // ["duration_slice",duration_slice,"duration_total",duration_total,"retrig",retrig].postln;
             if (bufs.at(filename).notNil,{

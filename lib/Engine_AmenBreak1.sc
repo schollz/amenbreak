@@ -58,6 +58,13 @@ Engine_AmenBreak1 : CroneEngine {
         oscs.put("position",OSCFunc({ |msg| NetAddr("127.0.0.1", 10111).sendMsg("progress",msg[3],msg[3]); }, '/position'));
         oscs.put("lfos",OSCFunc({ |msg| NetAddr("127.0.0.1", 10111).sendMsg("lfos",msg[3],msg[4]); }, '/lfos'));
         
+        SynthDef("rise",{|out,duration=1,min=0.1,max=1|
+            Out.kr(out,EnvGen.kr(Env.new([min,max],[duration],\exponential),doneAction:2));
+        }).send(context.server);        
+        SynthDef("set",{|out,val,slew=0.5|
+            Out.kr(out,Lag.kr(val,slew));
+        }).send(context.server);
+
         SynthDef("kick", { |basefreq = 40, ratio = 6, sweeptime = 0.05, preamp = 1, amp = 1,
             decay1 = 0.3, decay1L = 0.8, decay2 = 0.15, clicky=0.0, out|
             var snd;
@@ -178,6 +185,8 @@ Engine_AmenBreak1 : CroneEngine {
         syns.put("main",Synth.new(\main,[\tape_buf,bufs.at("tape"),\outBus,0,\sidechain_mult,8,\inBus,buses.at("busCompressible"),\inBusNSC,buses.at("busNotCompressible"),\inSC,buses.at("busCompressing"),\delay_bufs,bufsDelay,\inDelay,buses.at("busDelay")]));
         syns.put("lfos",Synth.new("lfos"));
         NodeWatcher.register(syns.at("main"));
+        syns.put("filter",Synth.new("set",[\out,buses.at("filter"),\val,18000],s,\addToHead));
+        NodeWatcher.register(syns.at("filter"));
         context.server.sync;
 
         this.addCommand("synth_set","ssf",{ arg msg;
@@ -217,12 +226,23 @@ Engine_AmenBreak1 : CroneEngine {
             var res=msg[26];
             var db_first=db+db_add;
             // TODO: set filter bus
+            if (syns.at("filter").isRunning,{
+                syns.at("filter").set(\val,lpf);
+            },{
+                syns.put("filter",Synth.new("set",[\out,buses.at("filter"),\val,18000],s,\addToHead));
+                NodeWatcher.register(syns.at("filter"));                
+            });
             if (retrig>0,{
                 db_first=db;
                 if (db_add>0,{
                     db_first=db-(db_add*retrig);
                     db=db_first;
-                })
+                });
+
+                // create filter sweep
+                syns.at("filter").free;
+                syns.put("filter",Synth.new("rise",[\out,buses.at("filter"),\duration,duration_total,\min,200,\max,lpf],s,\addToHead));
+                NodeWatcher.register(syns.at("filter"));
             });
             // ["duration_slice",duration_slice,"duration_total",duration_total,"retrig",retrig].postln;
             if (bufs.at(filename).notNil,{

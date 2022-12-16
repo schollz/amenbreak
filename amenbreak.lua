@@ -401,6 +401,7 @@ function draw_message()
   if show_message_clock~=nil and show_message_text~=nil and show_message_clock>0 and show_message_text~="" then
     show_message_clock=show_message_clock-1
     screen.blend_mode(0)
+    
     local x=64
     local y=28
     local w=screen.text_extents(show_message_text)+8
@@ -501,7 +502,12 @@ end
 
 ff=1
 function redraw()
-  screen.clear()
+  if kon[2] and kon[3] then 
+    screen.blend_mode(12)
+  else
+    screen.clear()
+    screen.blend_mode(0)
+  end
   ws[params:get("track")]:redraw()
   screen.font_face(63)
   screen.level(5)
@@ -512,20 +518,26 @@ function redraw()
   screen.move(64,8)
   screen.font_size(8)
   screen.text_center(performance and (clock_run==nil and "stopped" or "playing") or "edit")
-  if performance then
-    screen.level(15)
-    screen.font_size(13)
-    screen.move(32,30)
-    screen.text_center(param_switch and "AMEN" or "DRUM")
-    screen.move(32,30+24)
-    screen.text_center(param_switch and (math.floor(params:get("amen")*100).."%") or params:get("track"))
+  if kon[2] and kon[3] then 
+    screen.level(math.random(1,15))
+    screen.font_face(math.random(1,63))
+    screen.text_rotate(math.random(1,128),math.random(1,64),"f*** it",math.random(0,60))
+  else
+    if performance then
+      screen.level(15)
+      screen.font_size(13)
+      screen.move(32,30)
+      screen.text_center(param_switch and "AMEN" or "DRUM")
+      screen.move(32,30+24)
+      screen.text_center(param_switch and (math.floor(params:get("amen")*100).."%") or params:get("track"))
 
-    screen.font_face(62)
-    screen.move(32+60,30)
-    screen.text_center(param_switch and "BREAK" or "PUNCH")
-    screen.move(32+60,30+24)
-    screen.text_center(param_switch and (math.floor(params:get("break")*100).."%") or (math.floor(params:get("punch")*100).."%"))
-    screen.font_size(8)
+      screen.font_face(62)
+      screen.move(32+60,30)
+      screen.text_center(param_switch and "BREAK" or "PUNCH")
+      screen.move(32+60,30+24)
+      screen.text_center(param_switch and (math.floor(params:get("break")*100).."%") or (math.floor(params:get("punch")*100).."%"))
+      screen.font_size(8)
+    end
   end
 
   draw_message()

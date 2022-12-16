@@ -28,7 +28,7 @@ end
 json=require("cjson")
 musicutil=require("musicutil")
 sample_=include("lib/sample")
-
+_lfos=require('lfo')
 engine.name="AmenBreak1"
 
 param_switch=true
@@ -171,10 +171,6 @@ function init()
   end)
 
   -- startup
-  -- for i,fname in ipairs({"lyncollins_beats16_bpm114","winstons1_beats16_bpm138","bamboo1_beats16_bpm145","bamboo2_beats16_bpm145"}) do
-  -- for i,v in ipairs({"Crot_Break_bpm165","lyncollins_beats16_bpm114","amen5_beats4_bpm160"}) do
-  --   params:set(i.."sample_file",_path.code.."amenbreak/lib/flacs/"..v..".flac")
-  -- end
   for i,v in ipairs(amen_files) do
     params:set(i.."sample_file",_path.audio.."amenbreak/"..v)
   end
@@ -196,6 +192,19 @@ function init()
     end
   end
 
+  -- -- establish an LFO variable for a specific purpose:
+  -- cutoff_lfo=_lfos:add{
+  --   shape='sine',-- shape
+  --   min=0,-- min
+  --   max=1,-- max
+  --   depth=1,-- depth (0 to 1)
+  --   mode='free',-- mode
+  --   period=128,-- period (in 'clocked' mode, represents beats)
+  --   -- pass our 'scaled' value (bounded by min/max and depth) to the engine:
+  --   action=function(scaled,raw) params:set_raw("track",scaled) end -- action, always passes scaled and raw values
+  -- }
+  -- cutoff_lfo:start() -- start our LFO, complements ':stop()'
+
   -- debug
   clock.run(function()
     clock.sleep(1)
@@ -203,7 +212,7 @@ function init()
     -- params:set("break",0.6)
     params:set("punch",0.1)
     -- params:set("track",3)
-    toggle_clock(true)
+    -- toggle_clock(true)
   end)
 end
 
@@ -481,7 +490,7 @@ function redraw()
     screen.level(15)
     screen.font_size(13)
     screen.move(32,30)
-    screen.text_center(param_switch and "AMEN" or "TRACK")
+    screen.text_center(param_switch and "AMEN" or "DRUM")
     screen.move(32,30+24)
     screen.text_center(param_switch and (math.floor(params:get("amen")*100).."%") or params:get("track"))
 

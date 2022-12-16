@@ -43,9 +43,3 @@ install with
 
 https://github.com/schollz/amenbreak
 
-
-## TODO
-
-- amen increases probability of changing directions and adding in jumps
-- amen increases the probability of 1x and 3x retriggers (versus the break ones)
-- holding k1 shows the sample/punch values

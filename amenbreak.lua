@@ -162,6 +162,23 @@ function init()
     params:set(i.."sample_file",_path.audio.."amenbreak/"..v)
   end
 
+  -- listen to all the midi devices for startups
+  for i,dev in pairs(midi.devices) do
+    if dev.port~=nil then
+      local conn=midi.connect(dev.port)
+      conn.event=function(data)
+        local msg=midi.to_msg(data)
+        if msg.type=="clock" then do return end end
+        -- OP-1 fix for transport
+        if msg.type=='start' or msg.type=='continue' then
+          toggle_clock(true)
+        elseif msg.type=="stop" then
+          toggle_clock(false)
+        end
+      end
+    end
+  end
+
   -- debug
   clock.run(function()
     clock.sleep(1)
@@ -171,6 +188,20 @@ function init()
     -- params:set("track",3)
     toggle_clock(true)
   end)
+end
+
+toggling_clock=false 
+
+function clock.transport.start()
+  if not toggling_clock then 
+    toggle_clock(true)
+  end
+end
+
+function clock.transport.stop()
+  if not toggling_clock then 
+    toggle_clock(false)
+  end
 end
 
 -- https://www.desmos.com/calculator/oimuzwwcop
@@ -197,6 +228,7 @@ function easing_function3(x,k,n,b,a)
 end
 
 function toggle_clock(on)
+  toggling_clock=true
   if on==nil then
     on=clock_run==nil
   end
@@ -205,6 +237,7 @@ function toggle_clock(on)
     clock_run=nil
   end
   if not on then
+    toggling_clock=false
     do return end
   end
   clock_beat=-1
@@ -212,6 +245,7 @@ function toggle_clock(on)
   local switched_direction=false
   params:set("clock_reset",1)
   clock_run=clock.run(function()
+    toggling_clock=false
     while true do
       local track_beats=params:get(params:get("track").."beats")
       clock_beat=clock_beat+1

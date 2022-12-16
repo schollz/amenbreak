@@ -15,14 +15,14 @@ a dedicated amen break script for norns.
 
 ![amenbreak](https://user-images.githubusercontent.com/6550035/208138151-5d2cc8a9-bc64-4e12-b92e-87a12f1e9c35.png)
 
-
 ### quickstart
 
-E2 amens, E3 breaks. 
+E2 amens, E3 breaks.
+
 
 ### features
 
-- over 100 amen-type samples loaded into memory
+- over 100 amen break samples (from [internet archive](https://archive.org/details/amen-breaks-compilation)), loaded into memory for instant playback
 - automatic stutter/stretch/delay effects (amen+break)
 - overdrive/decimate/degrade control (punch)
 - kick drum added to bolster kicks of pre-analyzed samples

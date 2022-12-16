@@ -15,7 +15,7 @@ function Sample:init()
     if util.file_exists(x) and string.sub(x,-1)~="/" then
       self:load_sample(x)
     else
-      print("problem loading "..x)
+      -- print("problem loading "..x)
     end
   end)
   params:add_number(self.id.."bpm","bpm",10,600,math.floor(clock.get_tempo()))
@@ -62,7 +62,7 @@ function Sample:setup_beats(x)
     table.insert(self.cursors,self.duration*(i-1)/self.slice_num)
     table.insert(self.kick,-48)
   end
-  print("[sample]: updating beats to",x)
+  -- print("[sample]: updating beats to",x)
   self:do_move(0)
 end
 
@@ -83,7 +83,7 @@ function Sample:select(selected)
 end
 
 function Sample:load_sample(path)
-  print("sample: load_sample "..path)
+  -- print("[sample] load_sample "..path)
   -- copy file to data
   self.path=path
   self.pathname,self.filename,self.ext=string.match(self.path,"(.-)([^\\/]-%.?([^%.\\/]*))$")
@@ -117,12 +117,12 @@ function Sample:load_sample(path)
     local delete_temp=false
     local filename=self.path
     if self.ext=="aif" then
-      print(util.os_capture(string.format("sox '%s' '%s'",filename,filename..".wav")))
+      -- print(util.os_capture(string.format("sox '%s' '%s'",filename,filename..".wav")))
       filename=filename..".wav"
       delete_temp=true
     end
     local cmd=string.format("%s -q -i '%s' -o '%s' -z %d -b 8 &",audiowaveform,filename,self.path_to_dat,2)
-    print(cmd)
+    -- print(cmd)
     os.execute(cmd)
     if delete_temp then
       debounce_fn[self.id.."rm_"..filename]={45,function() os.execute("rm "..filename) end}
@@ -160,10 +160,9 @@ function Sample:get_onsets()
     if beats==nil then
       beats=util.round(self.duration/(60/params:get(self.id.."bpm")))
     end
-    print("[sample] found beats: "..beats)
+    -- print("[sample] found beats: "..beats)
     params:set(self.id.."beats",beats,true)
     self:setup_beats(beats)
-    print("sample: loading existing kick data")
     local f=io.open(self.path..".json","rb")
     local content=f:read("*all")
     f:close()
@@ -175,7 +174,7 @@ function Sample:get_onsets()
     end
     do return end
   end
-  print("sample: loading existing cursors")
+  -- print("[sample] loading existing cursors")
   local f=io.open(self.path_to_cursors,"rb")
   local content=f:read("*all")
   f:close()
@@ -186,8 +185,7 @@ function Sample:get_onsets()
       if data.kick~=nil then
         self.kick=data.kick
       end
-      tab.print(self.cursors)
-      print("sample: loaded existing cursors")
+      -- print("[sample] loaded existing cursors")
       params:set(self.id.."beats",#self.cursors/2,true)
       self:do_move(0)
     end
@@ -196,7 +194,7 @@ end
 
 function Sample:save_cursors()
   -- save cursors
-  print("writing cursor file",self.path_to_cursors)
+  -- print("[sample] writing cursor file",self.path_to_cursors)
   local file=io.open(self.path_to_cursors,"w+")
   io.output(file)
   io.write(json.encode({cursors=self.cursors,kick=self.kick}))
@@ -222,8 +220,6 @@ function Sample:guess_bpm(fname)
       end
     end
   end
-  print("bpm guessing for",fname)
-  tab.print(closest)
 end
 
 function Sample:play(d)
@@ -388,7 +384,6 @@ function Sample:get_kicks()
 end
 
 function Sample:random_kick_pos()
-  print("kick")
   local kicks=self:get_kicks()
   return kicks[math.random(#kicks)]
 end
@@ -479,7 +474,7 @@ function Sample:get_render()
       self.view[1],self.view[2]=self.view[2],self.view[1]
     end
     local cmd=string.format("%s -q -i '%s' -o '%s' -s %2.4f -e %2.4f -w %2.0f -h %2.0f --background-color 000000 --waveform-color 757575 --no-axis-labels --compression 9 &",audiowaveform,self.path_to_dat,rendered,self.view[1],self.view[2],self.width,self.height)
-    print(cmd)
+    -- print(cmd)
     os.execute(cmd)
   end
   return rendered

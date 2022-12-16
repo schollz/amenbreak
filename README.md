@@ -1,6 +1,7 @@
 # amenbreak
 
-two knobs: "amen" and "break".
+![inspiration](https://user-images.githubusercontent.com/6550035/208136642-1081aa03-8e32-487a-b282-fd7130da05fc.png)
+
 
 ## Requirements
 
@@ -9,9 +10,19 @@ two knobs: "amen" and "break".
 
 ## Documentation
 
-E2 amens, E3 breaks.
+### quickstart
 
-### more 
+E2 amens, E3 breaks. 
+
+### features
+
+- over 100 amen-type samples loaded into memory
+- automatic stutter/stretch/delay effects (amen+break)
+- overdrive/decimate/degrade control (punch)
+- kick drum added to bolster kicks of pre-analyzed samples
+- edit mode allows manipulating individual slices/kick volume
+
+### controls
 
 there are two modes - performance and editor. 
 
@@ -32,6 +43,10 @@ in edit mode:
 - E1 changes kick
 - E2 zooms
 - E3 jogs slice
+
+f*** it: 
+
+- K2+K3
 
 ## Install
 

@@ -7,6 +7,7 @@
 --
 --    ▼ instructions below ▼
 --
+-- ef-it: K2+K3
 -- in performance mode:
 -- K1 switches to edit mode
 -- K2 switches parameters
@@ -35,6 +36,7 @@ param_switch=true
 performance=true
 debounce_fn={}
 osc_fun={}
+lfos={0,0,0,0}
 screen_fade_in=15
 posit={
   beg=1,
@@ -50,6 +52,7 @@ function init()
     os.execute("mkdir -p ".._path.data.."amenbreak/cursors/")
     os.execute("mkdir -p ".._path.data.."amenbreak/pngs/")
     -- run installer
+    print("[amenbreak] INSTALLING PLEASE WAIT!!")
     os.execute(_path.code.."amenbreak/lib/install.sh")
   end
 
@@ -58,7 +61,7 @@ function init()
   for _,fname in ipairs(util.scandir(_path.audio.."amenbreak")) do
     if not string.find(fname,"slow") then
       if util.file_exists(_path.audio.."amenbreak/"..fname..".slow.flac") then
-        print(fname)
+        -- print(fname)
         table.insert(amen_files,fname)
         -- if #amen_files==4 then
         --   break
@@ -84,6 +87,7 @@ function init()
     {id="punch",name="punch",min=0,max=1,exp=false,div=0.01,default=0,unit="punches"},
     {id="amen",name="amen",min=0,max=1,exp=false,div=0.01,default=0,unit="amens"},
     {id="break",name="break",min=0,max=1,exp=false,div=0.01,default=0,unit="break"},
+    {id="efit",name="efit",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
     {id="track",name="track",min=1,max=#amen_files,exp=false,div=1,default=1},
     {id="probability",name="probability",min=0,max=100,exp=false,div=1,default=100,unit="%"},
     {id="pan",name="pan",min=-1,max=1,exp=false,div=0.01,default=0},
@@ -133,6 +137,11 @@ function init()
   -- bang params
   params:bang()
 
+  efit_lfos={
+    "punch",
+    "amen",
+    "break",
+  }
   -- setup osc
   osc_fun={
     progressbar=function(args)
@@ -145,6 +154,14 @@ function init()
     oscnotify=function(args)
       print("file edited ok!")
       rerun()
+    end,
+    lfos=function(args)
+      local i=math.floor(tonumber(args[1]))+1
+      local v=tonumber(args[2])
+      lfos[i]=v
+      if params:get("efit")==1 and i<4 then
+        params:set(efit_lfos[i],v)
+      end
     end,
     aubiodone=function(args)
       local id=tonumber(args[1])
@@ -343,9 +360,12 @@ function toggle_clock(on)
           d.retrig=math.random(1,2)*2-1
         end
 
-        print("d",json.encode(d))
+        -- print("d",json.encode(d))
         d.duration=d.steps*clock.get_beat_sec()/2
         ws[params:get("track")]:play(d)
+        if params:get("efit")==1 and math.random()<lfos[4] then
+          params:set_raw("track",math.random())
+        end
       end
       d.steps=d.steps-1
       clock.sync(1/2)
@@ -454,7 +474,10 @@ function enc(k,d)
   end
 end
 
+kon={false,false,false}
+
 function key(k,z)
+  kon[k]=z==1
   if k==1 and z==1 then
     performance=not performance
     if performance then
@@ -463,10 +486,12 @@ function key(k,z)
     do return end
   end
   if performance then
-    if k==3 and z==1 then
-      toggle_clock()
-    elseif k==2 and z==1 then
+    if kon[2] and kon[3] then
+      params:set("efit",1-params:get("efit"))
+    elseif kon[2] then
       param_switch=not param_switch
+    elseif kon[3] then
+      toggle_clock()
     end
   else
     ws[params:get("track")]:key(k,z)

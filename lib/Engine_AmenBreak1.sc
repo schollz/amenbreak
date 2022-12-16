@@ -56,6 +56,7 @@ Engine_AmenBreak1 : CroneEngine {
         bufsDelay = Buffer.allocConsecutive(2,context.server,48000*4,1);
         
         oscs.put("position",OSCFunc({ |msg| NetAddr("127.0.0.1", 10111).sendMsg("progress",msg[3],msg[3]); }, '/position'));
+        oscs.put("lfos",OSCFunc({ |msg| NetAddr("127.0.0.1", 10111).sendMsg("lfos",msg[3],msg[4]); }, '/lfos'));
         
         SynthDef("kick", { |basefreq = 40, ratio = 6, sweeptime = 0.05, preamp = 1, amp = 1,
             decay1 = 0.3, decay1L = 0.8, decay2 = 0.15, clicky=0.0, out|
@@ -68,6 +69,14 @@ Engine_AmenBreak1 : CroneEngine {
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
             Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*(1-\sendreverb.kr(0))*snd);
             Out.ar(\outreverb.kr(0),\sendreverb.kr(0)*snd);Out.ar(\outtape.kr(0),\sendtape.kr(0)*snd);Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);
+        }).send(context.server);
+        
+        SynthDef("lfos", {
+            4.do({ arg i;
+                var period=Rand(8,30);
+                var lfo=VarLag.kr(LFNoise0.kr(1/period),period,0,\sine).range(0,1);
+                SendReply.kr(Impulse.kr(4),'/lfos',[i,lfo]);
+            });
         }).send(context.server);
 
         SynthDef(\main, {
@@ -166,6 +175,7 @@ Engine_AmenBreak1 : CroneEngine {
         });
         context.server.sync;
         syns.put("main",Synth.new(\main,[\tape_buf,bufs.at("tape"),\outBus,0,\sidechain_mult,8,\inBus,buses.at("busCompressible"),\inBusNSC,buses.at("busNotCompressible"),\inSC,buses.at("busCompressing"),\delay_bufs,bufsDelay,\inDelay,buses.at("busDelay")]));
+        syns.put("lfos",Synth.new("lfos"));
         NodeWatcher.register(syns.at("main"));
         context.server.sync;
 
@@ -289,11 +299,11 @@ Engine_AmenBreak1 : CroneEngine {
 
         this.addCommand("load_buffer","s",{ arg msg;
             var id=msg[1];
-            ["loading"+id].postln;
+            // ["loading"+id].postln;
             if (bufs.at(id).isNil,{
                 Buffer.read(context.server, id, action: {arg buf;
-                    ["loaded"+id].postln;
-                    bufs.put(id.postln,buf);
+                    ["[amenbreak] loaded"+id].postln;
+                    bufs.put(id,buf);
                 });
             });
         });

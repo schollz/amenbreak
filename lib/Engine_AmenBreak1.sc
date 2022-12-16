@@ -122,7 +122,7 @@ Engine_AmenBreak1 : CroneEngine {
 
         (1..2).do({arg ch;
         SynthDef("slice"++ch,{
-            arg amp=0, buf1,buf2,buf3,buf4,buf5, rate=1, pos=0, drive=1,stretch=0, compression=0, gate=1, duration=100000, pan=0, send_pos=0, filter=18000, attack=0.01,release=0.01; 
+            arg amp=0, buf1,buf2,buf3,buf4,buf5, rate=1, pos=0, drive=1,stretch=0, compression=0, gate=1, duration=100000, pan=0, send_pos=0, lpfIn,res=0.707, attack=0.01,release=0.01; 
             var snd,sndD,snd1,snd2,snd3,snd4,snd5;
             var startFrame = pos / BufDur.ir(buf1) * BufFrames.ir(buf1);
             var snd_pos = Phasor.ar(
@@ -154,7 +154,7 @@ Engine_AmenBreak1 : CroneEngine {
 
             snd = Compander.ar(snd,snd,compression,0.5,clampTime:0.01,relaxTime:0.01);
 
-            snd = RLPF.ar(snd,Lag.kr(filter),0.707);
+            snd = RLPF.ar(snd,In.kr(lpfIn,1),res);
 
             Out.ar(\outtrack.kr(0),snd/10);Out.ar(\out.kr(0),\compressible.kr(0)*snd*amp);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
@@ -164,6 +164,7 @@ Engine_AmenBreak1 : CroneEngine {
         });
 
         context.server.sync;
+        buses.put("filter",Bus.control(s,1));
         buses.put("busCompressible",Bus.audio(s,2));
         buses.put("busNotCompressible",Bus.audio(s,2));
         buses.put("busCompressing",Bus.audio(s,2));
@@ -187,7 +188,7 @@ Engine_AmenBreak1 : CroneEngine {
         });
 
 
-        this.addCommand("slice_on","ssfffffffffffffffffffffff",{ arg msg;
+        this.addCommand("slice_on","ssffffffffffffffffffffffff",{ arg msg;
             var id=msg[1];
             var filename=msg[2];
             var db=msg[3];
@@ -200,7 +201,7 @@ Engine_AmenBreak1 : CroneEngine {
             var duration_total=msg[10];
             var retrig=msg[11];
             var gate=msg[12];
-            var filter=msg[13];
+            var lpf=msg[13];
             var decimate=msg[14];
             var compressible=msg[15];
             var compressing=msg[16];
@@ -213,7 +214,9 @@ Engine_AmenBreak1 : CroneEngine {
             var stretch=msg[23];
             var sendTape=msg[24];
             var sendDelay=msg[25];
+            var res=msg[26];
             var db_first=db+db_add;
+            // TODO: set filter bus
             if (retrig>0,{
                 db_first=db;
                 if (db_add>0,{
@@ -242,7 +245,8 @@ Engine_AmenBreak1 : CroneEngine {
                     release: release,
                     amp: db_first.dbamp,
                     pan: pan,
-                    filter: filter,
+                    lpf: buses.at("filter"),
+                    res: res,
                     rate: rate*pitch.midiratio,
                     pos: pos,
                     duration: (duration_slice * gate / (retrig + 1)),
@@ -276,7 +280,8 @@ Engine_AmenBreak1 : CroneEngine {
                                 stretch: stretch,
                                 rate: rate*((pitch.sign)*(i+1)+pitch).midiratio,
                                 duration: duration_slice * gate / (retrig + 1),
-                                filter: filter,
+                                lpf: buses.at("filter"),
+                                res: res,
                                 pos: pos,
                                 decimate: decimate,
                                 drive: drive,

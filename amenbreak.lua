@@ -91,7 +91,8 @@ function init()
     {id="track",name="track",min=1,max=#amen_files,exp=false,div=1,default=1},
     {id="probability",name="probability",min=0,max=100,exp=false,div=1,default=100,unit="%"},
     {id="pan",name="pan",min=-1,max=1,exp=false,div=0.01,default=0},
-    {id="filter",name="filter",min=24,max=135,exp=false,div=0.5,default=135,formatter=function(param) return musicutil.note_num_to_name(math.floor(param:get()),true)end},
+    {id="lpf",name="lpf",min=24,max=135,exp=false,div=0.5,default=135,formatter=function(param) return musicutil.note_num_to_name(math.floor(param:get()),true)end},
+    {id="res",name="res",min=0.01,max=1,exp=false,div=0.01,default=0.71},
     {id="attack",name="attack",min=0,max=100,exp=false,div=1,default=5,unit="ms"},
     {id="release",name="release",min=0,max=200,exp=false,div=1,default=15,unit="ms"},
     {id="hold",name="hold",min=0,max=128,exp=false,div=1,default=0,unit="pulses"},
@@ -125,7 +126,7 @@ function init()
     params:set_raw("drive",easing_function(x,0.1,2))
     params:set_raw("compression",easing_function(x,5.4,4))
     params:set_raw("decimate",easing_function(x,8.8,12))
-    params:set_raw("filter",easing_function(x,-5.5,10)+0.65)
+    params:set_raw("lpf",easing_function(x,-5.5,10)+0.65)
   end)
 
   -- setup ws

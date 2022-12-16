@@ -241,7 +241,8 @@ function Sample:play(d)
   d.hold=d.hold or params:get("hold")
   d.compressing=d.compressing or params:get("compressing")
   d.compressible=d.compressible or params:get("compressible")
-  d.filter=musicutil.note_num_to_freq(params:get("filter"))
+  d.lpf=musicutil.note_num_to_freq(params:get("lpf"))
+  d.res=params:get("res")
   d.decimate=d.decimate or params:get("decimate")
   d.attack=d.attack or params:get("attack")/1000
   d.release=d.release or params:get("release")/1000
@@ -286,12 +287,12 @@ function Sample:play(d)
     d.duration_total,
     d.retrig,
     d.gate,
-    d.filter,
+    d.lpf,
     d.decimate,
     d.compressible,
     d.compressing,
     d.reverb,d.drive,d.compression,
-  d.watch,d.attack,d.release,d.stretch,d.send_tape,d.delay)
+  d.watch,d.attack,d.release,d.stretch,d.send_tape,d.delay,d.res)
   if self.kick[d.ci]>-48 then
     engine.kick(
       musicutil.note_num_to_freq(params:get("kick_basenote")),

@@ -325,14 +325,14 @@ function toggle_clock(on)
           d.stretch=1
           d.steps=d.steps*math.random(4,8)
           debounce_fn["stretch"]={refractory,function()end}
-         elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.7)*0.2 and debounce_fn["delay"]==nil then
-            d.delay=1
-             d.gate=math.random(25,75)/100
-             d.steps=d.steps*math.random(4,8)
-            debounce_fn["delay"]={refractory,function()end}
-	 elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.6) and debounce_fn["tremolo"]==nil then 
-		 debounce_fn["tremolo"]={refractory,function()end}
-		 engine.tremolo(math.random(100,800),musicutil.note_num_to_freq(params:get("lpf")),math.random(1,8),params:get("clock_tempo")/60*math.random(1,4)*2)
+        elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.7)*0.2 and debounce_fn["delay"]==nil then
+          d.delay=1
+          d.gate=math.random(25,75)/100
+          d.steps=d.steps*math.random(4,8)
+          debounce_fn["delay"]={refractory,function()end}
+          -- elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.6) and debounce_fn["tremolo"]==nil then
+          --   debounce_fn["tremolo"]={refractory,function()end}
+          --   engine.tremolo(math.random(100,800),musicutil.note_num_to_freq(params:get("lpf")),math.random(1,8),params:get("clock_tempo")/60*math.random(1,4)*2)
         end
         if math.random()<easing_function2(params:get("break"),-3.1,-1.3,0.177,0.5) then
           d.rate=-1
@@ -404,7 +404,7 @@ function draw_message()
   if show_message_clock~=nil and show_message_text~=nil and show_message_clock>0 and show_message_text~="" then
     show_message_clock=show_message_clock-1
     screen.blend_mode(0)
-    
+
     local x=64
     local y=28
     local w=screen.text_extents(show_message_text)+8
@@ -505,15 +505,15 @@ end
 
 ff=1
 function redraw()
-local efit_mode=kon[2] and kon[3]
-  if efit_mode then 
+  local efit_mode=kon[2] and kon[3]
+  if efit_mode then
     screen.blend_mode(0)
   else
     screen.clear()
     screen.blend_mode(0)
   end
-  if not efit_mode then 
-  ws[params:get("track")]:redraw()
+  if not efit_mode then
+    ws[params:get("track")]:redraw()
   end
   screen.font_face(63)
   screen.level(5)
@@ -524,12 +524,12 @@ local efit_mode=kon[2] and kon[3]
   screen.move(64,8)
   screen.font_size(8)
   screen.text_center(performance and (clock_run==nil and "stopped" or "playing") or "edit")
-  if efit_mode then 
-	  screen.font_size(math.random(12,36))
+  if efit_mode then
+    screen.font_size(math.random(12,36))
     screen.level(math.random(12,15))
     screen.font_face(math.random(1,63))
     screen.text_rotate(math.random(1,128),math.random(1,64),"f",math.random(0,360))
-	  screen.font_size(8)
+    screen.font_size(8)
   else
     if performance then
       screen.level(15)

@@ -66,7 +66,7 @@ Engine_AmenBreak1 : CroneEngine {
         }).send(context.server);        
         SynthDef("tremolo",{|out,min=0.1,max=1,rate=0.5,duration=1|
             FreeSelf.kr(TDelay.kr(Impulse.kr(0), duration));
-            Out.kr(out,PulseDPW.kr(rate).range(min,max));
+            Out.kr(out,Pulse.kr(rate).range(min,max));
         }).send(context.server);
 
         SynthDef("kick", { |basefreq = 40, ratio = 6, sweeptime = 0.05, preamp = 1, amp = 1,

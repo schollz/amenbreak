@@ -65,7 +65,7 @@ Engine_AmenBreak1 : CroneEngine {
             Out.kr(out,Lag.kr(val,slew));
         }).send(context.server);        
         SynthDef("tremolo",{|out,min=0.1,max=1,rate=0.5,duration=1|
-            FreeSelf.kr(TDelay.ar(Impulse.kr(0), duration));
+            FreeSelf.kr(TDelay.kr(Impulse.kr(0), duration));
             Out.kr(out,PulseDPW.kr(rate).range(min,max));
         }).send(context.server);
 

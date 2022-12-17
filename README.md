@@ -8,7 +8,7 @@ a dedicated amen break script for norns.
 ## Requirements
 
 - norns
-- at least 200MB of disk space
+- at least 400MB of disk space
 
 ## Documentation
 
@@ -22,7 +22,7 @@ E2 amens, E3 breaks.
 
 ### features
 
-- over 100 amen break samples (from [internet archive](https://archive.org/details/amen-breaks-compilation)), loaded into memory for instant playback
+- over 200 amen break samples (from [internet archive](https://archive.org/details/amen-breaks-compilation)), loaded into memory for instant playback
 - automatic stutter/stretch/delay effects (amen+break)
 - overdrive/decimate/degrade control (punch)
 - kick drum added to bolster kicks of pre-analyzed samples

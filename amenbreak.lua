@@ -230,7 +230,7 @@ function init()
     -- params:set("break",0.6)
     params:set("punch",0.1)
     -- params:set("track",3)
-    -- toggle_clock(true)
+    toggle_clock(true)
   end)
 end
 
@@ -325,11 +325,14 @@ function toggle_clock(on)
           d.stretch=1
           d.steps=d.steps*math.random(4,8)
           debounce_fn["stretch"]={refractory,function()end}
-          -- elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.7)*0.2 and d.beat%8>3 and debounce_fn["delay"]==nil then
-          --   d.delay=1
-          --   d.gate=math.random(25,75)/100
-          --   d.steps=(8-d.beat%8)*ticks_per_beat
-          --   debounce_fn["delay"]={refractory,function()end}
+         elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.7)*0.2 and debounce_fn["delay"]==nil then
+            d.delay=1
+             d.gate=math.random(25,75)/100
+             d.steps=d.steps*math.random(4,8)
+            debounce_fn["delay"]={refractory,function()end}
+	 elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.6) and debounce_fn["tremolo"]==nil then 
+		 debounce_fn["tremolo"]={refractory,function()end}
+		 engine.tremolo(math.random(100,800),musicutil.note_num_to_freq(params:get("lpf")),math.random(1,8),params:get("clock_tempo")/60*math.random(1,4)*2)
         end
         if math.random()<easing_function2(params:get("break"),-3.1,-1.3,0.177,0.5) then
           d.rate=-1

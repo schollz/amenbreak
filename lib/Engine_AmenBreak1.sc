@@ -58,6 +58,17 @@ Engine_AmenBreak1 : CroneEngine {
         oscs.put("position",OSCFunc({ |msg| NetAddr("127.0.0.1", 10111).sendMsg("progress",msg[3],msg[3]); }, '/position'));
         oscs.put("lfos",OSCFunc({ |msg| NetAddr("127.0.0.1", 10111).sendMsg("lfos",msg[3],msg[4]); }, '/lfos'));
         
+        SynthDef("rise",{|out,duration=1,min=0.1,max=1|
+            Out.kr(out,EnvGen.kr(Env.new([min,max],[duration],\exponential),doneAction:2));
+        }).send(context.server);        
+        SynthDef("set",{|out,val,slew=0.5|
+            Out.kr(out,Lag.kr(val,slew));
+        }).send(context.server);        
+        SynthDef("tremolo",{|out,min=0.1,max=1,rate=0.5,duration=1|
+            FreeSelf.kr(TDelay.kr(Impulse.kr(0), duration));
+            Out.kr(out,Pulse.kr(rate).range(min,max));
+        }).send(context.server);
+
         SynthDef("kick", { |basefreq = 40, ratio = 6, sweeptime = 0.05, preamp = 1, amp = 1,
             decay1 = 0.3, decay1L = 0.8, decay2 = 0.15, clicky=0.0, out|
             var snd;
@@ -178,6 +189,8 @@ Engine_AmenBreak1 : CroneEngine {
         syns.put("main",Synth.new(\main,[\tape_buf,bufs.at("tape"),\outBus,0,\sidechain_mult,8,\inBus,buses.at("busCompressible"),\inBusNSC,buses.at("busNotCompressible"),\inSC,buses.at("busCompressing"),\delay_bufs,bufsDelay,\inDelay,buses.at("busDelay")]));
         syns.put("lfos",Synth.new("lfos"));
         NodeWatcher.register(syns.at("main"));
+        syns.put("filter",Synth.new("set",[\out,buses.at("filter"),\val,18000],s,\addToHead));
+        NodeWatcher.register(syns.at("filter"));
         context.server.sync;
 
         this.addCommand("synth_set","ssf",{ arg msg;
@@ -187,6 +200,15 @@ Engine_AmenBreak1 : CroneEngine {
             this.synthChange(id,k,v);
         });
 
+        this.addCommand("tremolo","ffff",{ arg msg;
+            var min=msg[1];
+            var max=msg[2];
+            var duration=msg[3];
+            var rate=msg[4];
+            syns.at("filter").free;
+            syns.put("filter",Synth.new("tremolo",[\out,buses.at("filter"),\duration,duration,\min,min,\max,max,\rate,rate],s,\addToHead));
+            NodeWatcher.register(syns.at("filter"));
+        });
 
         this.addCommand("slice_on","ssffffffffffffffffffffffff",{ arg msg;
             var id=msg[1];
@@ -217,12 +239,26 @@ Engine_AmenBreak1 : CroneEngine {
             var res=msg[26];
             var db_first=db+db_add;
             // TODO: set filter bus
+            if (syns.at("filter").isRunning,{
+                syns.at("filter").set(\val,lpf);
+            },{
+                syns.put("filter",Synth.new("set",[\out,buses.at("filter"),\val,18000],s,\addToHead));
+                NodeWatcher.register(syns.at("filter"));                
+            });
             if (retrig>0,{
                 db_first=db;
                 if (db_add>0,{
                     db_first=db-(db_add*retrig);
                     db=db_first;
-                })
+                });
+                if (retrig>3,{
+                    if (100.rand<25,{
+                        // create filter sweep
+                        syns.at("filter").free;
+                        syns.put("filter",Synth.new("rise",[\out,buses.at("filter"),\duration,duration_total,\min,200,\max,lpf],s,\addToHead));
+                        NodeWatcher.register(syns.at("filter"));
+                    });
+                });
             });
             // ["duration_slice",duration_slice,"duration_total",duration_total,"retrig",retrig].postln;
             if (bufs.at(filename).notNil,{
@@ -245,7 +281,7 @@ Engine_AmenBreak1 : CroneEngine {
                     release: release,
                     amp: db_first.dbamp,
                     pan: pan,
-                    lpf: buses.at("filter"),
+                    lpfIn: buses.at("filter"),
                     res: res,
                     rate: rate*pitch.midiratio,
                     pos: pos,
@@ -280,7 +316,7 @@ Engine_AmenBreak1 : CroneEngine {
                                 stretch: stretch,
                                 rate: rate*((pitch.sign)*(i+1)+pitch).midiratio,
                                 duration: duration_slice * gate / (retrig + 1),
-                                lpf: buses.at("filter"),
+                                lpfIn: buses.at("filter"),
                                 res: res,
                                 pos: pos,
                                 decimate: decimate,

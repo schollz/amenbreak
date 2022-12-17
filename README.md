@@ -27,6 +27,7 @@ E2 amens, E3 breaks.
 - overdrive/decimate/degrade control (punch)
 - kick drum added to bolster kicks of pre-analyzed samples
 - edit mode allows manipulating individual slices/kick volume
+- all effects are determined by probabilities with sweet spots controlled by many different [easing functions](https://www.desmos.com/calculator/3mmmijzncm) (thanks to @dewb for pointing this out)
 
 ### controls
 

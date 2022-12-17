@@ -8,7 +8,7 @@ a dedicated amen break script for norns.
 ## Requirements
 
 - norns
-- at least 400MB of disk space
+- at least 150MB of disk space
 
 ## Documentation
 
@@ -52,7 +52,7 @@ in edit mode:
 
 f*** it: 
 
-- K2+K3
+- any two keys
 
 ## Install
 

@@ -502,13 +502,16 @@ end
 
 ff=1
 function redraw()
-  if kon[2] and kon[3] then 
-    screen.blend_mode(12)
+local efit_mode=kon[2] and kon[3]
+  if efit_mode then 
+    screen.blend_mode(0)
   else
     screen.clear()
     screen.blend_mode(0)
   end
+  if not efit_mode then 
   ws[params:get("track")]:redraw()
+  end
   screen.font_face(63)
   screen.level(5)
   screen.rect(0,0,128,7)
@@ -518,10 +521,12 @@ function redraw()
   screen.move(64,8)
   screen.font_size(8)
   screen.text_center(performance and (clock_run==nil and "stopped" or "playing") or "edit")
-  if kon[2] and kon[3] then 
-    screen.level(math.random(1,15))
+  if efit_mode then 
+	  screen.font_size(math.random(12,36))
+    screen.level(math.random(12,15))
     screen.font_face(math.random(1,63))
-    screen.text_rotate(math.random(1,128),math.random(1,64),"f*** it",math.random(0,60))
+    screen.text_rotate(math.random(1,128),math.random(1,64),"f",math.random(0,360))
+	  screen.font_size(8)
   else
     if performance then
       screen.level(15)

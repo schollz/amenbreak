@@ -73,7 +73,7 @@ def analyze(fname):
         else:
             kick.append(0)
     kick = librosa.amplitude_to_db(kick)
-    with open(fname+".json","w") as f:
+    with open(fname + ".json", "w") as f:
         f.write(json.dumps(list(kick)))
 
     if doplot:
@@ -112,7 +112,7 @@ def gather2(fname):
     return data
 
 
-for fname in tqdm(list(glob.glob("amenbreak/*.flac"))):
+for fname in tqdm(list(glob.glob("amens/*.flac"))):
     if "slow" in fname:
         continue
     analyze(fname)

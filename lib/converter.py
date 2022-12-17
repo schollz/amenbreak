@@ -50,8 +50,9 @@ def convert(filepath):
 
 # part 1
 # folders = [
-#     "Rhythm Lab The Ultimate Amen Breaks Pack/SAMPLED AND REMIXED",
-#     "Amen Breaks Compilation",
+#     # "Rhythm Lab The Ultimate Amen Breaks Pack/SAMPLED AND REMIXED",
+#     # "Amen Breaks Compilation",
+#     "amens-raw/Compound Audio Presents - 101 Amen Breaks/Amen Loops WAV"
 # ]
 # files = []
 # for folder in folders:
@@ -65,10 +66,13 @@ def convert(filepath):
 # for filepath in files:
 #     convert(filepath)
 
-# part 2
+# # part 2
 files = []
 for fname in glob.glob("amens/*flac"):
     if ".slow." in fname:
+        continue
+    if os.path.exists(f"{fname}.slow.flac"):
+        print("skipping " + fname)
         continue
     duration = librosa.get_duration(filename=fname)
     cmd = f"sox '{fname}' '{fname}.slow.flac' tempo -s 0.125 highpass 30 phaser 0.9 0.85 4 0.23 1.3 -s deemph trim 0 {duration*2}"

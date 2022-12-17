@@ -29,7 +29,6 @@ end
 json=require("cjson")
 musicutil=require("musicutil")
 sample_=include("lib/sample")
-_lfos=require('lfo')
 engine.name="AmenBreak1"
 
 param_switch=true
@@ -45,7 +44,7 @@ dur={1}}
 
 function init()
   debounce_fn["startup"]={30,function()end}
-  os.execute(_path.code.."amenbreak/lib/oscnotify/run.sh &")
+  -- os.execute(_path.code.."amenbreak/lib/oscnotify/run.sh &")
 
   if not util.file_exists(_path.data.."amenbreak/dats/") then
     os.execute("mkdir -p ".._path.data.."amenbreak/dats/")
@@ -60,7 +59,7 @@ function init()
   amen_files={}
   for _,fname in ipairs(util.scandir(_path.audio.."amenbreak")) do
     if not string.find(fname,"slow") then
-      if util.file_exists(_path.audio.."amenbreak/"..fname..".slow.flac") then
+      if util.file_exists(_path.audio.."amenbreak/"..fname..".json") then
         -- print(fname)
         table.insert(amen_files,fname)
         -- if #amen_files==4 then
@@ -69,6 +68,7 @@ function init()
       end
     end
   end
+  table.sort(amen_files)
   print(string.format("[amenbreak] found %s files",#amen_files))
 
   -- choose audiowaveform binary
@@ -210,27 +210,14 @@ function init()
     end
   end
 
-  -- -- establish an LFO variable for a specific purpose:
-  -- cutoff_lfo=_lfos:add{
-  --   shape='sine',-- shape
-  --   min=0,-- min
-  --   max=1,-- max
-  --   depth=1,-- depth (0 to 1)
-  --   mode='free',-- mode
-  --   period=128,-- period (in 'clocked' mode, represents beats)
-  --   -- pass our 'scaled' value (bounded by min/max and depth) to the engine:
-  --   action=function(scaled,raw) params:set_raw("track",scaled) end -- action, always passes scaled and raw values
-  -- }
-  -- cutoff_lfo:start() -- start our LFO, complements ':stop()'
-
   -- debug
   clock.run(function()
     clock.sleep(1)
+    params:set("punch",0.1)
     --   params:set("amen",0)
     -- params:set("break",0.6)
-    params:set("punch",0.1)
     -- params:set("track",3)
-    toggle_clock(true)
+    -- toggle_clock(true)
   end)
 end
 
@@ -313,7 +300,7 @@ function toggle_clock(on)
         if d.beat==0 then
         elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.3)*2 and debounce_fn["retrig"]==nil then
           -- local retrig_beats=util.clamp(track_beats-(d.beat%track_beats),1,6)
-          local retrig_beats=math.random(1,3)
+          local retrig_beats=math.random(1,5)
           d.steps=retrig_beats*math.random(1,4)
           d.retrig=2*math.random(1,4)*retrig_beats-1
           d.db=math.random(1,2)
@@ -323,16 +310,13 @@ function toggle_clock(on)
           debounce_fn["retrig"]={math.floor(refractory/2),function()end}
         elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.5) and debounce_fn["stretch"]==nil then
           d.stretch=1
-          d.steps=d.steps*math.random(4,8)
-          debounce_fn["stretch"]={refractory,function()end}
+          d.steps=d.steps*math.random(8,12)
+          debounce_fn["stretch"]={refractory*4,function()end}
         elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.7)*0.2 and debounce_fn["delay"]==nil then
           d.delay=1
           d.gate=math.random(25,75)/100
-          d.steps=d.steps*math.random(4,8)
+          d.steps=d.steps*math.random(2,12)
           debounce_fn["delay"]={refractory,function()end}
-          -- elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.6) and debounce_fn["tremolo"]==nil then
-          --   debounce_fn["tremolo"]={refractory,function()end}
-          --   engine.tremolo(math.random(100,800),musicutil.note_num_to_freq(params:get("lpf")),math.random(1,8),params:get("clock_tempo")/60*math.random(1,4)*2)
         end
         if math.random()<easing_function2(params:get("break"),-3.1,-1.3,0.177,0.5) then
           d.rate=-1
@@ -367,7 +351,7 @@ function toggle_clock(on)
         -- print("d",json.encode(d))
         d.duration=d.steps*clock.get_beat_sec()/2
         ws[params:get("track")]:play(d)
-        if params:get("efit")==1 and math.random()<lfos[4] then
+        if params:get("efit")==1 and math.random()<lfos[4]/4 then
           params:set_raw("track",math.random())
         end
       end
@@ -473,6 +457,7 @@ function enc(k,d)
       params:delta("punch",d)
     elseif k==1 then
       params:delta("db",d)
+      debounce_fn["show_db"]={15,function()end}
     end
   else
     ws[params:get("track")]:enc(k,d)
@@ -491,7 +476,7 @@ function key(k,z)
     do return end
   end
   if performance then
-    if kon[2] and kon[3] then
+    if (kon[2] and kon[3]) or (kon[1] and kon[3]) or (kon[1] and kon[2]) then
       params:set("efit",1-params:get("efit"))
     elseif kon[2] then
       param_switch=not param_switch
@@ -513,6 +498,9 @@ function redraw()
     screen.blend_mode(0)
   end
   if not efit_mode then
+    if ws[params:get("track")]==nil then 
+      do return end
+    end
     ws[params:get("track")]:redraw()
   end
   screen.font_face(63)
@@ -523,7 +511,12 @@ function redraw()
   screen.move(8,6)
   screen.move(64,8)
   screen.font_size(8)
-  screen.text_center(performance and (clock_run==nil and "stopped" or "playing") or "edit")
+  if debounce_fn["show_db"]~=nil then 
+    screen.level(15-debounce_fn["show_db"][1])
+    screen.text_center(params:string("db"))
+  else
+    screen.text_center(performance and (clock_run==nil and "stopped" or "playing") or "edit")
+  end
   if efit_mode then
     screen.font_size(math.random(12,36))
     screen.level(math.random(12,15))

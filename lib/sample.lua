@@ -88,8 +88,10 @@ function Sample:load_sample(path)
   self.path=path
   self.pathname,self.filename,self.ext=string.match(self.path,"(.-)([^\\/]-%.?([^%.\\/]*))$")
   engine.load_buffer(self.path)
-  engine.load_buffer(self.path..".slow.flac")
-
+  if self.id==1 then 
+    engine.load_slow(self.pathname.."/slow.flac")
+  end
+ 
   self.ch,self.samples,self.sample_rate=audio.file_info(self.path)
   if self.samples<10 or self.samples==nil then
     print("ERROR PROCESSING FILE: "..path)
@@ -347,8 +349,8 @@ function Sample:do_move(d)
     do return end
   end
   self.cursors[self.ci]=util.clamp(self.cursors[self.ci]+d*((self.view[2]-self.view[1])/128),0,self.duration)
-  self.debounce_fn["save"]={15,function() self:save_cursors() end}
   if d>0 then
+    self.debounce_fn["save"]={15,function() self:save_cursors() end}
     self:sel_cursor(self.ci)
   end
 end

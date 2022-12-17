@@ -84,7 +84,7 @@ Engine_AmenBreak1 : CroneEngine {
         
         SynthDef("lfos", {
             4.do({ arg i;
-                var period=Rand(8,30);
+                var period=Rand(1*(i+1),2*(i+1)*(i+1));
                 var lfo=VarLag.kr(LFNoise0.kr(1/period),period,0,\sine).range(0,1);
                 SendReply.kr(Impulse.kr(4),'/lfos',[i,lfo]);
             });
@@ -276,7 +276,7 @@ Engine_AmenBreak1 : CroneEngine {
                     compressing: compressing,
                     sendreverb: send_reverb,
                     buf1: bufs.at(filename),
-                    buf2: bufs.at((filename++".slow.flac").asSymbol),
+                    buf2: bufs.at("slow"),
                     attack: attack,
                     release: release,
                     amp: db_first.dbamp,
@@ -308,7 +308,7 @@ Engine_AmenBreak1 : CroneEngine {
                                 compressible: compressible,
                                 compressing: compressing,
                                 buf1: bufs.at(filename),
-                                buf2: bufs.at((filename++".slow.flac").asSymbol),
+                                buf2: bufs.at("slow"),
                                 pan: pan,
                                 attack: attack,
                                 release: release,
@@ -345,6 +345,16 @@ Engine_AmenBreak1 : CroneEngine {
                 Buffer.read(context.server, id, action: {arg buf;
                     ["[amenbreak] loaded"+id].postln;
                     bufs.put(id,buf);
+                });
+            });
+        });
+        this.addCommand("load_slow","s",{ arg msg;
+            var id=msg[1];
+            // ["loading"+id].postln;
+            if (bufs.at("slow").isNil,{
+                Buffer.read(context.server, id, action: {arg buf;
+                    ["[amenbreak] loaded slow"+id].postln;
+                    bufs.put("slow",buf);
                 });
             });
         });

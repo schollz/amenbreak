@@ -79,6 +79,7 @@ function init()
   end
 
   -- add major parameters
+  params_audioin()
   params_sidechain()
   params_kick()
 
@@ -498,7 +499,7 @@ function redraw()
     screen.blend_mode(0)
   end
   if not efit_mode then
-    if ws[params:get("track")]==nil then 
+    if ws[params:get("track")]==nil then
       do return end
     end
     ws[params:get("track")]:redraw()
@@ -511,7 +512,7 @@ function redraw()
   screen.move(8,6)
   screen.move(64,8)
   screen.font_size(8)
-  if debounce_fn["show_db"]~=nil then 
+  if debounce_fn["show_db"]~=nil then
     screen.level(15-debounce_fn["show_db"][1])
     screen.text_center(params:string("db"))
   else
@@ -543,6 +544,27 @@ function redraw()
 
   draw_message()
   screen.update()
+end
+
+function params_audioin()
+  local params_menu={
+    {id="amp",name="amp",min=0,max=2,exp=false,div=0.01,default=1.0},
+    {id="compressing",name="compressing",min=0,max=1,exp=false,div=1,default=0.0,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
+    {id="compressible",name="compressible",min=0,max=1,exp=false,div=1,default=1.0,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
+  }
+  params:add_group("AUDIO IN",#params_menu)
+  for _,pram in ipairs(params_menu) do
+    params:add{
+      type="control",
+      id="audioin"..pram.id,
+      name=pram.name,
+      controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
+      formatter=pram.formatter,
+    }
+    params:set_action("audioin"..pram.id,function(v)
+      engine.audionin_set(pram.id,v)
+    end)
+  end
 end
 
 function params_kick()

@@ -60,7 +60,7 @@ function init()
         os.execute("mkdir -p ".._path.data.."amenbreak/cursors/")
         os.execute("mkdir -p ".._path.data.."amenbreak/pngs/")
         -- run installer
-        Restart_Message = UI.Message.new{ "installing amen audio..." }
+        Restart_Message = UI.Message.new{ "installing amen audio...","(this takes awhile)" }
         redraw()
         clock.sleep(1)
         print("[amenbreak] INSTALLING PLEASE WAIT!!")

@@ -29,7 +29,6 @@ end
 json=require("cjson")
 musicutil=require("musicutil")
 sample_=include("lib/sample")
-engine.name="AmenBreak1"
 
 param_switch=true
 performance=true
@@ -43,20 +42,53 @@ posit={
 dur={1}}
 initital_monitor_level=0
 
+UI = require 'ui'
+loaded_files=0
+Needs_Restart = false
+Engine_Exists=(util.file_exists('/home/we/.local/share/SuperCollider/Extensions/supercollider-plugins/AnalogTape_scsynth.so') or  util.file_exists("/home/we/.local/share/SuperCollider/Extensions/PortedPlugins/AnalogTape_scsynth.so"))
+engine.name = Engine_Exists and 'AmenBreak1' or nil
+
+-- other stuff
 function init()
+  Needs_Restart = false
+  Data_Exists = util.file_exists(_path.data.."amenbreak/dats/")
+  if (not Data_Exists) or (not Engine_Exists) then 
+    clock.run(function()
+      if not Data_Exists then 
+        Needs_Restart=true
+        os.execute("mkdir -p ".._path.data.."amenbreak/dats/")
+        os.execute("mkdir -p ".._path.data.."amenbreak/cursors/")
+        os.execute("mkdir -p ".._path.data.."amenbreak/pngs/")
+        -- run installer
+        Restart_Message = UI.Message.new{ "installing amen audio..." }
+        redraw()
+        clock.sleep(1)
+        print("[amenbreak] INSTALLING PLEASE WAIT!!")
+        os.execute(_path.code.."amenbreak/lib/install.sh")
+      end
+      if not Engine_Exists then  
+        Needs_Restart=true
+        Restart_Message = UI.Message.new{ "installing tapedeck..." }
+        redraw()
+        clock.sleep(1)
+        os.execute("cd /tmp && wget https://github.com/schollz/tapedeck/releases/download/PortedPlugins/PortedPlugins.tar.gz && tar -xvzf PortedPlugins.tar.gz && rm PortedPlugins.tar.gz && sudo rsync -avrP PortedPlugins /home/we/.local/share/SuperCollider/Extensions/")
+      end
+      Restart_Message = UI.Message.new{ "please restart norns." }
+      redraw()
+      clock.sleep(1)
+      do return end        
+    end)
+    do return end 
+  end
+  -- rest of init()
+  show_message("loading amen breaks...")
+  redraw()
+
   initital_monitor_level = params:get('monitor_level')
   params:set('monitor_level', -math.huge)
   debounce_fn["startup"]={30,function()end}
   -- os.execute(_path.code.."amenbreak/lib/oscnotify/run.sh &")
 
-  if not util.file_exists(_path.data.."amenbreak/dats/") then
-    os.execute("mkdir -p ".._path.data.."amenbreak/dats/")
-    os.execute("mkdir -p ".._path.data.."amenbreak/cursors/")
-    os.execute("mkdir -p ".._path.data.."amenbreak/pngs/")
-    -- run installer
-    print("[amenbreak] INSTALLING PLEASE WAIT!!")
-    os.execute(_path.code.."amenbreak/lib/install.sh")
-  end
 
   -- find all the amen files
   amen_files={}
@@ -84,6 +116,7 @@ function init()
   -- add major parameters
   params_audioin()
   params_sidechain()
+  params_tape()
   params_kick()
 
   local params_menu={
@@ -130,11 +163,12 @@ function init()
     params:set_raw("drive",easing_function(x,0.1,2))
     params:set_raw("compression",easing_function(x,5.4,4))
     params:set_raw("decimate",easing_function(x,8.8,12))
-    params:set_raw("lpf",easing_function(x,-5.5,10)+0.65)
+    params:set_raw("lpf",easing_function(x,-5.5,10)+0.25)
   end)
 
   -- setup ws
   ws={}
+
   for i=1,#amen_files do
     table.insert(ws,sample_:new{id=i})
   end
@@ -192,11 +226,6 @@ function init()
     end
   end)
 
-  -- startup
-  for i,v in ipairs(amen_files) do
-    params:set(i.."sample_file",_path.audio.."amenbreak/"..v)
-  end
-
   -- listen to all the midi devices for startups
   for i,dev in pairs(midi.devices) do
     if dev.port~=nil then
@@ -216,8 +245,17 @@ function init()
 
   -- debug
   clock.run(function()
+    -- startup
+    for i,v in ipairs(amen_files) do
+      params:set(i.."sample_file",_path.audio.."amenbreak/"..v)
+      loaded_files=i/#amen_files*100
+      show_message("loading amen breaks...")
+      show_progress(loaded_files)
+      clock.sleep(0.001)
+    end
+    show_message_text=nil
     clock.sleep(1)
-    params:set("punch",0.1)
+    params:set("punch",0.3)
     --   params:set("amen",0)
     -- params:set("break",0.6)
     -- params:set("track",3)
@@ -269,14 +307,35 @@ function toggle_clock(on)
   if on==nil then
     on=clock_run==nil
   end
-  if clock_run~=nil then
-    clock.cancel(clock_run)
-    clock_run=nil
+
+
+  -- do tape stuff
+  if on then 
+    params:set("tape_gate",1)
+    clock.run(function()
+      clock.sleep(0.25)
+      params:set("tape_gate",0)
+    end)
+    if clock_run~=nil then
+      clock.cancel(clock_run)
+      clock_run=nil
+    end
+  else
+    params:set("tape_gate",1)
+    clock.run(function()
+      clock.sleep(0.5)
+      if clock_run~=nil then
+        clock.cancel(clock_run)
+        clock_run=nil
+      end
+      toggling_clock=false
+      clock.sleep(1)  
+      params:set("tape_gate",0)
+    end)
+    do return end 
   end
-  if not on then
-    toggling_clock=false
-    do return end
-  end
+
+  -- infinite loop
   clock_beat=-1
   local d={steps=0,ci=1}
   local switched_direction=false
@@ -297,39 +356,36 @@ function toggle_clock(on)
         d.gate=1
         d.rate=1
         d.pitch=0
-        d.steps=d.steps>0 and d.steps or 1
 
         -- retriggering
         local refractory=math.random(15*1,15*10)
-        if d.beat==0 then
-        elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.3)*2 and debounce_fn["retrig"]==nil then
+        if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.3)*1.5 and debounce_fn["retrig"]==nil then
           -- local retrig_beats=util.clamp(track_beats-(d.beat%track_beats),1,6)
-          local retrig_beats=math.random(1,5)
-          d.steps=retrig_beats*math.random(1,4)
+          local retrig_beats=math.random(1,4)
+          d.steps=retrig_beats*math.random(1,3)
           d.retrig=2*math.random(1,4)*retrig_beats-1
           d.db=math.random(1,2)
           if math.random()<0.25 then
             d.pitch=-2
           end
+          if math.random()<0.25 then
+            d.db=d.db*-1
+          end
           debounce_fn["retrig"]={math.floor(refractory/2),function()end}
-        elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.5) and debounce_fn["stretch"]==nil then
+        end
+        if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.5) and debounce_fn["stretch"]==nil then
           d.stretch=1
-          d.steps=d.steps*math.random(8,12)
+          d.steps=d.steps>1 and d.steps or d.steps*math.random(8,12)
           debounce_fn["stretch"]={refractory*4,function()end}
-        elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.7)*0.2 and debounce_fn["delay"]==nil then
+        end
+        if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.7)*0.2 and debounce_fn["delay"]==nil then
           d.delay=1
           d.gate=math.random(25,75)/100
-          d.steps=d.steps*math.random(2,12)
-          debounce_fn["delay"]={refractory,function()end}
+          d.steps=d.steps>1 and d.steps or d.steps*math.random(2,8)
+          debounce_fn["delay"]={refractory*2,function()end}
         end
-        if math.random()<easing_function2(params:get("break"),-3.1,-1.3,0.177,0.5) then
+        if math.random()<easing_function2(params:get("amen"),-3.1,-1.3,0.177,0.5) then
           d.rate=-1
-        end
-        if math.random()<easing_function2(params:get("break"),1,0.3,0.044,0.72)/72 and params:get("tape_gate")==0 then
-          params:set("tape_gate",1)
-          debounce_fn["tape_gate"]={math.random(15,30),function()
-            params:set("tape_gate",0)
-          end}
         end
 
         -- calculate the next position
@@ -365,6 +421,15 @@ function toggle_clock(on)
           params:set_raw("track",math.random())
         end
       end
+
+      if math.random()<easing_function2(params:get("amen"),1,0.3,0.044,0.72)/48 and params:get("tape_gate")==0 and debounce_fn["tape_gate"]==nil then
+        params:set("tape_gate",1)
+        debounce_fn["tape_gate"]={math.random(15,30),function()
+          params:set("tape_gate",0)
+          debounce_fn["tape_gate"]={math.random(15*1,15*10),function()end}
+        end}
+      end
+
       d.steps=d.steps-1
       clock.sync(1/2)
     end
@@ -501,54 +566,63 @@ end
 
 ff=1
 function redraw()
-  local efit_mode=kon[2] and kon[3]
-  if efit_mode then
-    screen.blend_mode(0)
-  else
+  if Needs_Restart then
     screen.clear()
-    screen.blend_mode(0)
+    screen.level(15)
+    Restart_Message:redraw()
+    screen.update()
+    return
   end
-  if not efit_mode then
-    if ws[params:get("track")]==nil then
-      do return end
+  if loaded_files==100 then 
+    local efit_mode=kon[2] and kon[3]
+    if efit_mode then
+      screen.blend_mode(0)
+    else
+      screen.clear()
+      screen.blend_mode(0)
     end
-    ws[params:get("track")]:redraw()
-  end
-  screen.font_face(63)
-  screen.level(5)
-  screen.rect(0,0,128,7)
-  screen.fill()
-  screen.level(0)
-  screen.move(8,6)
-  screen.move(64,8)
-  screen.font_size(8)
-  if debounce_fn["show_db"]~=nil then
-    screen.level(15-debounce_fn["show_db"][1])
-    screen.text_center(params:string("db"))
-  else
-    screen.text_center(performance and (clock_run==nil and "stopped" or "playing") or "edit")
-  end
-  if efit_mode then
-    screen.font_size(math.random(12,36))
-    screen.level(math.random(12,15))
-    screen.font_face(math.random(1,63))
-    screen.text_rotate(math.random(1,128),math.random(1,64),"f",math.random(0,360))
+    if not efit_mode then
+      if ws[params:get("track")]==nil then
+        do return end
+      end
+      ws[params:get("track")]:redraw()
+    end
+    screen.font_face(63)
+    screen.level(5)
+    screen.rect(0,0,128,7)
+    screen.fill()
+    screen.level(0)
+    screen.move(8,6)
+    screen.move(64,8)
     screen.font_size(8)
-  else
-    if performance then
-      screen.level(15)
-      screen.font_size(13)
-      screen.move(32,30)
-      screen.text_center(param_switch and "AMEN" or "DRUM")
-      screen.move(32,30+24)
-      screen.text_center(param_switch and (math.floor(params:get("amen")*100).."%") or params:get("track"))
-
-      screen.font_face(62)
-      screen.move(32+60,30)
-      screen.text_center(param_switch and "BREAK" or "PUNCH")
-      screen.move(32+60,30+24)
-      screen.text_center(param_switch and (math.floor(params:get("break")*100).."%") or (math.floor(params:get("punch")*100).."%"))
+    if debounce_fn["show_db"]~=nil then
+      screen.level(15-debounce_fn["show_db"][1])
+      screen.text_center(params:string("db"))
+    else
+      screen.text_center(performance and (clock_run==nil and "stopped" or "playing") or "edit")
+    end
+    if efit_mode then
+      screen.font_size(math.random(12,36))
+      screen.level(math.random(12,15))
+      screen.font_face(math.random(1,63))
+      screen.text_rotate(math.random(1,128),math.random(1,64),"f",math.random(0,360))
       screen.font_size(8)
+    else
+      if performance then
+        screen.level(15)
+        screen.font_size(13)
+        screen.move(32,30)
+        screen.text_center(param_switch and "AMEN" or "DRUM")
+        screen.move(32,30+24)
+        screen.text_center(param_switch and (math.floor(params:get("amen")*100).."%") or params:get("track"))
+
+        screen.font_face(62)
+        screen.move(32+60,30)
+        screen.text_center(param_switch and "BREAK" or "PUNCH")
+        screen.move(32+60,30+24)
+        screen.text_center(param_switch and (math.floor(params:get("break")*100).."%") or (math.floor(params:get("punch")*100).."%"))
+        screen.font_size(8)
+      end
     end
   end
 
@@ -613,12 +687,8 @@ function params_sidechain()
     {id="compress_release",name="release",min=0,max=2,exp=false,div=0.01,default=0.2,formatter=function(param) return (param:get()*1000).." ms" end},
     {id="lpshelf",name="lp boost freq",min=12,max=127,exp=false,div=1,default=23,formatter=function(param) return musicutil.note_num_to_name(math.floor(param:get()),true)end,fn=function(x) return musicutil.note_num_to_freq(x) end},
     {id="lpgain",name="lp boost db",min=-48,max=36,exp=false,div=1,default=0,unit="dB"},
-    {id="delay_feedback",name="tape feedback time",min=0.001,max=12,exp=false,div=0.1,default=clock.get_beat_sec()*8,unit="s"},
-    {id="delay_time",name="tape delay time",min=0.01,max=4,exp=false,div=clock.get_beat_sec()/32,default=clock.get_beat_sec()/2,unit="s"},
-    {id="tape_slow",name="tape slow",min=0,max=2,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
-    {id="tape_gate",name="tape stop",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
   }
-  params:add_group("AUDIO OUT",#params_menu)
+  params:add_group("SIDECHAIN",#params_menu)
   for _,pram in ipairs(params_menu) do
     params:add{
       type="control",
@@ -627,6 +697,41 @@ function params_sidechain()
       controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
       formatter=pram.formatter,
     }
+    params:set_action(pram.id,function(v)
+      engine.main_set(pram.id,pram.fn~=nil and pram.fn(v) or v)
+    end)
+  end
+end
+
+function params_tape()
+  local params_menu={
+    {id="tape_gate",name="tape stop",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
+    {id="tape_slow",name="tape slow",min=0,max=2,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="delay_feedback",name="feedback time",min=0.001,max=12,exp=false,hide=false,div=0.1,default=clock.get_beat_sec()*16,unit="s"},
+    {id="delay_time",name="delay time",min=0.01,max=4,exp=false,hide=false,div=clock.get_beat_sec()/32,default=clock.get_beat_sec()/2,unit="s"},
+    {id="tape_wet",name="analog tape",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
+    {id="tape_bias",name="tape bias",min=0,max=1,exp=false,div=0.01,default=0.8,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="saturation",name="tape saturation",min=0,max=2,exp=false,div=0.01,default=0.80,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="tape_drive",name="tape drive",min=0,max=2,exp=false,div=0.01,default=0.75,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="dist_on",name="distortion",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
+    {id="dist_wet",name="distortion gain",min=0,max=1,exp=false,div=0.01,default=0.05,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="drivegain",name="distortion oomph",min=0,max=1,exp=false,div=0.01,default=0.5,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="dist_bias",name="distortion bias",min=0,max=2.5,exp=false,div=0.01,default=0.5,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="lowgain",name="low gain",min=0,max=0.3,exp=false,div=0.01,default=0.1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="highgain",name="high gain",min=0,max=0.3,exp=false,div=0.01,default=0.1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+  }
+  params:add_group("TAPE",#params_menu)
+  for _,pram in ipairs(params_menu) do
+    params:add{
+      type="control",
+      id=pram.id,
+      name=pram.name,
+      controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
+      formatter=pram.formatter,
+    }
+    if pram.hide then 
+      params:hide(pram.id)
+    end
     params:set_action(pram.id,function(v)
       engine.main_set(pram.id,pram.fn~=nil and pram.fn(v) or v)
     end)

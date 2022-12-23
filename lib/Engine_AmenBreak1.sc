@@ -47,6 +47,17 @@ Engine_AmenBreak1 : CroneEngine {
         // AmenBreak1 specific v0.0.1
         var s=context.server;
 
+        var mips=0.0;
+        var piped = Pipe.new("lscpu | grep BogoMIPS | awk '{print $2}'", "r"); 
+        var oversample=1;
+        mips = piped.getLine.asFloat;
+        piped.close;
+        ["BogoMIPS: ",mips].postln;
+        if (mips>200,{
+            oversample=3;
+        });
+
+
         buses = Dictionary.new();
         syns = Dictionary.new();
         bufs = Dictionary.new();
@@ -105,12 +116,16 @@ Engine_AmenBreak1 : CroneEngine {
 
         SynthDef(\main, {
             arg outBus=0,inBusNSC,inSC,inDelay,lpshelf=60,lpgain=0,sidechain_mult=2,compress_thresh=0.1,compress_level=0.1,compress_attack=0.01,compress_release=1,inBus,
-            tape_buf,tape_slow=0,tape_stretch=0,delay_bufs=#[0,1],delay_time=0.25,delay_feedback=0.5,tape_gate=0;
+            tape_buf,tape_slow=0,tape_stretch=0,delay_bufs=#[0,1],delay_time=0.25,delay_feedback=0.5,tape_gate=0,
+            tape_wet=0.9,tape_bias=0.9,saturation=0.9,tape_drive=0.7,
+			tape_oversample=2,mode=0,
+			dist_wet=0.05,dist_on=0,drivegain=0.5,dist_bias=0,lowgain=0.1,highgain=0.1,
+			shelvingfreq=600,dist_oversample=2;
             var snd,sndSC,sndNSC,sndDelay,tapePosRec,tapePosStretch,local,tape_slow2;
             snd=In.ar(inBus,2);
             sndNSC=In.ar(inBusNSC,2);
             sndSC=In.ar(inSC,2);
-            sndDelay=In.ar(inDelay,2)*0.5;
+            sndDelay=In.ar(inDelay,2)*0.4;
 
             snd = Compander.ar(snd, (sndSC*sidechain_mult), 
                 compress_thresh, 1, compress_level, 
@@ -139,8 +154,15 @@ Engine_AmenBreak1 : CroneEngine {
             snd = SelectX.ar(VarLag.kr((tape_slow>0)+(tape_slow2<1),0.05,warp:\sine),[snd,PlayBuf.ar(2,tape_buf,tape_slow2*Lag.kr(1/(tape_slow+1),1),startPos:tapePosRec-10,loop:1,trigger:Trig.kr((tape_slow+tape_gate)>0))]);
             snd = snd*Lag.kr(tape_slow2>0.04701);
 
+            // tape in the tae
+			snd=SelectX.ar(Lag.kr(tape_wet,1),[snd,AnalogTape.ar(snd,tape_bias,saturation,tape_drive,oversample,mode)]);
+			
+			snd=SelectX.ar(Lag.kr(dist_on*dist_wet/5,1),[snd,AnalogVintageDistortion.ar(snd,drivegain,dist_bias,lowgain,highgain,shelvingfreq,oversample)]);			
+		
+
             // reduce stereo spread in the bass
             snd = BHiPass.ar(snd,200)+Pan2.ar(BLowPass.ar(snd[0]+snd[1],200));
+            
 
             Out.ar(outBus,snd*EnvGen.ar(Env.new([0,1],[1])));
         }).send(context.server);
@@ -180,7 +202,7 @@ Engine_AmenBreak1 : CroneEngine {
 
             snd = Compander.ar(snd,snd,compression,0.5,clampTime:0.01,relaxTime:0.01);
 
-            snd = RLPF.ar(snd,In.kr(lpfIn,1),res);
+            snd = RLPF.ar(snd,In.kr(lpfIn,1).poll,res);
 
             Out.ar(\out.kr(0),\compressible.kr(0)*snd*amp);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
@@ -269,6 +291,7 @@ Engine_AmenBreak1 : CroneEngine {
             var sendDelay=msg[25];
             var res=msg[26];
             var db_first=db+db_add;
+            var db_orig=db_first;
             // TODO: set filter bus
             if (syns.at("filter").isRunning,{
                 syns.at("filter").set(\val,lpf);
@@ -281,6 +304,9 @@ Engine_AmenBreak1 : CroneEngine {
                 if (db_add>0,{
                     db_first=db-(db_add*retrig);
                     db=db_first;
+                });
+                if (db<36.neg,{
+                    db=36.neg;
                 });
                 if (retrig>3,{
                     if (100.rand<25,{
@@ -329,6 +355,10 @@ Engine_AmenBreak1 : CroneEngine {
                 if (retrig>0,{
                     Routine {
                         (retrig).do{ arg i;
+                            var db_next=db+(db_add*(i+1));
+                            if (db_next>db_orig,{
+                                db_next=db_orig;
+                            });
                             (duration_total/ (retrig+1) ).wait;
                             syns.put(id,Synth.new("slice"++bufs.at(filename).numChannels, [
                                 out: buses.at("busCompressible"),
@@ -343,7 +373,7 @@ Engine_AmenBreak1 : CroneEngine {
                                 pan: pan,
                                 attack: attack,
                                 release: release,
-                                amp: (db+(db_add*(i+1))).dbamp,
+                                amp: db_next.dbamp,
                                 stretch: stretch,
                                 rate: rate*((pitch.sign)*(i+1)+pitch).midiratio,
                                 duration: duration_slice * gate / (retrig + 1),
@@ -374,7 +404,7 @@ Engine_AmenBreak1 : CroneEngine {
             // ["loading"+id].postln;
             if (bufs.at(id).isNil,{
                 Buffer.read(context.server, id, action: {arg buf;
-                    ["[amenbreak] loaded"+id].postln;
+                    // ["[amenbreak] loaded"+id].postln;
                     bufs.put(id,buf);
                 });
             });
@@ -384,7 +414,7 @@ Engine_AmenBreak1 : CroneEngine {
             // ["loading"+id].postln;
             if (bufs.at("slow").isNil,{
                 Buffer.read(context.server, id, action: {arg buf;
-                    ["[amenbreak] loaded slow"+id].postln;
+                    // ["[amenbreak] loaded slow"+id].postln;
                     bufs.put("slow",buf);
                 });
             });

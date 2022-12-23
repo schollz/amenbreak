@@ -29,7 +29,6 @@ end
 json=require("cjson")
 musicutil=require("musicutil")
 sample_=include("lib/sample")
-engine.name="AmenBreak1"
 
 param_switch=true
 performance=true
@@ -43,20 +42,41 @@ posit={
 dur={1}}
 initital_monitor_level=0
 
+UI = require 'ui'
+Needs_Restart = false
+Engine_Exists=(util.file_exists('/home/we/.local/share/SuperCollider/Extensions/supercollider-plugins/AnalogTape_scsynth.so') or  util.file_exists("/home/we/.local/share/SuperCollider/Extensions/PortedPlugins/AnalogTape_scsynth.so"))
+engine.name = Engine_Exists and 'AmenBreak1' or nil
+
+-- other stuff
 function init()
+  Needs_Restart = false
+  Data_Exists = util.file_exists(_path.data.."amenbreak/dats/")
+  if not Data_Exists then 
+    os.execute("mkdir -p ".._path.data.."amenbreak/dats/")
+    os.execute("mkdir -p ".._path.data.."amenbreak/cursors/")
+    os.execute("mkdir -p ".._path.data.."amenbreak/pngs/")
+    -- run installer
+    Restart_Message = UI.Message.new{ "installing amen audio..." }
+    print("[amenbreak] INSTALLING PLEASE WAIT!!")
+    os.execute(_path.code.."amenbreak/lib/install.sh")
+  end
+  if not Engine_Exists then  
+    Restart_Message = UI.Message.new{ "installing tapedeck..." }
+    redraw()
+    os.execute("cd /tmp && wget https://github.com/schollz/tapedeck/releases/download/PortedPlugins/PortedPlugins.tar.gz && tar -xvzf PortedPlugins.tar.gz && rm PortedPlugins.tar.gz && sudo rsync -avrP PortedPlugins /home/we/.local/share/SuperCollider/Extensions/")
+  end
+  if (not Engine_Exists) or (not Data_Exists) then 
+    Restart_Message = UI.Message.new{ "please restart norns." }
+    redraw()
+    do return end
+  end
+  -- rest of init()
+
   initital_monitor_level = params:get('monitor_level')
   params:set('monitor_level', -math.huge)
   debounce_fn["startup"]={30,function()end}
   -- os.execute(_path.code.."amenbreak/lib/oscnotify/run.sh &")
 
-  if not util.file_exists(_path.data.."amenbreak/dats/") then
-    os.execute("mkdir -p ".._path.data.."amenbreak/dats/")
-    os.execute("mkdir -p ".._path.data.."amenbreak/cursors/")
-    os.execute("mkdir -p ".._path.data.."amenbreak/pngs/")
-    -- run installer
-    print("[amenbreak] INSTALLING PLEASE WAIT!!")
-    os.execute(_path.code.."amenbreak/lib/install.sh")
-  end
 
   -- find all the amen files
   amen_files={}
@@ -508,6 +528,12 @@ end
 
 ff=1
 function redraw()
+  if Needs_Restart then
+    screen.clear()
+    Restart_Message:redraw()
+    screen.update()
+    return
+  end
   local efit_mode=kon[2] and kon[3]
   if efit_mode then
     screen.blend_mode(0)

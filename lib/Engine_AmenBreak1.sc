@@ -125,7 +125,7 @@ Engine_AmenBreak1 : CroneEngine {
             snd=In.ar(inBus,2);
             sndNSC=In.ar(inBusNSC,2);
             sndSC=In.ar(inSC,2);
-            sndDelay=In.ar(inDelay,2)*0.5;
+            sndDelay=In.ar(inDelay,2)*0.4;
 
             snd = Compander.ar(snd, (sndSC*sidechain_mult), 
                 compress_thresh, 1, compress_level, 

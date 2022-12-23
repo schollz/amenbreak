@@ -360,8 +360,7 @@ function toggle_clock(on)
 
         -- retriggering
         local refractory=math.random(15*1,15*10)
-        if d.beat==0 then
-        elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.3)*1.5 and debounce_fn["retrig"]==nil then
+        if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.3)*1.5 and debounce_fn["retrig"]==nil then
           -- local retrig_beats=util.clamp(track_beats-(d.beat%track_beats),1,6)
           local retrig_beats=math.random(1,4)
           d.steps=retrig_beats*math.random(1,3)
@@ -374,17 +373,19 @@ function toggle_clock(on)
             d.db=d.db*-1
           end
           debounce_fn["retrig"]={math.floor(refractory/2),function()end}
-        elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.5) and debounce_fn["stretch"]==nil then
+        end
+        if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.5) and debounce_fn["stretch"]==nil then
           d.stretch=1
           d.steps=d.steps*math.random(8,12)
           debounce_fn["stretch"]={refractory*4,function()end}
-        elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.7)*0.2 and debounce_fn["delay"]==nil then
+        end
+        if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.7)*0.2 and debounce_fn["delay"]==nil then
           d.delay=1
           d.gate=math.random(25,75)/100
-          d.steps=d.steps*math.random(2,12)
+          d.steps=d.steps*math.random(2,8)
           debounce_fn["delay"]={refractory*2,function()end}
         end
-        if math.random()<easing_function2(params:get("break"),-3.1,-1.3,0.177,0.5) then
+        if math.random()<easing_function2(params:get("amen"),-3.1,-1.3,0.177,0.5) then
           d.rate=-1
         end
 

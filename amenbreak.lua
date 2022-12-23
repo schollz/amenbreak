@@ -84,6 +84,7 @@ function init()
   -- add major parameters
   params_audioin()
   params_sidechain()
+  params_tape()
   params_kick()
 
   local params_menu={
@@ -613,12 +614,8 @@ function params_sidechain()
     {id="compress_release",name="release",min=0,max=2,exp=false,div=0.01,default=0.2,formatter=function(param) return (param:get()*1000).." ms" end},
     {id="lpshelf",name="lp boost freq",min=12,max=127,exp=false,div=1,default=23,formatter=function(param) return musicutil.note_num_to_name(math.floor(param:get()),true)end,fn=function(x) return musicutil.note_num_to_freq(x) end},
     {id="lpgain",name="lp boost db",min=-48,max=36,exp=false,div=1,default=0,unit="dB"},
-    {id="delay_feedback",name="tape feedback time",min=0.001,max=12,exp=false,div=0.1,default=clock.get_beat_sec()*8,unit="s"},
-    {id="delay_time",name="tape delay time",min=0.01,max=4,exp=false,div=clock.get_beat_sec()/32,default=clock.get_beat_sec()/2,unit="s"},
-    {id="tape_slow",name="tape slow",min=0,max=2,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
-    {id="tape_gate",name="tape stop",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
   }
-  params:add_group("AUDIO OUT",#params_menu)
+  params:add_group("SIDECHAIN",#params_menu)
   for _,pram in ipairs(params_menu) do
     params:add{
       type="control",
@@ -627,6 +624,41 @@ function params_sidechain()
       controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
       formatter=pram.formatter,
     }
+    params:set_action(pram.id,function(v)
+      engine.main_set(pram.id,pram.fn~=nil and pram.fn(v) or v)
+    end)
+  end
+end
+
+function params_tape()
+  local params_menu={
+    {id="tape_gate",name="tape stop",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
+    {id="tape_slow",name="tape slow",min=0,max=2,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="delay_feedback",name="feedback time",min=0.001,max=12,exp=false,hide=true,div=0.1,default=clock.get_beat_sec()*8,unit="s"},
+    {id="delay_time",name="delay time",min=0.01,max=4,exp=false,hide=true,div=clock.get_beat_sec()/32,default=clock.get_beat_sec()/2,unit="s"},
+    {id="tape_wet",name="analog tape",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
+    {id="tape_bias",name="tape bias",min=0,max=1,exp=false,div=0.01,default=0.8,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="saturation",name="tape saturation",min=0,max=2,exp=false,div=0.01,default=0.80,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="tape_drive",name="tape drive",min=0,max=2,exp=false,div=0.01,default=0.75,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="dist_on",name="distortion",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
+    {id="dist_wet",name="distortion gain",min=0,max=1,exp=false,div=0.01,default=0.05,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="drivegain",name="distortion oomph",min=0,max=1,exp=false,div=0.01,default=0.5,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="dist_bias",name="distortion bias",min=0,max=2.5,exp=false,div=0.01,default=0.5,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="lowgain",name="low gain",min=0,max=0.3,exp=false,div=0.01,default=0.1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="highgain",name="high gain",min=0,max=0.3,exp=false,div=0.01,default=0.1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+  }
+  params:add_group("TAPE",#params_menu)
+  for _,pram in ipairs(params_menu) do
+    params:add{
+      type="control",
+      id=pram.id,
+      name=pram.name,
+      controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
+      formatter=pram.formatter,
+    }
+    if pram.hide then 
+      params:hide(pram.id)
+    end
     params:set_action(pram.id,function(v)
       engine.main_set(pram.id,pram.fn~=nil and pram.fn(v) or v)
     end)

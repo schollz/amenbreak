@@ -303,14 +303,17 @@ function toggle_clock(on)
         -- retriggering
         local refractory=math.random(15*1,15*10)
         if d.beat==0 then
-        elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.3)*2 and debounce_fn["retrig"]==nil then
+        elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.3)*1.5 and debounce_fn["retrig"]==nil then
           -- local retrig_beats=util.clamp(track_beats-(d.beat%track_beats),1,6)
-          local retrig_beats=math.random(1,5)
-          d.steps=retrig_beats*math.random(1,4)
+          local retrig_beats=math.random(1,4)
+          d.steps=retrig_beats*math.random(1,3)
           d.retrig=2*math.random(1,4)*retrig_beats-1
           d.db=math.random(1,2)
           if math.random()<0.25 then
             d.pitch=-2
+          end
+          if math.random()<0.25 then
+            d.db=d.db*-1
           end
           debounce_fn["retrig"]={math.floor(refractory/2),function()end}
         elseif math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.5) and debounce_fn["stretch"]==nil then
@@ -321,16 +324,10 @@ function toggle_clock(on)
           d.delay=1
           d.gate=math.random(25,75)/100
           d.steps=d.steps*math.random(2,12)
-          debounce_fn["delay"]={refractory,function()end}
+          debounce_fn["delay"]={refractory*2,function()end}
         end
         if math.random()<easing_function2(params:get("break"),-3.1,-1.3,0.177,0.5) then
           d.rate=-1
-        end
-        if math.random()<easing_function2(params:get("break"),1,0.3,0.044,0.72)/72 and params:get("tape_gate")==0 then
-          params:set("tape_gate",1)
-          debounce_fn["tape_gate"]={math.random(15,30),function()
-            params:set("tape_gate",0)
-          end}
         end
 
         -- calculate the next position
@@ -366,6 +363,15 @@ function toggle_clock(on)
           params:set_raw("track",math.random())
         end
       end
+
+      if math.random()<easing_function2(params:get("break"),1,0.3,0.044,0.72)/64 and params:get("tape_gate")==0 and debounce_fn["tape_gate"]==nil then
+        params:set("tape_gate",1)
+        debounce_fn["tape_gate"]={math.random(15,30),function()
+          params:set("tape_gate",0)
+          debounce_fn["tape_gate"]={math.random(15*1,15*10),function()end}
+        end}
+      end
+
       d.steps=d.steps-1
       clock.sync(1/2)
     end

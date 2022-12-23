@@ -202,7 +202,7 @@ Engine_AmenBreak1 : CroneEngine {
 
             snd = Compander.ar(snd,snd,compression,0.5,clampTime:0.01,relaxTime:0.01);
 
-            snd = RLPF.ar(snd,In.kr(lpfIn,1),res);
+            snd = RLPF.ar(snd,In.kr(lpfIn,1).poll,res);
 
             Out.ar(\out.kr(0),\compressible.kr(0)*snd*amp);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
@@ -291,6 +291,7 @@ Engine_AmenBreak1 : CroneEngine {
             var sendDelay=msg[25];
             var res=msg[26];
             var db_first=db+db_add;
+            var db_orig=db_first;
             // TODO: set filter bus
             if (syns.at("filter").isRunning,{
                 syns.at("filter").set(\val,lpf);
@@ -303,6 +304,9 @@ Engine_AmenBreak1 : CroneEngine {
                 if (db_add>0,{
                     db_first=db-(db_add*retrig);
                     db=db_first;
+                });
+                if (db<36.neg,{
+                    db=36.neg;
                 });
                 if (retrig>3,{
                     if (100.rand<25,{
@@ -351,6 +355,10 @@ Engine_AmenBreak1 : CroneEngine {
                 if (retrig>0,{
                     Routine {
                         (retrig).do{ arg i;
+                            var db_next=db+(db_add*(i+1));
+                            if (db_next>db_orig,{
+                                db_next=db_orig;
+                            });
                             (duration_total/ (retrig+1) ).wait;
                             syns.put(id,Synth.new("slice"++bufs.at(filename).numChannels, [
                                 out: buses.at("busCompressible"),
@@ -365,7 +373,7 @@ Engine_AmenBreak1 : CroneEngine {
                                 pan: pan,
                                 attack: attack,
                                 release: release,
-                                amp: (db+(db_add*(i+1))).dbamp,
+                                amp: db_next.dbamp,
                                 stretch: stretch,
                                 rate: rate*((pitch.sign)*(i+1)+pitch).midiratio,
                                 duration: duration_slice * gate / (retrig + 1),

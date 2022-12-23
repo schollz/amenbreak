@@ -79,6 +79,7 @@ function init()
   end
 
   -- add major parameters
+  params_audioin()
   params_sidechain()
   params_kick()
 
@@ -321,6 +322,12 @@ function toggle_clock(on)
         if math.random()<easing_function2(params:get("break"),-3.1,-1.3,0.177,0.5) then
           d.rate=-1
         end
+        if math.random()<easing_function2(params:get("break"),1,0.3,0.044,0.72)/72 and params:get("tape_gate")==0 then
+          params:set("tape_gate",1)
+          debounce_fn["tape_gate"]={math.random(15,30),function()
+            params:set("tape_gate",0)
+          end}
+        end
 
         -- calculate the next position
         if d.beat%(track_beats*4)==0 then
@@ -498,7 +505,7 @@ function redraw()
     screen.blend_mode(0)
   end
   if not efit_mode then
-    if ws[params:get("track")]==nil then 
+    if ws[params:get("track")]==nil then
       do return end
     end
     ws[params:get("track")]:redraw()
@@ -511,7 +518,7 @@ function redraw()
   screen.move(8,6)
   screen.move(64,8)
   screen.font_size(8)
-  if debounce_fn["show_db"]~=nil then 
+  if debounce_fn["show_db"]~=nil then
     screen.level(15-debounce_fn["show_db"][1])
     screen.text_center(params:string("db"))
   else
@@ -543,6 +550,27 @@ function redraw()
 
   draw_message()
   screen.update()
+end
+
+function params_audioin()
+  local params_menu={
+    {id="amp",name="amp",min=0,max=2,exp=false,div=0.01,default=1.0},
+    {id="compressing",name="compressing",min=0,max=1,exp=false,div=1,default=0.0,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
+    {id="compressible",name="compressible",min=0,max=1,exp=false,div=1,default=1.0,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
+  }
+  params:add_group("AUDIO IN",#params_menu)
+  for _,pram in ipairs(params_menu) do
+    params:add{
+      type="control",
+      id="audioin"..pram.id,
+      name=pram.name,
+      controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
+      formatter=pram.formatter,
+    }
+    params:set_action("audioin"..pram.id,function(v)
+      engine.audionin_set(pram.id,v)
+    end)
+  end
 end
 
 function params_kick()
@@ -584,6 +612,7 @@ function params_sidechain()
     {id="delay_feedback",name="tape feedback time",min=0.001,max=12,exp=false,div=0.1,default=clock.get_beat_sec()*8,unit="s"},
     {id="delay_time",name="tape delay time",min=0.01,max=4,exp=false,div=clock.get_beat_sec()/32,default=clock.get_beat_sec()/2,unit="s"},
     {id="tape_slow",name="tape slow",min=0,max=2,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="tape_gate",name="tape stop",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
   }
   params:add_group("AUDIO OUT",#params_menu)
   for _,pram in ipairs(params_menu) do

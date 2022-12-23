@@ -54,6 +54,7 @@ Engine_AmenBreak1 : CroneEngine {
         mods = Dictionary.new();
         im = Dictionary.new();
         bufsDelay = Buffer.allocConsecutive(2,context.server,48000*4,1);
+        bufs.put("tape",Buffer.alloc(context.server, context.server.sampleRate * 18.0, 2));
         
         oscs.put("position",OSCFunc({ |msg| NetAddr("127.0.0.1", 10111).sendMsg("progress",msg[3],msg[3]); }, '/position'));
         oscs.put("lfos",OSCFunc({ |msg| NetAddr("127.0.0.1", 10111).sendMsg("lfos",msg[3],msg[4]); }, '/lfos'));
@@ -76,10 +77,10 @@ Engine_AmenBreak1 : CroneEngine {
             env = EnvGen.kr(Env([clicky,1, decay1L, 0], [0.0,decay1, decay2], -4), doneAction: Done.freeSelf),
             sig = SinOsc.ar(fcurve, 0.5pi, preamp).distort * env ;
             snd = (sig*amp).tanh!2;
-            Out.ar(\outtrack.kr(0),snd);Out.ar(\out.kr(0),\compressible.kr(0)*(1-\sendreverb.kr(0))*snd);
+            Out.ar(\out.kr(0),\compressible.kr(0)*snd);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
-            Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*(1-\sendreverb.kr(0))*snd);
-            Out.ar(\outreverb.kr(0),\sendreverb.kr(0)*snd);Out.ar(\outtape.kr(0),\sendtape.kr(0)*snd);Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);
+            Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);
+            Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);
         }).send(context.server);
         
         SynthDef("lfos", {
@@ -90,10 +91,22 @@ Engine_AmenBreak1 : CroneEngine {
             });
         }).send(context.server);
 
+        SynthDef("defAudioIn",{
+            arg ch=0,lpf=20000,lpfqr=0.707,hpf=20,hpfqr=0.909,pan=0,amp=1.0;
+            var snd;
+            snd=SoundIn.ar([0,1])*amp;
+            // snd=RHPF.ar(snd,hpf,hpfqr);
+            // snd=RLPF.ar(snd,lpf,lpfqr);
+            Out.ar(\out.kr(0),\compressible.kr(0)*snd);
+            Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
+            Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);
+            Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);
+        }).add;
+
         SynthDef(\main, {
             arg outBus=0,inBusNSC,inSC,inDelay,lpshelf=60,lpgain=0,sidechain_mult=2,compress_thresh=0.1,compress_level=0.1,compress_attack=0.01,compress_release=1,inBus,
-            tape_buf,tape_slow=0,tape_stretch=0,delay_bufs=#[0,1],delay_time=0.25,delay_feedback=0.5;
-            var snd,sndSC,sndNSC,sndDelay,tapePosRec,tapePosStretch,local;
+            tape_buf,tape_slow=0,tape_stretch=0,delay_bufs=#[0,1],delay_time=0.25,delay_feedback=0.5,tape_gate=0;
+            var snd,sndSC,sndNSC,sndDelay,tapePosRec,tapePosStretch,local,tape_slow2;
             snd=In.ar(inBus,2);
             sndNSC=In.ar(inBusNSC,2);
             sndSC=In.ar(inSC,2);
@@ -122,7 +135,9 @@ Engine_AmenBreak1 : CroneEngine {
             tapePosRec=Phasor.ar(end:BufFrames.ir(tape_buf));
             BufWr.ar(snd,tape_buf,tapePosRec);
             // tape slow
-            snd = SelectX.ar(VarLag.kr(tape_slow>0,1,warp:\sine),[snd,PlayBuf.ar(2,tape_buf,Lag.kr(1/(tape_slow+1),1),startPos:tapePosRec-10,loop:1,trigger:Trig.kr(tape_slow>0))]);
+            tape_slow2=EnvGen.kr(Env.new([1,0.047,1],[LFNoise0.kr(1).range(0.75,1.5),LFNoise0.kr(1).range(0.25,0.75)],\exponential,releaseNode:1),tape_gate);
+            snd = SelectX.ar(VarLag.kr((tape_slow>0)+(tape_slow2<1),0.05,warp:\sine),[snd,PlayBuf.ar(2,tape_buf,tape_slow2*Lag.kr(1/(tape_slow+1),1),startPos:tapePosRec-10,loop:1,trigger:Trig.kr((tape_slow+tape_gate)>0))]);
+            snd = snd*Lag.kr(tape_slow2>0.04701);
 
             // reduce stereo spread in the bass
             snd = BHiPass.ar(snd,200)+Pan2.ar(BLowPass.ar(snd[0]+snd[1],200));
@@ -169,8 +184,8 @@ Engine_AmenBreak1 : CroneEngine {
 
             Out.ar(\outtrack.kr(0),snd/10);Out.ar(\out.kr(0),\compressible.kr(0)*snd*amp);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
-            Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*(1-\sendreverb.kr(0))*snd*amp);
-            Out.ar(\outreverb.kr(0),\sendreverb.kr(0)*snd);Out.ar(\outtape.kr(0),\sendtape.kr(0)*snd);Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);
+            Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd*amp);
+            Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);
         }).send(context.server);
         });
 
@@ -180,18 +195,34 @@ Engine_AmenBreak1 : CroneEngine {
         buses.put("busNotCompressible",Bus.audio(s,2));
         buses.put("busCompressing",Bus.audio(s,2));
         buses.put("busDelay",Bus.audio(s,2));
-        buses.put("busReverb",Bus.audio(s,2));
-        buses.put("busTape",Bus.audio(s,2));
+
         10.do({ arg i;
             buses.put("bus"++i,Bus.audio(s,2));
         });
         context.server.sync;
         syns.put("main",Synth.new(\main,[\tape_buf,bufs.at("tape"),\outBus,0,\sidechain_mult,8,\inBus,buses.at("busCompressible"),\inBusNSC,buses.at("busNotCompressible"),\inSC,buses.at("busCompressing"),\delay_bufs,bufsDelay,\inDelay,buses.at("busDelay")]));
         syns.put("lfos",Synth.new("lfos"));
+
+        syns.put("audioIn",Synth.new("defAudioIn",[
+            out: buses.at("busCompressible"),
+            outsc: buses.at("busCompressing"),
+            outnsc: buses.at("busNotCompressible"),
+            outdelay: buses.at("busDelay"),
+            compressible: 0,
+            compressing: 0,
+        ], syns.at("main"), \addBefore));
+        NodeWatcher.register(syns.at("audioIn"));
         NodeWatcher.register(syns.at("main"));
         syns.put("filter",Synth.new("set",[\out,buses.at("filter"),\val,18000],s,\addToHead));
         NodeWatcher.register(syns.at("filter"));
         context.server.sync;
+
+        this.addCommand("audionin_set","sf",{ arg msg;
+            var key=msg[1];
+            var val=msg[2];
+            ["audioIn",key,val].postln;
+            syns.at("audioIn").set(key,val);
+        });
 
         this.addCommand("synth_set","ssf",{ arg msg;
             var id=msg[1];
@@ -271,7 +302,7 @@ Engine_AmenBreak1 : CroneEngine {
                     out: buses.at("busCompressible"),
                     outsc: buses.at("busCompressing"),
                     outnsc: buses.at("busNotCompressible"),
-                    outreverb: buses.at("busReverb"),outtape: buses.at("busTape"),outdelay: buses.at("busDelay"),
+                    outdelay: buses.at("busDelay"),
                     compressible: compressible,
                     compressing: compressing,
                     sendreverb: send_reverb,
@@ -294,7 +325,7 @@ Engine_AmenBreak1 : CroneEngine {
                     sendtape: sendTape,
                     senddelay: sendDelay,
                     outtrack: buses.at("bus"++id.asString.split($_)[0].asString),
-                ], syns.at("reverb"), \addBefore));
+                ], syns.at("main"), \addBefore));
                 if (retrig>0,{
                     Routine {
                         (retrig).do{ arg i;
@@ -303,7 +334,7 @@ Engine_AmenBreak1 : CroneEngine {
                                 out: buses.at("busCompressible"),
                                 outsc: buses.at("busCompressing"),
                                 outnsc: buses.at("busNotCompressible"),
-                                outreverb: buses.at("busReverb"),outtape: buses.at("busTape"),outdelay: buses.at("busDelay"),
+                                outdelay: buses.at("busDelay"),
                                 sendreverb: send_reverb,
                                 compressible: compressible,
                                 compressing: compressing,
@@ -326,7 +357,7 @@ Engine_AmenBreak1 : CroneEngine {
                                 sendtape: sendTape,
                                 senddelay: sendDelay,
                                 outtrack: buses.at("bus"++id.asString.split($_)[0].asString),
-                            ], syns.at("reverb"), \addBefore));
+                            ], syns.at("main"), \addBefore));
                         };
                         NodeWatcher.register(syns.at(id));
                         this.synthWatch(id.asString.split($_)[0].asString,syns.at(id));
@@ -387,13 +418,13 @@ Engine_AmenBreak1 : CroneEngine {
                 out: buses.at("busCompressible"),
                 outsc: buses.at("busCompressing"),
                 outnsc: buses.at("busNotCompressible"),
-                outreverb: buses.at("busReverb"),outtape: buses.at("busTape"),outdelay: buses.at("busDelay"),
+                outdelay: buses.at("busDelay"),
                 compressible: compressible,
                 compressing: compressing,
                 sendreverb: send_reverb,
                 sendtape: sendTape,
                 senddelay: sendDelay,
-            ],syns.at("reverb"),\addBefore).onFree({"freed!"});
+            ],syns.at("main"),\addBefore).onFree({"freed!"});
         });
 
 

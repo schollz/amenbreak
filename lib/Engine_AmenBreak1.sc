@@ -182,7 +182,7 @@ Engine_AmenBreak1 : CroneEngine {
 
             snd = RLPF.ar(snd,In.kr(lpfIn,1),res);
 
-            Out.ar(\outtrack.kr(0),snd/10);Out.ar(\out.kr(0),\compressible.kr(0)*snd*amp);
+            Out.ar(\out.kr(0),\compressible.kr(0)*snd*amp);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
             Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd*amp);
             Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);

@@ -1,4 +1,4 @@
--- amenbreak v1.0.0
+-- amenbreak v1.1.0
 --
 --
 -- amen+break
@@ -41,8 +41,11 @@ posit={
   beg=1,
   inc={1},
 dur={1}}
+initital_monitor_level=0
 
 function init()
+  initital_monitor_level = params:get('monitor_level')
+  params:set('monitor_level', -math.huge)
   debounce_fn["startup"]={30,function()end}
   -- os.execute(_path.code.."amenbreak/lib/oscnotify/run.sh &")
 
@@ -373,6 +376,7 @@ function rerun()
 end
 
 function cleanup()
+  params:set('monitor_level', initital_monitor_level)
   os.execute("pkill -f oscnotify")
 end
 

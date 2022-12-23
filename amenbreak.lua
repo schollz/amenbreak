@@ -329,7 +329,7 @@ function toggle_clock(on)
         clock_run=nil
       end
       toggling_clock=false
-      clock.sleep(2)
+      clock.sleep(1)  
       params:set("tape_gate",0)
     end)
     do return end 
@@ -356,7 +356,6 @@ function toggle_clock(on)
         d.gate=1
         d.rate=1
         d.pitch=0
-        d.steps=d.steps>0 and d.steps or 1
 
         -- retriggering
         local refractory=math.random(15*1,15*10)
@@ -376,13 +375,13 @@ function toggle_clock(on)
         end
         if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.5) and debounce_fn["stretch"]==nil then
           d.stretch=1
-          d.steps=d.steps*math.random(8,12)
+          d.steps=d.steps>1 and d.steps or d.steps*math.random(8,12)
           debounce_fn["stretch"]={refractory*4,function()end}
         end
         if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.7)*0.2 and debounce_fn["delay"]==nil then
           d.delay=1
           d.gate=math.random(25,75)/100
-          d.steps=d.steps*math.random(2,8)
+          d.steps=d.steps>1 and d.steps or d.steps*math.random(2,8)
           debounce_fn["delay"]={refractory*2,function()end}
         end
         if math.random()<easing_function2(params:get("amen"),-3.1,-1.3,0.177,0.5) then

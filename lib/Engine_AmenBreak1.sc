@@ -50,11 +50,13 @@ Engine_AmenBreak1 : CroneEngine {
         var mips=0.0;
         var piped = Pipe.new("lscpu | grep BogoMIPS | awk '{print $2}'", "r"); 
         var oversample=1;
+        var oversampleDist=1;
         mips = piped.getLine.asFloat;
         piped.close;
         ["BogoMIPS: ",mips].postln;
         if (mips>200,{
             oversample=3;
+            oversampleDist=2;
         });
 
 
@@ -162,7 +164,7 @@ Engine_AmenBreak1 : CroneEngine {
             // tape in the tae
 			snd=SelectX.ar(Lag.kr(tape_wet,1),[snd,AnalogTape.ar(snd,tape_bias,saturation,tape_drive,oversample,mode)]);
 			
-			snd=SelectX.ar(Lag.kr(dist_on*dist_wet/5,1),[snd,AnalogVintageDistortion.ar(snd,drivegain,dist_bias,lowgain,highgain,shelvingfreq,oversample)]);			
+			snd=SelectX.ar(Lag.kr(dist_on*dist_wet/5,1),[snd,AnalogVintageDistortion.ar(snd,drivegain,dist_bias,lowgain,highgain,shelvingfreq,oversampleDist)]);			
 		
 
             // reduce stereo spread in the bass

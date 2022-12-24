@@ -42,53 +42,52 @@ posit={
 dur={1}}
 initital_monitor_level=0
 
-UI = require 'ui'
+UI=require 'ui'
 loaded_files=0
-Needs_Restart = false
-Engine_Exists=(util.file_exists('/home/we/.local/share/SuperCollider/Extensions/supercollider-plugins/AnalogTape_scsynth.so') or  util.file_exists("/home/we/.local/share/SuperCollider/Extensions/PortedPlugins/AnalogTape_scsynth.so"))
-engine.name = Engine_Exists and 'AmenBreak1' or nil
+Needs_Restart=false
+Engine_Exists=(util.file_exists('/home/we/.local/share/SuperCollider/Extensions/supercollider-plugins/AnalogTape_scsynth.so') or util.file_exists("/home/we/.local/share/SuperCollider/Extensions/PortedPlugins/AnalogTape_scsynth.so"))
+engine.name=Engine_Exists and 'AmenBreak1' or nil
 
 -- other stuff
 function init()
-  Needs_Restart = false
-  Data_Exists = util.file_exists(_path.data.."amenbreak/dats/")
-  if (not Data_Exists) or (not Engine_Exists) then 
+  Needs_Restart=false
+  Data_Exists=util.file_exists(_path.data.."amenbreak/dats/")
+  if (not Data_Exists) or (not Engine_Exists) then
     clock.run(function()
-      if not Data_Exists then 
+      if not Data_Exists then
         Needs_Restart=true
         os.execute("mkdir -p ".._path.data.."amenbreak/dats/")
         os.execute("mkdir -p ".._path.data.."amenbreak/cursors/")
         os.execute("mkdir -p ".._path.data.."amenbreak/pngs/")
         -- run installer
-        Restart_Message = UI.Message.new{ "installing amen audio...","(this takes awhile)" }
+        Restart_Message=UI.Message.new{"installing amen audio...","(this takes awhile)"}
         redraw()
         clock.sleep(1)
         print("[amenbreak] INSTALLING PLEASE WAIT!!")
         os.execute(_path.code.."amenbreak/lib/install.sh")
       end
-      if not Engine_Exists then  
+      if not Engine_Exists then
         Needs_Restart=true
-        Restart_Message = UI.Message.new{ "installing tapedeck..." }
+        Restart_Message=UI.Message.new{"installing tapedeck..."}
         redraw()
         clock.sleep(1)
         os.execute("cd /tmp && wget https://github.com/schollz/tapedeck/releases/download/PortedPlugins/PortedPlugins.tar.gz && tar -xvzf PortedPlugins.tar.gz && rm PortedPlugins.tar.gz && sudo rsync -avrP PortedPlugins /home/we/.local/share/SuperCollider/Extensions/")
       end
-      Restart_Message = UI.Message.new{ "please restart norns." }
+      Restart_Message=UI.Message.new{"please restart norns."}
       redraw()
       clock.sleep(1)
-      do return end        
+      do return end
     end)
-    do return end 
+    do return end
   end
   -- rest of init()
   show_message("loading amen breaks...")
   redraw()
 
-  initital_monitor_level = params:get('monitor_level')
-  params:set('monitor_level', -math.huge)
+  initital_monitor_level=params:get('monitor_level')
+  params:set('monitor_level',-math.huge)
   debounce_fn["startup"]={30,function()end}
   -- os.execute(_path.code.."amenbreak/lib/oscnotify/run.sh &")
-
 
   -- find all the amen files
   amen_files={}
@@ -164,6 +163,7 @@ function init()
     params:set_raw("compression",easing_function(x,5.4,4))
     params:set_raw("decimate",easing_function(x,8.8,12))
     params:set_raw("lpf",easing_function(x,-5.5,10)+0.25)
+    params:set_raw("sine_drive",easing_function2(x,3.5,-0.1,0.095,0.5))
   end)
 
   -- setup ws
@@ -308,9 +308,8 @@ function toggle_clock(on)
     on=clock_run==nil
   end
 
-
   -- do tape stuff
-  if on then 
+  if on then
     params:set("tape_gate",1)
     clock.run(function()
       clock.sleep(0.25)
@@ -329,10 +328,10 @@ function toggle_clock(on)
         clock_run=nil
       end
       toggling_clock=false
-      clock.sleep(1)  
+      clock.sleep(1)
       params:set("tape_gate",0)
     end)
-    do return end 
+    do return end
   end
 
   -- infinite loop
@@ -441,7 +440,7 @@ function rerun()
 end
 
 function cleanup()
-  params:set('monitor_level', initital_monitor_level)
+  params:set('monitor_level',initital_monitor_level)
   os.execute("pkill -f oscnotify")
 end
 
@@ -573,7 +572,7 @@ function redraw()
     screen.update()
     return
   end
-  if loaded_files==100 then 
+  if loaded_files==100 then
     local efit_mode=kon[2] and kon[3]
     if efit_mode then
       screen.blend_mode(0)
@@ -709,6 +708,7 @@ function params_tape()
     {id="tape_slow",name="tape slow",min=0,max=2,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="delay_feedback",name="feedback time",min=0.001,max=12,exp=false,hide=false,div=0.1,default=clock.get_beat_sec()*16,unit="s"},
     {id="delay_time",name="delay time",min=0.01,max=4,exp=false,hide=false,div=clock.get_beat_sec()/32,default=clock.get_beat_sec()/2,unit="s"},
+    {id="sine_drive",name="saturate",min=0,max=1,exp=false,div=0.01,default=0.8,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="tape_wet",name="analog tape",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
     {id="tape_bias",name="tape bias",min=0,max=1,exp=false,div=0.01,default=0.8,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="saturation",name="tape saturation",min=0,max=2,exp=false,div=0.01,default=0.80,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
@@ -729,7 +729,7 @@ function params_tape()
       controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
       formatter=pram.formatter,
     }
-    if pram.hide then 
+    if pram.hide then
       params:hide(pram.id)
     end
     params:set_action(pram.id,function(v)

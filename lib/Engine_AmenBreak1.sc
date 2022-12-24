@@ -66,7 +66,9 @@ Engine_AmenBreak1 : CroneEngine {
         im = Dictionary.new();
         bufsDelay = Buffer.allocConsecutive(2,context.server,48000*4,1);
         bufs.put("tape",Buffer.alloc(context.server, context.server.sampleRate * 18.0, 2));
-        
+        bufs.put("sine",Buffer.alloc(context.server,512,1));
+        bufs.at("sine").sine2([2],[0.5],false); // https://ableton-production.imgix.net/manual/en/Saturator.png?auto=compress%2Cformat&w=716
+
         oscs.put("position",OSCFunc({ |msg| NetAddr("127.0.0.1", 10111).sendMsg("progress",msg[3],msg[3]); }, '/position'));
         oscs.put("lfos",OSCFunc({ |msg| NetAddr("127.0.0.1", 10111).sendMsg("lfos",msg[3],msg[4]); }, '/lfos'));
         
@@ -118,7 +120,7 @@ Engine_AmenBreak1 : CroneEngine {
             arg outBus=0,inBusNSC,inSC,inDelay,lpshelf=60,lpgain=0,sidechain_mult=2,compress_thresh=0.1,compress_level=0.1,compress_attack=0.01,compress_release=1,inBus,
             tape_buf,tape_slow=0,tape_stretch=0,delay_bufs=#[0,1],delay_time=0.25,delay_feedback=0.5,tape_gate=0,
             tape_wet=0.9,tape_bias=0.9,saturation=0.9,tape_drive=0.7,
-			tape_oversample=2,mode=0,
+			tape_oversample=2,mode=0,sine_drive=0,sine_buf=0,
 			dist_wet=0.05,dist_on=0,drivegain=0.5,dist_bias=0,lowgain=0.1,highgain=0.1,
 			shelvingfreq=600,dist_oversample=2;
             var snd,sndSC,sndNSC,sndDelay,tapePosRec,tapePosStretch,local,tape_slow2;
@@ -153,6 +155,9 @@ Engine_AmenBreak1 : CroneEngine {
             tape_slow2=EnvGen.kr(Env.new([1,0.047,1],[LFNoise0.kr(1).range(0.75,1.5),LFNoise0.kr(1).range(0.25,0.75)],\exponential,releaseNode:1),tape_gate);
             snd = SelectX.ar(VarLag.kr((tape_slow>0)+(tape_slow2<1),0.05,warp:\sine),[snd,PlayBuf.ar(2,tape_buf,tape_slow2*Lag.kr(1/(tape_slow+1),1),startPos:tapePosRec-10,loop:1,trigger:Trig.kr((tape_slow+tape_gate)>0))]);
             snd = snd*Lag.kr(tape_slow2>0.04701);
+
+            // drive
+            snd=SelectX.ar(Lag.kr(sine_drive),[snd,Shaper.ar(sine_buf,snd)]);
 
             // tape in the tae
 			snd=SelectX.ar(Lag.kr(tape_wet,1),[snd,AnalogTape.ar(snd,tape_bias,saturation,tape_drive,oversample,mode)]);
@@ -202,7 +207,7 @@ Engine_AmenBreak1 : CroneEngine {
 
             snd = Compander.ar(snd,snd,compression,0.5,clampTime:0.01,relaxTime:0.01);
 
-            snd = RLPF.ar(snd,In.kr(lpfIn,1).poll,res);
+            snd = RLPF.ar(snd,In.kr(lpfIn,1),res);
 
             Out.ar(\out.kr(0),\compressible.kr(0)*snd*amp);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
@@ -222,7 +227,7 @@ Engine_AmenBreak1 : CroneEngine {
             buses.put("bus"++i,Bus.audio(s,2));
         });
         context.server.sync;
-        syns.put("main",Synth.new(\main,[\tape_buf,bufs.at("tape"),\outBus,0,\sidechain_mult,8,\inBus,buses.at("busCompressible"),\inBusNSC,buses.at("busNotCompressible"),\inSC,buses.at("busCompressing"),\delay_bufs,bufsDelay,\inDelay,buses.at("busDelay")]));
+        syns.put("main",Synth.new(\main,[\sine_buf,bufs.at("sine"),\tape_buf,bufs.at("tape"),\outBus,0,\sidechain_mult,8,\inBus,buses.at("busCompressible"),\inBusNSC,buses.at("busNotCompressible"),\inSC,buses.at("busCompressing"),\delay_bufs,bufsDelay,\inDelay,buses.at("busDelay")]));
         syns.put("lfos",Synth.new("lfos"));
 
         syns.put("audioIn",Synth.new("defAudioIn",[

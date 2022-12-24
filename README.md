@@ -63,12 +63,5 @@ install with
 ;install https://github.com/schollz/amenbreak
 ```
 
-to fully install, you must also install tapedeck. in maiden you can copy and paste the following:
-
-```lua
-os.execute("cd /tmp && wget https://github.com/schollz/tapedeck/releases/download/PortedPlugins/PortedPlugins.tar.gz && tar -xvzf PortedPlugins.tar.gz && rm PortedPlugins.tar.gz && sudo rsync -avrP PortedPlugins /home/we/.local/share/SuperCollider/Extensions/")
-```
-
-
 https://github.com/schollz/amenbreak
 

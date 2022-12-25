@@ -198,7 +198,7 @@ function init()
       local i=math.floor(tonumber(args[1]))+1
       local v=tonumber(args[2])
       lfos[i]=v
-      if params:get("efit")==1 and i<5 then
+      if params:get("efit")==1 and i<4 then
         params:set_raw(efit_lfos[i],v)
       end
     end,
@@ -708,7 +708,7 @@ function params_tape()
     {id="tape_slow",name="tape slow",min=0,max=2,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="delay_feedback",name="feedback time",min=0.001,max=12,exp=false,hide=true,div=0.1,default=clock.get_beat_sec()*16,unit="s"},
     {id="delay_time",name="delay time",min=0.01,max=4,exp=false,hide=true,div=clock.get_beat_sec()/32,default=clock.get_beat_sec()/2,unit="s"},
-    {id="sine_drive",name="saturate",min=0,max=1,exp=false,div=0.01,default=0.8,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="sine_drive",name="saturate",min=0,max=1,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="compress_curve_wet",name="compress curve wet",min=0,max=1,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="compress_curve_drive",name="compress curve drive",min=0,max=10,exp=false,div=0.01,default=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="expand_curve_wet",name="expand curve wet",min=0,max=1,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},

@@ -119,7 +119,7 @@ function init()
   params_kick()
 
   local params_menu={
-    {id="db",name="volume",min=-48,max=12,exp=false,div=0.1,default=-6,unit="db"},
+    {id="db",name="volume",min=-48,max=12,exp=false,div=0.1,default=0,unit="db"},
     {id="punch",name="punch",min=0,max=1,exp=false,div=0.01,default=0,unit="punches"},
     {id="amen",name="amen",min=0,max=1,exp=false,div=0.01,default=0,unit="amens"},
     {id="break",name="break",min=0,max=1,exp=false,div=0.01,default=0,unit="break"},
@@ -198,8 +198,8 @@ function init()
       local i=math.floor(tonumber(args[1]))+1
       local v=tonumber(args[2])
       lfos[i]=v
-      if params:get("efit")==1 and i<4 then
-        params:set(efit_lfos[i],v)
+      if params:get("efit")==1 and i<5 then
+        params:set_raw(efit_lfos[i],v)
       end
     end,
     aubiodone=function(args)
@@ -416,7 +416,7 @@ function toggle_clock(on)
         -- print("d",json.encode(d))
         d.duration=d.steps*clock.get_beat_sec()/2
         ws[params:get("track")]:play(d)
-        if params:get("efit")==1 and math.random()<lfos[4]/4 then
+        if params:get("efit")==1 and math.random()<lfos[5]/4 then
           params:set_raw("track",math.random())
         end
       end
@@ -655,7 +655,7 @@ function params_kick()
   local params_menu={
     {id="db",name="db adj",min=-96,max=16,exp=false,div=1,default=-6,unit="db"},
     {id="preamp",name="preamp",min=0,max=4,exp=false,div=0.01,default=1,unit="amp"},
-    {id="basenote",name="base note",min=10,max=200,exp=false,div=1,default=24,formatter=function(param) return musicutil.note_num_to_name(param:get(),true)end},
+    {id="basenote",name="base note",min=10,max=90,exp=false,div=1,default=24,formatter=function(param) return musicutil.note_num_to_name(param:get(),true)end},
     {id="ratio",name="ratio",min=1,max=20,exp=false,div=1,default=6},
     {id="sweeptime",name="sweep time",min=0,max=200,exp=false,div=1,default=50,unit="ms"},
     {id="decay1",name="decay1",min=5,max=2000,exp=false,div=10,default=300,unit="ms"},
@@ -706,9 +706,13 @@ function params_tape()
   local params_menu={
     {id="tape_gate",name="tape stop",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
     {id="tape_slow",name="tape slow",min=0,max=2,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
-    {id="delay_feedback",name="feedback time",min=0.001,max=12,exp=false,hide=false,div=0.1,default=clock.get_beat_sec()*16,unit="s"},
-    {id="delay_time",name="delay time",min=0.01,max=4,exp=false,hide=false,div=clock.get_beat_sec()/32,default=clock.get_beat_sec()/2,unit="s"},
+    {id="delay_feedback",name="feedback time",min=0.001,max=12,exp=false,hide=true,div=0.1,default=clock.get_beat_sec()*16,unit="s"},
+    {id="delay_time",name="delay time",min=0.01,max=4,exp=false,hide=true,div=clock.get_beat_sec()/32,default=clock.get_beat_sec()/2,unit="s"},
     {id="sine_drive",name="saturate",min=0,max=1,exp=false,div=0.01,default=0.8,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="compress_curve_wet",name="compress curve wet",min=0,max=1,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="compress_curve_drive",name="compress curve drive",min=0,max=10,exp=false,div=0.01,default=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="expand_curve_wet",name="expand curve wet",min=0,max=1,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="expand_curve_drive",name="expand curve drive",min=0,max=10,exp=false,div=0.1,default=4,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="tape_wet",name="analog tape",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
     {id="tape_bias",name="tape bias",min=0,max=1,exp=false,div=0.01,default=0.8,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="saturation",name="tape saturation",min=0,max=2,exp=false,div=0.01,default=0.80,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},

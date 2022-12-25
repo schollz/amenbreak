@@ -46,6 +46,7 @@ Engine_AmenBreak1 : CroneEngine {
     alloc {
         // AmenBreak1 specific v0.0.1
         var s=context.server;
+        var n, mu, unit, expandCurve, compressCurve;
 
         var mips=0.0;
         var piped = Pipe.new("lscpu | grep BogoMIPS | awk '{print $2}'", "r"); 
@@ -60,6 +61,17 @@ Engine_AmenBreak1 : CroneEngine {
         });
 
 
+        n = 512*2;
+        mu = 255*2;
+        unit = Array.fill(n, {|i| i.linlin(0, n-1, -1, 1) });
+        compressCurve = unit.collect({ |x|
+            x.sign * log(1 + mu * x.abs) / log(1 + mu);
+        });
+        expandCurve = unit.collect({ |y|
+            y.sign / mu * ((1+mu)**(y.abs) - 1);
+        });
+        context.server.sync;
+
         buses = Dictionary.new();
         syns = Dictionary.new();
         bufs = Dictionary.new();
@@ -70,6 +82,11 @@ Engine_AmenBreak1 : CroneEngine {
         bufs.put("tape",Buffer.alloc(context.server, context.server.sampleRate * 18.0, 2));
         bufs.put("sine",Buffer.alloc(context.server,512,1));
         bufs.at("sine").sine2([2],[0.5],false); // https://ableton-production.imgix.net/manual/en/Saturator.png?auto=compress%2Cformat&w=716
+        bufs.put("compress",Buffer.loadCollection(context.server,Signal.newFrom(compressCurve).asWavetableNoWrap));
+        bufs.put("expand",Buffer.loadCollection(context.server,Signal.newFrom(expandCurve).asWavetableNoWrap));
+        context.server.sync;
+        bufs.at("expand").postln;
+
 
         oscs.put("position",OSCFunc({ |msg| NetAddr("127.0.0.1", 10111).sendMsg("progress",msg[3],msg[3]); }, '/position'));
         oscs.put("lfos",OSCFunc({ |msg| NetAddr("127.0.0.1", 10111).sendMsg("lfos",msg[3],msg[4]); }, '/lfos'));
@@ -99,7 +116,7 @@ Engine_AmenBreak1 : CroneEngine {
         }).send(context.server);
         
         SynthDef("lfos", {
-            4.do({ arg i;
+            5.do({ arg i;
                 var period=Rand(1*(i+1),2*(i+1)*(i+1));
                 var lfo=VarLag.kr(LFNoise0.kr(1/period),period,0,\sine).range(0,1);
                 SendReply.kr(Impulse.kr(4),'/lfos',[i,lfo]);
@@ -123,6 +140,8 @@ Engine_AmenBreak1 : CroneEngine {
             tape_buf,tape_slow=0,tape_stretch=0,delay_bufs=#[0,1],delay_time=0.25,delay_feedback=0.5,tape_gate=0,
             tape_wet=0.9,tape_bias=0.9,saturation=0.9,tape_drive=0.7,
 			tape_oversample=2,mode=0,sine_drive=0,sine_buf=0,
+            compress_curve_wet=0,compress_curve_drive=1,bufCompress,
+            expand_curve_wet=0,expand_curve_drive=1,bufExpand,
 			dist_wet=0.05,dist_on=0,drivegain=0.5,dist_bias=0,lowgain=0.1,highgain=0.1,
 			shelvingfreq=600,dist_oversample=2;
             var snd,sndSC,sndNSC,sndDelay,tapePosRec,tapePosStretch,local,tape_slow2;
@@ -158,8 +177,14 @@ Engine_AmenBreak1 : CroneEngine {
             snd = SelectX.ar(VarLag.kr((tape_slow>0)+(tape_slow2<1),0.05,warp:\sine),[snd,PlayBuf.ar(2,tape_buf,tape_slow2*Lag.kr(1/(tape_slow+1),1),startPos:tapePosRec-10,loop:1,trigger:Trig.kr((tape_slow+tape_gate)>0))]);
             snd = snd*Lag.kr(tape_slow2>0.04701);
 
-            // drive
+            // sinoid drive
             snd=SelectX.ar(Lag.kr(sine_drive),[snd,Shaper.ar(sine_buf,snd)]);
+
+            // compress curve
+            snd=SelectX.ar(Lag.kr(compress_curve_wet),[snd,Shaper.ar(bufCompress,snd*compress_curve_drive)]);
+
+            // expand cruve
+            snd=SelectX.ar(Lag.kr(expand_curve_wet),[snd,Shaper.ar(bufExpand,snd*expand_curve_drive)]);
 
             // tape in the tae
 			snd=SelectX.ar(Lag.kr(tape_wet,1),[snd,AnalogTape.ar(snd,tape_bias,saturation,tape_drive,oversample,mode)]);
@@ -170,6 +195,7 @@ Engine_AmenBreak1 : CroneEngine {
             // reduce stereo spread in the bass
             snd = BHiPass.ar(snd,200)+Pan2.ar(BLowPass.ar(snd[0]+snd[1],200));
             
+            snd = (snd*2).tanh/2; // limit
 
             Out.ar(outBus,snd*EnvGen.ar(Env.new([0,1],[1])));
         }).send(context.server);
@@ -229,7 +255,7 @@ Engine_AmenBreak1 : CroneEngine {
             buses.put("bus"++i,Bus.audio(s,2));
         });
         context.server.sync;
-        syns.put("main",Synth.new(\main,[\sine_buf,bufs.at("sine"),\tape_buf,bufs.at("tape"),\outBus,0,\sidechain_mult,8,\inBus,buses.at("busCompressible"),\inBusNSC,buses.at("busNotCompressible"),\inSC,buses.at("busCompressing"),\delay_bufs,bufsDelay,\inDelay,buses.at("busDelay")]));
+        syns.put("main",Synth.new(\main,[\bufExpand,bufs.at("expand"),\bufCompress,bufs.at("compress"),\sine_buf,bufs.at("sine"),\tape_buf,bufs.at("tape"),\outBus,0,\sidechain_mult,8,\inBus,buses.at("busCompressible"),\inBusNSC,buses.at("busNotCompressible"),\inSC,buses.at("busCompressing"),\delay_bufs,bufsDelay,\inDelay,buses.at("busDelay")]));
         syns.put("lfos",Synth.new("lfos"));
 
         syns.put("audioIn",Synth.new("defAudioIn",[

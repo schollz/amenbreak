@@ -143,7 +143,7 @@ Engine_AmenBreak1 : CroneEngine {
             expand_curve_wet=0,expand_curve_drive=1,bufExpand,
 			dist_wet=0.05,dist_on=0,drivegain=0.5,dist_bias=0,lowgain=0.1,highgain=0.1,
 			shelvingfreq=600,dist_oversample=2;
-            var snd,sndSC,sndNSC,sndDelay,tapePosRec,tapePosStretch,local,tape_slow2;
+            var snd,sndSC,sndNSC,sndDelay,tapePosRec,tapePosStretch,local,tape_slow2,snd_db,snd_db_max;
             snd=In.ar(inBus,2);
             sndNSC=In.ar(inBusNSC,2);
             sndSC=In.ar(inSC,2);
@@ -165,6 +165,12 @@ Engine_AmenBreak1 : CroneEngine {
             snd = snd + local;
 
             snd = LeakDC.ar(snd);
+
+            // noise gate
+            snd_db=Amplitude.ar(snd).ampdb;
+            snd_db_max=RunningMax.kr(snd_db,Impulse.kr(1));
+            snd = snd * EnvGen.ar(Env.asr(noise_gate_attack,1,noise_gate_release),snd_db>(snd_db_max+noise_gate_db));
+
             // snd = RHPF.ar(snd,60,0.707);
             snd=BLowShelf.ar(snd, lpshelf, 1, lpgain);
 
@@ -185,7 +191,7 @@ Engine_AmenBreak1 : CroneEngine {
             // expand cruve
             snd=SelectX.ar(Lag.kr(expand_curve_wet),[snd,Shaper.ar(bufExpand,snd*expand_curve_drive)]);
 
-            // tape in the tae
+            // tape in the tape
 			snd=SelectX.ar(Lag.kr(tape_wet,1),[snd,AnalogTape.ar(snd,tape_bias,saturation,tape_drive,oversample,mode)]);
 			
 			snd=SelectX.ar(Lag.kr(dist_on*dist_wet/5,1),[snd,AnalogVintageDistortion.ar(snd,drivegain,dist_bias,lowgain,highgain,shelvingfreq,oversampleDist)]);			
@@ -195,9 +201,6 @@ Engine_AmenBreak1 : CroneEngine {
             snd = BHiPass.ar(snd,200)+Pan2.ar(BLowPass.ar(snd[0]+snd[1],200));
             
             snd = (snd*2).tanh/2; // limit
-
-            // noise gate
-            snd = snd * EnvGen.ar(Env.asr(noise_gate_attack,1,noise_gate_release),Amplitude.ar(snd).ampdb>noise_gate_db);
 
             Out.ar(outBus,snd*EnvGen.ar(Env.new([0,1],[1])));
         }).send(context.server);

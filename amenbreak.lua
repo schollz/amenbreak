@@ -686,6 +686,9 @@ function params_sidechain()
     {id="compress_release",name="release",min=0,max=2,exp=false,div=0.01,default=0.2,formatter=function(param) return (param:get()*1000).." ms" end},
     {id="lpshelf",name="lp boost freq",min=12,max=127,exp=false,div=1,default=23,formatter=function(param) return musicutil.note_num_to_name(math.floor(param:get()),true)end,fn=function(x) return musicutil.note_num_to_freq(x) end},
     {id="lpgain",name="lp boost db",min=-48,max=36,exp=false,div=1,default=0,unit="dB"},
+    {id="noise_gate_db",name="noise gate threshold",min=-60,max=36,exp=false,div=1,default=-60,unit="dB"},
+    {id="noise_gate_attack",name="noise gate attack",min=0,max=1,exp=false,div=0.001,default=0.01,unit="s"},
+    {id="noise_gate_release",name="noise gate release",min=0,max=1,exp=false,div=0.001,default=0.01,unit="s"},
   }
   params:add_group("SIDECHAIN",#params_menu)
   for _,pram in ipairs(params_menu) do

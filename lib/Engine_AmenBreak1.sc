@@ -138,7 +138,7 @@ Engine_AmenBreak1 : CroneEngine {
             arg outBus=0,inBusNSC,inSC,inDelay,lpshelf=60,lpgain=0,sidechain_mult=2,compress_thresh=0.1,compress_level=0.1,compress_attack=0.01,compress_release=1,inBus,
             tape_buf,tape_slow=0,tape_stretch=0,delay_bufs=#[0,1],delay_time=0.25,delay_feedback=0.5,tape_gate=0,
             tape_wet=0.9,tape_bias=0.9,saturation=0.9,tape_drive=0.7,
-			tape_oversample=2,mode=0,sine_drive=0,sine_buf=0,
+			tape_oversample=2,mode=0,sine_drive=0,sine_buf=0,noise_gate_db=60.neg,noise_gate_attack=0.01,noise_gate_release=0.05,
             compress_curve_wet=0,compress_curve_drive=1,bufCompress,
             expand_curve_wet=0,expand_curve_drive=1,bufExpand,
 			dist_wet=0.05,dist_on=0,drivegain=0.5,dist_bias=0,lowgain=0.1,highgain=0.1,
@@ -195,6 +195,9 @@ Engine_AmenBreak1 : CroneEngine {
             snd = BHiPass.ar(snd,200)+Pan2.ar(BLowPass.ar(snd[0]+snd[1],200));
             
             snd = (snd*2).tanh/2; // limit
+
+            // noise gate
+            snd = snd * EnvGen.ar(Env.asr(noise_gate_attack,1,noise_gate_release),Amplitude.ar(snd).ampdb>noise_gate_db);
 
             Out.ar(outBus,snd*EnvGen.ar(Env.new([0,1],[1])));
         }).send(context.server);

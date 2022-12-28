@@ -447,9 +447,9 @@ function toggle_clock(on)
         d_=d
       end
 
-      if math.random()<easing_function2(params:get("amen"),1,0.3,0.044,0.72)/48 and params:get("tape_gate")==0 and debounce_fn["tape_gate"]==nil then
+      if math.random()<easing_function2(params:get("amen"),1,0.3,0.044,0.72)/64 and params:get("tape_gate")==0 and debounce_fn["tape_gate"]==nil then
         params:set("tape_gate",1)
-        debounce_fn["tape_gate"]={math.random(15,30),function()
+        debounce_fn["tape_gate"]={math.random(7,15),function()
           params:set("tape_gate",0)
           debounce_fn["tape_gate"]={math.random(15*1,15*10),function()end}
         end}

@@ -98,9 +98,9 @@ function init()
       if util.file_exists(_path.audio.."amenbreak/"..fname..".json") then
         -- print(fname)
         table.insert(amen_files,fname)
-        if #amen_files==4 then
-          break
-        end
+        -- if #amen_files==4 then
+        --   break
+        -- end
       end
     end
   end
@@ -264,7 +264,7 @@ function init()
     --   params:set("amen",0)
     -- params:set("break",0.6)
     -- params:set("track",3)
-    toggle_clock(true)
+    -- toggle_clock(true)
   end)
 end
 

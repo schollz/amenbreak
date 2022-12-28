@@ -138,12 +138,12 @@ Engine_AmenBreak1 : CroneEngine {
             arg outBus=0,inBusNSC,inSC,inDelay,lpshelf=60,lpgain=0,sidechain_mult=2,compress_thresh=0.1,compress_level=0.1,compress_attack=0.01,compress_release=1,inBus,
             tape_buf,tape_slow=0,tape_stretch=0,delay_bufs=#[0,1],delay_time=0.25,delay_feedback=0.5,tape_gate=0,
             tape_wet=0.9,tape_bias=0.9,saturation=0.9,tape_drive=0.7,
-			tape_oversample=2,mode=0,sine_drive=0,sine_buf=0,
+			tape_oversample=2,mode=0,sine_drive=0,sine_buf=0,noise_gate_db=60.neg,noise_gate_attack=0.01,noise_gate_release=0.05,
             compress_curve_wet=0,compress_curve_drive=1,bufCompress,
             expand_curve_wet=0,expand_curve_drive=1,bufExpand,
 			dist_wet=0.05,dist_on=0,drivegain=0.5,dist_bias=0,lowgain=0.1,highgain=0.1,
 			shelvingfreq=600,dist_oversample=2;
-            var snd,sndSC,sndNSC,sndDelay,tapePosRec,tapePosStretch,local,tape_slow2;
+            var snd,sndSC,sndNSC,sndDelay,tapePosRec,tapePosStretch,local,tape_slow2,snd_db,snd_db_max;
             snd=In.ar(inBus,2);
             sndNSC=In.ar(inBusNSC,2);
             sndSC=In.ar(inSC,2);
@@ -165,6 +165,12 @@ Engine_AmenBreak1 : CroneEngine {
             snd = snd + local;
 
             snd = LeakDC.ar(snd);
+
+            // noise gate
+            snd_db=Amplitude.ar(snd).ampdb;
+            snd_db_max=RunningMax.kr(snd_db,Impulse.kr(1));
+            snd = snd * EnvGen.ar(Env.asr(noise_gate_attack,1,noise_gate_release),snd_db>(snd_db_max+noise_gate_db));
+
             // snd = RHPF.ar(snd,60,0.707);
             snd=BLowShelf.ar(snd, lpshelf, 1, lpgain);
 
@@ -185,7 +191,7 @@ Engine_AmenBreak1 : CroneEngine {
             // expand cruve
             snd=SelectX.ar(Lag.kr(expand_curve_wet),[snd,Shaper.ar(bufExpand,snd*expand_curve_drive)]);
 
-            // tape in the tae
+            // tape in the tape
 			snd=SelectX.ar(Lag.kr(tape_wet,1),[snd,AnalogTape.ar(snd,tape_bias,saturation,tape_drive,oversample,mode)]);
 			
 			snd=SelectX.ar(Lag.kr(dist_on*dist_wet/5,1),[snd,AnalogVintageDistortion.ar(snd,drivegain,dist_bias,lowgain,highgain,shelvingfreq,oversampleDist)]);			

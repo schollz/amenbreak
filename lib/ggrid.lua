@@ -61,7 +61,7 @@ function GGrid:new(args)
     {5,11},
     {5,13},
     {6,15},
-    {6,17},       
+    {6,17},
   }
   m.d={retrig=0,ci=0,steps=1,retrigi=1,stretch=1,delay=1,gate=1}
   return m
@@ -71,7 +71,6 @@ function GGrid:grid_key(x,y,z)
   self:key_press(y,x,z==1)
   self:grid_redraw()
 end
-
 
 function GGrid:key_press(row,col,on)
   local ct=clock.get_beats()*clock.get_beat_sec()
@@ -83,17 +82,21 @@ function GGrid:key_press(row,col,on)
     self.pressed_buttons[row..","..col]=nil
   end
 
+  if not on then
+    self.d.ci=0
+    do return end
+  end
 
-  if row<=2 and on then 
+  if row<=2 and on then
     self.d.ci=col+16*(row-1)
-elseif row==STRETCH and on then 
+  elseif row==STRETCH and on then
     self.d.stretch=col
-elseif row==DELAY and on then 
+  elseif row==DELAY and on then
     self.d.delay=col
-elseif row==GATE and on then 
+  elseif row==GATE and on then
     self.d.gate=col
     print(self.d.gate)
-  elseif row==RETRIG and on then 
+  elseif row==RETRIG and on then
     self.d.retrigi=col
     self.d.steps=self.retrigs[self.d.retrigi][1]
     self.d.retrig=self.retrigs[self.d.retrigi][2]
@@ -104,18 +107,18 @@ function GGrid:get_visual()
   -- clear visual
   for row=1,8 do
     for col=1,self.grid_width do
-        if self.visual[row][col]>0 then 
-            self.visual[row][col]=0
-        end
+      if self.visual[row][col]>0 then
+        self.visual[row][col]=0
+      end
     end
   end
 
-  if d_.ci~=nil then 
+  if d_.ci~=nil then
     local row=1
-    local col=d_.ci 
-    while col>16 do 
-        col=col-16
-        row=row+1
+    local col=d_.ci
+    while col>16 do
+      col=col-16
+      row=row+1
     end
     self.visual[row][col]=14
   end
@@ -132,7 +135,6 @@ function GGrid:get_visual()
     col=tonumber(col)
     self.visual[row][col]=14
   end
-
 
   return self.visual
 end

@@ -360,24 +360,24 @@ function toggle_clock(on)
         d.gate=1
         d.rate=1
         d.pitch=0
-        if g_.d.ci>0 then 
+        if g_.d.ci>0 then
           d.ci=g_.d.ci
           d.retrig=g_.d.retrig
           d.steps=g_.d.steps
-          if d.retrig>0 then 
+          if d.retrig>0 then
             d.db=math.random(-2,2)
             d.pitch=math.random(-1,1)
           end
-          if g_.d.stretch>1 then 
+          if g_.d.stretch>1 then
             d.stretch=1
             d.steps=g_.d.stretch-1
           end
-          if g_.d.delay>1 then 
+          if g_.d.delay>1 then
             d.delay=1
             d.gate=math.random(25,75)/100
             -- d.steps=g_.d.delay-1
           end
-          if g_.d.gate>1 then 
+          if g_.d.gate>1 then
             d.gate=(17-g_.d.gate)/17
             print(d.gate)
             -- d.steps=g_.d.delay-1
@@ -413,7 +413,7 @@ function toggle_clock(on)
           if math.random()<easing_function2(params:get("amen"),-3.1,-1.3,0.177,0.5) then
             d.rate=-1
           end
-  
+
           -- calculate the next position
           if d.beat%(track_beats*4)==0 then
             d.ci=ws[params:get("track")]:random_kick_pos()
@@ -432,7 +432,7 @@ function toggle_clock(on)
               -- do a jump
               d.ci=d.ci+math.random(-1*track_beats,track_beats)
             end
-          end  
+          end
           -- do a small retrig sometimes based on amen
           local p=easing_function3(params:get("amen"),2.6,7.6,1.8,1.2)
           if d.retrig==0 and math.random()<p then
@@ -445,9 +445,6 @@ function toggle_clock(on)
           params:set_raw("track",math.random())
         end
         d_=d
-        if g_.d.ci~=0 then
-          g_.d.ci=0 
-        end
       end
 
       if math.random()<easing_function2(params:get("amen"),1,0.3,0.044,0.72)/48 and params:get("tape_gate")==0 and debounce_fn["tape_gate"]==nil then

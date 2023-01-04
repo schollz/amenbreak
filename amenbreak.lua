@@ -83,7 +83,7 @@ function init()
     do return end
   end
   -- rest of init()
-  show_message("loading amen breaks...")
+  show_message("loading...")
   redraw()
 
   initital_monitor_level=params:get('monitor_level')
@@ -251,14 +251,16 @@ function init()
   -- debug
   clock.run(function()
     -- startup
+    loading_screen=true
     for i,v in ipairs(amen_files) do
       params:set(i.."sample_file",_path.audio.."amenbreak/"..v)
       loaded_files=i/#amen_files*100
-      show_message("loading amen breaks...")
+      show_message(string.format("loading %2.0f%%...",loaded_files))
       show_progress(loaded_files)
       clock.sleep(0.001)
     end
     show_message_text=nil
+    loading_screen=false
     clock.sleep(1)
     params:set("punch",0.3)
     -- toggle_clock(true)
@@ -632,6 +634,23 @@ function redraw()
     end
   end
 
+  if loading_screen then 
+    screen.clear()
+    screen.blend_mode(0)
+    screen.level(15)
+    screen.font_face(63)
+    screen.font_size(13)
+    screen.move(32,22)
+    screen.text_center("AMEN")
+    screen.font_face(62)
+    screen.move(32+60,22)
+    screen.text_center("BREAK")
+    screen.move(64,57)
+    screen.font_face(63)
+    screen.text_center("v1.1.1")
+    screen.font_size(8)
+    screen.font_face(1)
+  end
   draw_message()
   screen.update()
 end

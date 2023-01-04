@@ -1,4 +1,4 @@
--- amenbreak v1.1.0
+-- amenbreak v1.1.1
 --
 --
 -- amen+break
@@ -261,9 +261,6 @@ function init()
     show_message_text=nil
     clock.sleep(1)
     params:set("punch",0.3)
-    --   params:set("amen",0)
-    -- params:set("break",0.6)
-    -- params:set("track",3)
     -- toggle_clock(true)
   end)
 end
@@ -341,6 +338,11 @@ function toggle_clock(on)
 
   -- infinite loop
   clock_beat=-1
+  pos_available={}
+  for i=1,64 do 
+    table.insert(pos_available,i)
+  end
+  pos_i=#pos_available*1000
   local d={steps=0,ci=1}
   local switched_direction=false
   params:set("clock_reset",1)
@@ -360,91 +362,70 @@ function toggle_clock(on)
         d.gate=1
         d.rate=1
         d.pitch=0
-        if g_.d.ci>0 then
-          d.ci=g_.d.ci
-          d.retrig=g_.d.retrig
-          d.steps=g_.d.steps
-          if d.retrig>0 then
-            d.db=math.random(-2,2)
-            d.pitch=math.random(-1,1)
+        -- retriggering
+        local refractory=math.random(15*1,15*10)
+        if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.3)*1.5 and debounce_fn["retrig"]==nil then
+          -- local retrig_beats=util.clamp(track_beats-(d.beat%track_beats),1,6)
+          local retrig_beats=math.random(1,4)
+          d.steps=retrig_beats*math.random(1,3)
+          if math.random()<0.25 then 
+            d.steps=d.steps*2
           end
-          if g_.d.stretch>1 then
-            d.stretch=1
-            d.steps=g_.d.stretch-1
+          d.retrig=2*math.random(1,4)*retrig_beats-1
+          d.db=math.random(1,2)
+          if math.random()<0.25 then
+            d.pitch=-2
           end
-          if g_.d.delay>1 then
-            d.delay=1
-            d.gate=math.random(25,75)/100
-            -- d.steps=g_.d.delay-1
+          if math.random()<0.25 then
+            d.db=d.db*-1
           end
-          if g_.d.gate>1 then
-            d.gate=(17-g_.d.gate)/17
-            print(d.gate)
-            -- d.steps=g_.d.delay-1
-          end
-        else
-          -- retriggering
-          local refractory=math.random(15*1,15*10)
-          if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.3)*1.5 and debounce_fn["retrig"]==nil then
-            -- local retrig_beats=util.clamp(track_beats-(d.beat%track_beats),1,6)
-            local retrig_beats=math.random(1,4)
-            d.steps=retrig_beats*math.random(1,3)
-            d.retrig=2*math.random(1,4)*retrig_beats-1
-            d.db=math.random(1,2)
-            if math.random()<0.25 then
-              d.pitch=-2
-            end
-            if math.random()<0.25 then
-              d.db=d.db*-1
-            end
-            debounce_fn["retrig"]={math.floor(refractory/2),function()end}
-          end
-          if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.5) and debounce_fn["stretch"]==nil then
-            d.stretch=1
-            d.steps=d.steps>1 and d.steps or d.steps*math.random(8,12)
-            debounce_fn["stretch"]={refractory*4,function()end}
-          end
-          if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.7)*0.2 and debounce_fn["delay"]==nil then
-            d.delay=1
-            d.gate=math.random(25,75)/100
-            d.steps=d.steps>1 and d.steps or d.steps*math.random(2,8)
-            debounce_fn["delay"]={refractory*2,function()end}
-          end
-          if math.random()<easing_function2(params:get("amen"),-3.1,-1.3,0.177,0.5) then
-            d.rate=-1
-          end
+          debounce_fn["retrig"]={math.floor(refractory/2),function()end}
+        end
+        if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.5) and debounce_fn["stretch"]==nil then
+          d.stretch=1
+          d.steps=d.steps>1 and d.steps or d.steps*math.random(8,12)
+          debounce_fn["stretch"]={refractory*4,function()end}
+        end
+        if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.7)*0.2 and debounce_fn["delay"]==nil then
+          d.delay=1
+          d.gate=math.random(25,75)/100
+          d.steps=d.steps>1 and d.steps or d.steps*math.random(2,8)
+          debounce_fn["delay"]={refractory*2,function()end}
+        end
+        if math.random()<easing_function2(params:get("amen"),-3.1,-1.3,0.177,0.5) then
+          d.rate=-1
+        end
 
-          -- calculate the next position
-          if d.beat%(track_beats*4)==0 then
-            d.ci=ws[params:get("track")]:random_kick_pos()
-          else
-            -- switching directions
-            local p=easing_function3(params:get("amen"),2.1,5.9,1.4,0.8)
-            if switched_direction and math.random()>p then
-              switched_direction=false
-            elseif not switched_direction and math.random()<p then
-              switched_direction=true
-            end
-            d.ci=d.ci+(switched_direction and-1 or 1)
-            -- jumping
-            local p=easing_function3(params:get("amen"),0.8,12,1.1,0.8)
-            if math.random()<p then
-              -- do a jump
-              d.ci=d.ci+math.random(-1*track_beats,track_beats)
-            end
+        -- calculate the next position
+        if d.beat%(track_beats*4)==0 and math.random()<0.1 then
+          d.ci=ws[params:get("track")]:random_kick_pos()
+        else
+          -- switching directions
+          local p=easing_function3(params:get("amen"),2.1,5.9,1.4,0.8)
+          if switched_direction and math.random()>p then
+            switched_direction=false
+          elseif not switched_direction and math.random()<p then
+            switched_direction=true
           end
-          -- do a small retrig sometimes based on amen
-          local p=easing_function3(params:get("amen"),2.6,7.6,1.8,1.2)
-          if d.retrig==0 and math.random()<p then
-            d.retrig=math.random(1,2)*2-1
+          pos_i=pos_i+(switched_direction and-1 or 1)
+          -- jumping
+          local p=easing_function3(params:get("amen"),0.8,12,1.1,0.8)
+          if math.random()<p then
+            -- do a jump
+            pos_i=pos_i+math.random(-1*track_beats,track_beats)
           end
+          d.ci=pos_available[(pos_i-1)%#pos_available+1]
+        end
+        -- do a small retrig sometimes based on amen
+        local p=easing_function3(params:get("amen"),2.6,7.6,1.8,1.2)
+        if d.retrig==0 and math.random()<p then
+          d.retrig=math.random(1,2)*2-1
         end
         d.duration=d.steps*clock.get_beat_sec()/2
         ws[params:get("track")]:play(d)
         if params:get("efit")==1 and math.random()<lfos[5]/4 then
           params:set_raw("track",math.random())
         end
-        d_=d
       end
 
       if math.random()<easing_function2(params:get("amen"),1,0.3,0.044,0.72)/64 and params:get("tape_gate")==0 and debounce_fn["tape_gate"]==nil then

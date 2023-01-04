@@ -83,18 +83,16 @@ function init()
       do return end
     end)
     do return end
-  end 
+  end
   -- rest of init()
   show_message("loading...")
   redraw()
 
-
   -- setup positions
   pos_available={}
-  for i=1,64 do 
+  for i=1,64 do
     table.insert(pos_available,i)
   end
-
 
   initital_monitor_level=params:get('monitor_level')
   params:set('monitor_level',-math.huge)
@@ -125,10 +123,9 @@ function init()
   end
 
   -- add major parameters
-  params_audioin()
-  params_sidechain()
-  params_tape()
   params_kick()
+  params_audioin()
+  params_audioout()
 
   local params_menu={
     {id="db",name="volume",min=-48,max=12,exp=false,div=0.1,default=0,unit="db"},
@@ -136,8 +133,8 @@ function init()
     {id="amen",name="amen",min=0,max=1,exp=false,div=0.01,default=0,unit="amens"},
     {id="break",name="break",min=0,max=1,exp=false,div=0.01,default=0,unit="break"},
     {id="efit",name="efit",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
-    {id="track",name="track",min=1,max=#amen_files,exp=false,div=1,default=1},
-    {id="probability",name="probability",min=0,max=100,exp=false,div=1,default=100,unit="%"},
+    {id="track",name="sample",min=1,max=#amen_files,exp=false,div=1,default=1,formatter=function(param) return math.floor(param:get()) end},
+    {id="probability",name="probability",hide=true,min=0,max=100,exp=false,div=1,default=100,unit="%"},
     {id="pan",name="pan",min=-1,max=1,exp=false,div=0.01,default=0},
     {id="lpf",name="lpf",min=24,max=135,exp=false,div=0.5,default=135,formatter=function(param) return musicutil.note_num_to_name(math.floor(param:get()),true)end},
     {id="res",name="res",min=0.01,max=1,exp=false,div=0.01,default=0.71},
@@ -149,12 +146,12 @@ function init()
     {id="compression",name="compression",min=0,max=0.4,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%d%%",util.round(100*param:get())) end},
     {id="pitch",name="note",min=-24,max=24,exp=false,div=0.1,default=0.0,response=1,formatter=function(param) return string.format("%s%2.1f",param:get()>-0.01 and "+" or "",param:get()) end},
     {id="rate",name="rate",min=-2,max=2,exp=false,div=0.01,default=1.0,response=1,formatter=function(param) return string.format("%s%2.1f",param:get()>-0.01 and "+" or "",param:get()*100) end},
-    {id="rotate",name="rotate",min=-127,max=127,exp=false,div=1,default=0.0,response=1,formatter=function(param) return string.format("%s%2.0f",param:get()>-0.01 and "+" or "",param:get()) end},
+    {id="rotate",name="rotate",hide=true,min=-127,max=127,exp=false,div=1,default=0.0,response=1,formatter=function(param) return string.format("%s%2.0f",param:get()>-0.01 and "+" or "",param:get()) end},
     {id="stretch",name="stretch",min=0,max=5,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="compressing",name="compressing",min=0,max=1,exp=false,div=1,default=0.0,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
     {id="compressible",name="compressible",min=0,max=1,exp=false,div=1,default=1,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
-    {id="send_reverb",name="reverb send",min=0,max=1,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
-    {id="send_delay",name="delay send",min=0,max=1,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="send_reverb",name="reverb send",min=0,max=1,hide=true,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="send_delay",name="delay send",min=0,max=1,exp=false,hide=true,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
   }
   for _,pram in ipairs(params_menu) do
     params:add{
@@ -164,7 +161,11 @@ function init()
       controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
       formatter=pram.formatter,
     }
+    if pram.hide then
+      params:hide(pram.id)
+    end
   end
+  params:add_separator("current sample")
   params:set_action("track",function(x)
     for i=1,#amen_files do
       ws[i]:select(x==i)
@@ -244,8 +245,8 @@ function init()
       local conn=midi.connect(dev.port)
       conn.event=function(data)
         local msg=midi.to_msg(data)
-        if msg.type=="clock" then 
-          do return end 
+        if msg.type=="clock" then
+          do return end
         end
         -- OP-1 fix for transport
         if msg.type=='start' or msg.type=='continue' then
@@ -378,7 +379,7 @@ function toggle_clock(on)
           -- local retrig_beats=util.clamp(track_beats-(d.beat%track_beats),1,6)
           local retrig_beats=math.random(1,4)
           d.steps=retrig_beats*math.random(1,3)
-          if math.random()<0.25 then 
+          if math.random()<0.25 then
             d.steps=d.steps*2
           end
           d.retrig=2*math.random(1,4)*retrig_beats-1
@@ -642,7 +643,7 @@ function redraw()
     end
   end
 
-  if loading_screen then 
+  if loading_screen then
     screen.clear()
     screen.blend_mode(0)
     screen.level(15)
@@ -665,7 +666,7 @@ end
 
 function params_audioin()
   local params_menu={
-    {id="amp",name="amp",min=0,max=2,exp=false,div=0.01,default=1.0},
+    {id="amp",name="amp",min=0,max=4,exp=false,div=0.01,default=1.0},
     {id="compressing",name="compressing",min=0,max=1,exp=false,div=1,default=0.0,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
     {id="compressible",name="compressible",min=0,max=1,exp=false,div=1,default=1.0,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
   }
@@ -711,41 +712,23 @@ function params_kick()
   end
 end
 
-function params_sidechain()
+function params_audioout()
   local params_menu={
-    {id="sidechain_mult",name="amount",min=0,max=8,exp=false,div=0.1,default=2.0},
-    {id="compress_thresh",name="threshold",min=0,max=1,exp=false,div=0.01,default=0.1},
-    {id="compress_level",name="level",min=0,max=1,exp=false,div=0.01,default=0.1},
-    {id="compress_attack",name="attack",min=0,max=1,exp=false,div=0.001,default=0.01,formatter=function(param) return (param:get()*1000).." ms" end},
-    {id="compress_release",name="release",min=0,max=2,exp=false,div=0.01,default=0.2,formatter=function(param) return (param:get()*1000).." ms" end},
+    {id="tape_gate",name="tape stop",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
+    {id="tape_slow",name="tape slow",min=0,max=2,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="sidechain_mult",name="sidechain amount",min=0,max=8,exp=false,div=0.1,default=2.0},
+    {id="compress_thresh",name="sidechain threshold",min=0,max=1,exp=false,div=0.01,default=0.1},
+    {id="compress_level",name="sidechain level",min=0,max=1,exp=false,div=0.01,default=0.1},
+    {id="compress_attack",name="sidechain attack",min=0,max=1,exp=false,div=0.001,default=0.01,formatter=function(param) return (param:get()*1000).." ms" end},
+    {id="compress_release",name="sidechain release",min=0,max=2,exp=false,div=0.01,default=0.2,formatter=function(param) return (param:get()*1000).." ms" end},
     {id="lpshelf",name="lp boost freq",min=12,max=127,exp=false,div=1,default=23,formatter=function(param) return musicutil.note_num_to_name(math.floor(param:get()),true)end,fn=function(x) return musicutil.note_num_to_freq(x) end},
     {id="lpgain",name="lp boost db",min=-48,max=36,exp=false,div=1,default=0,unit="dB"},
     {id="noise_gate_db",name="noise gate threshold",min=-60,max=0,exp=false,div=0.5,default=-60,unit="dB"},
     {id="noise_gate_attack",name="noise gate attack",min=0,max=1,exp=false,div=0.001,default=0.01,unit="s"},
     {id="noise_gate_release",name="noise gate release",min=0,max=1,exp=false,div=0.001,default=0.01,unit="s"},
-  }
-  params:add_group("SIDECHAIN",#params_menu)
-  for _,pram in ipairs(params_menu) do
-    params:add{
-      type="control",
-      id=pram.id,
-      name=pram.name,
-      controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
-      formatter=pram.formatter,
-    }
-    params:set_action(pram.id,function(v)
-      engine.main_set(pram.id,pram.fn~=nil and pram.fn(v) or v)
-    end)
-  end
-end
-
-function params_tape()
-  local params_menu={
-    {id="tape_gate",name="tape stop",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
-    {id="tape_slow",name="tape slow",min=0,max=2,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="delay_feedback",name="feedback time",min=0.001,max=12,exp=false,hide=true,div=0.1,default=clock.get_beat_sec()*16,unit="s"},
     {id="delay_time",name="delay time",min=0.01,max=4,exp=false,hide=true,div=clock.get_beat_sec()/32,default=clock.get_beat_sec()/2,unit="s"},
-    {id="sine_drive",name="saturate",min=0,max=1,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="sine_drive",name="saturate wavefolder",min=0,max=1,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="compress_curve_wet",name="compress curve wet",min=0,max=1,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="compress_curve_drive",name="compress curve drive",min=0,max=10,exp=false,div=0.01,default=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="expand_curve_wet",name="expand curve wet",min=0,max=1,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
@@ -758,10 +741,10 @@ function params_tape()
     {id="dist_wet",name="distortion gain",min=0,max=1,exp=false,div=0.01,default=0.05,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="drivegain",name="distortion oomph",min=0,max=1,exp=false,div=0.01,default=0.5,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="dist_bias",name="distortion bias",min=0,max=2.5,exp=false,div=0.01,default=0.5,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
-    {id="lowgain",name="low gain",min=0,max=0.3,exp=false,div=0.01,default=0.1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
-    {id="highgain",name="high gain",min=0,max=0.3,exp=false,div=0.01,default=0.1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="lowgain",name="distortion low gain",min=0,max=0.3,exp=false,div=0.01,default=0.1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="highgain",name="distortion high gain",min=0,max=0.3,exp=false,div=0.01,default=0.1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
   }
-  params:add_group("TAPE",#params_menu)
+  params:add_group("AUDIO OUT",#params_menu)
   for _,pram in ipairs(params_menu) do
     params:add{
       type="control",

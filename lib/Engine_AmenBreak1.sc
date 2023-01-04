@@ -166,13 +166,12 @@ Engine_AmenBreak1 : CroneEngine {
 
             snd = LeakDC.ar(snd);
 
+            snd=BLowShelf.ar(snd, lpshelf, 1, lpgain);
+
             // noise gate
             snd_db=Amplitude.ar(snd).ampdb;
             snd_db_max=RunningMax.kr(snd_db,Impulse.kr(1));
             snd = snd * EnvGen.ar(Env.asr(noise_gate_attack,1,noise_gate_release),snd_db>(snd_db_max+noise_gate_db));
-
-            // snd = RHPF.ar(snd,60,0.707);
-            snd=BLowShelf.ar(snd, lpshelf, 1, lpgain);
 
             // // tape
             tapePosRec=Phasor.ar(end:BufFrames.ir(tape_buf));

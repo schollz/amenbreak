@@ -46,6 +46,11 @@ function GGrid:new(args)
   end
   m.grid_refresh:start()
 
+  m.patterns={}
+  for i=1,9 do 
+    table.insert(m.patterns,{})
+  end
+  m.pattern_loaded=0
   return m
 end
 
@@ -70,12 +75,39 @@ function GGrid:key_press(row,col,on)
     local bin=binary.encode(params:get("track"))
     bin[row]=1-bin[row]
     params:set("track",binary.decode(bin))
-  elseif on and col>=4 and col<=8 then 
+  elseif on and col>=5 and col<=8 then 
     local i=(row-1)*4+col-4
     if clock_run==nil then 
       ws[params:get("track")]:play{ci=i}
+    end  
+    if self.pattern_step~=nil then 
+      table.insert(self.pattern_step.pattern,i)
     end
-
+  elseif col>=2 and col<=4 then 
+    local i=(row-1)*3+col-1
+    if on then 
+      self.pattern_step={id=i,pattern={}}
+    else
+      tab.print(self.pattern_step.pattern)
+      if next(self.pattern_step.pattern)~=nil then 
+        self.patterns[self.pattern_step.id]=self.pattern_step.pattern
+      elseif next(self.patterns[self.pattern_step.id])~=nil then 
+        -- load pattern
+        if self.pattern_loaded>0 and self.pattern_loaded==i then 
+          self.pattern_loaded=0
+          pos_available={}
+          for i=1,64 do 
+            table.insert(pos_available,i)
+          end
+        else
+          self.pattern_loaded=self.pattern_step.id
+          pos_available=self.patterns[self.pattern_step.id]
+          print("loading pattern")
+          tab.print(pos_available)
+        end
+      end
+      self.pattern_step=nil
+    end
   end
 end
 
@@ -89,11 +121,11 @@ function GGrid:get_visual()
     end
   end
 
-  -- illuminate the available track
+  -- illuminate the current position
   for i=1,params:get(params:get("track").."beats")*2 do 
     local row=math.floor((i-1)/4)+1
     local col=(i-1)%4+5
-    self.visual[row][col]=pos_last==i and 15 or 2
+    self.visual[row][col]=pos_last==i and 15 or (ws[params:get("track")].kick[i]>-48 and 5 or 2)
   end
 
   -- illuminate currently pressed button
@@ -110,6 +142,13 @@ function GGrid:get_visual()
     if i<8 then 
       self.visual[i][1]=v==1 and 15 or 2
     end
+  end
+
+  -- illuminate which patterns are availble
+  for i,p in ipairs(self.patterns) do
+    local row=math.floor((i-1)/3)+1
+    local col=(i-1)%3+2
+    self.visual[row][col]=next(p)==nil and 0 or (self.pattern_loaded==i and 10 or 2)
   end
 
   -- illuminate playing screen

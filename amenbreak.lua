@@ -88,6 +88,14 @@ function init()
   show_message("loading...")
   redraw()
 
+
+  -- setup positions
+  pos_available={}
+  for i=1,64 do 
+    table.insert(pos_available,i)
+  end
+
+
   initital_monitor_level=params:get('monitor_level')
   params:set('monitor_level',-math.huge)
   debounce_fn["startup"]={30,function()end}
@@ -343,12 +351,8 @@ function toggle_clock(on)
   end
 
   -- infinite loop
-  clock_beat=-1
-  pos_available={}
-  for i=1,64 do 
-    table.insert(pos_available,i)
-  end
   pos_i=#pos_available*1000
+  clock_beat=-1
   local d={steps=0,ci=1}
   local switched_direction=false
   params:set("clock_reset",1)

@@ -108,9 +108,9 @@ function init()
       if util.file_exists(_path.audio.."amenbreak/"..fname..".json") then
         -- print(fname)
         table.insert(amen_files,fname)
-        if #amen_files==40 then
-          break
-        end
+        -- if #amen_files==40 then
+        --   break
+        -- end
       end
     end
   end

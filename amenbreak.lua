@@ -27,10 +27,12 @@ if not string.find(package.cpath,"/home/we/dust/code/amenbreak/lib/") then
   package.cpath=package.cpath..";/home/we/dust/code/amenbreak/lib/?.so"
 end
 json=require("cjson")
+include("lib/utils")
 musicutil=require("musicutil")
 sample_=include("lib/sample")
 ggrid_=include("lib/ggrid")
 
+pos_last=0
 param_switch=true
 performance=true
 debounce_fn={}
@@ -81,7 +83,7 @@ function init()
       do return end
     end)
     do return end
-  end
+  end 
   -- rest of init()
   show_message("loading...")
   redraw()
@@ -89,7 +91,7 @@ function init()
   initital_monitor_level=params:get('monitor_level')
   params:set('monitor_level',-math.huge)
   debounce_fn["startup"]={30,function()end}
-  -- os.execute(_path.code.."amenbreak/lib/oscnotify/run.sh &")
+  os.execute(_path.code.."amenbreak/lib/oscnotify/run.sh &")
 
   -- find all the amen files
   amen_files={}
@@ -98,9 +100,9 @@ function init()
       if util.file_exists(_path.audio.."amenbreak/"..fname..".json") then
         -- print(fname)
         table.insert(amen_files,fname)
-        -- if #amen_files==4 then
-        --   break
-        -- end
+        if #amen_files==40 then
+          break
+        end
       end
     end
   end
@@ -234,8 +236,10 @@ function init()
       local conn=midi.connect(dev.port)
       conn.event=function(data)
         local msg=midi.to_msg(data)
-        if msg.type=="clock" then do return end end
--- OP-1 fix for transport
+        if msg.type=="clock" then 
+          do return end 
+        end
+        -- OP-1 fix for transport
         if msg.type=='start' or msg.type=='continue' then
           toggle_clock(true)
         elseif msg.type=="stop" then

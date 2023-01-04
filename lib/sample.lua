@@ -238,6 +238,7 @@ function Sample:play(d)
   d.rate=d.rate*clock.get_tempo()/params:get(self.id.."bpm")*params:get("rate")
   d.ci=d.ci or self.ci
   d.ci=(d.ci-1+params:get("rotate"))%(#self.cursors)+1
+  pos_last=d.ci
   d.retrig=d.retrig or 0
   d.gate=d.gate or 1.0 -- vestigial, it should probably alwasy be 1
   d.hold=d.hold or params:get("hold")

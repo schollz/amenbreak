@@ -55,6 +55,10 @@ f*** it:
 
 - any two keys
 
+## Grid
+
+![grid](https://user-images.githubusercontent.com/6550035/211224265-1f959d9d-79e2-4be4-951f-239a97366140.png)
+
 ## Install
 
 install with

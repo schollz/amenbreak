@@ -125,11 +125,10 @@ function init()
   for _,fname in ipairs(util.scandir(_path.audio.."amenbreak")) do
     if not string.find(fname,"slow") then
       if util.file_exists(_path.audio.."amenbreak/"..fname..".json") then
-        -- print(fname)
         table.insert(amen_files,fname)
-        if #amen_files==10 then
-          break
-        end
+        -- if #amen_files==10 then
+        --   break
+        -- end
       end
     end
   end
@@ -148,7 +147,7 @@ function init()
   params_audioin()
   params_audioout()
   params_action()
-  params:default()
+  -- params:default()
 
   local params_menu={
     {id="db",name="volume",min=-48,max=12,exp=false,div=0.1,default=0,unit="db"},
@@ -299,7 +298,7 @@ function init()
     loading_screen=false
     clock.sleep(1)
     params:set("punch",0.3)
-    toggle_clock(true)
+    -- toggle_clock(true)
   end)
 end
 
@@ -350,26 +349,34 @@ function toggle_clock(on)
 
   -- do tape stuff
   if on then
-    -- params:set("tape_gate",1)
-    -- clock.run(function()
-    --   clock.sleep(0.25)
-    --   params:set("tape_gate",0)
-    -- end)
+    if params:get("tape_start_stop")==1 then 
+      params:set("tape_gate",1)
+      clock.run(function()
+        clock.sleep(0.25)
+        params:set("tape_gate",0)
+      end)
+    end
     if clock_run~=nil then
       clock.cancel(clock_run)
       clock_run=nil
     end
   else
-    -- params:set("tape_gate",1)
+    if params:get("tape_start_stop")==1 then 
+      params:set("tape_gate",1)
+    end
     clock.run(function()
-      -- clock.sleep(0.5)
+      if params:get("tape_start_stop")==1 then 
+        clock.sleep(math.random(100,500)/1000)
+      end
       if clock_run~=nil then
         clock.cancel(clock_run)
         clock_run=nil
       end
       toggling_clock=false
-      clock.sleep(1)
-      -- params:set("tape_gate",0)
+      if params:get("tape_start_stop")==1 then 
+        clock.sleep(math.random(500,1200)/1000)
+        params:set("tape_gate",0)
+      end
     end)
     do return end
   end
@@ -701,7 +708,7 @@ function redraw()
     screen.text_center("BREAK")
     screen.move(64,57)
     screen.font_face(63)
-    screen.text_center("v1.1.1")
+    screen.text_center("v1.2.0")
     screen.font_size(8)
     screen.font_face(1)
   end
@@ -760,6 +767,7 @@ end
 function params_audioout()
   local params_menu={
     {id="tape_gate",name="tape stop",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
+    {id="tape_start_stop",name="tape autio start/stop",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
     {id="tape_slow",name="tape slow",min=0,max=2,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="sidechain_mult",name="sidechain amount",min=0,max=8,exp=false,div=0.1,default=2.0},
     {id="compress_thresh",name="sidechain threshold",min=0,max=1,exp=false,div=0.01,default=0.1},

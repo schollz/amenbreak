@@ -1,10 +1,5 @@
 local GGrid={}
 
-local RETRIG=3
-local STRETCH=4
-local DELAY=5
-local GATE=6
-
 function GGrid:new(args)
   local m=setmetatable({},{__index=GGrid})
   local args=args==nil and {} or args
@@ -45,25 +40,8 @@ function GGrid:new(args)
     end
   end
   m.grid_refresh:start()
-  m.retrigs={
-    {1,0},
-    {1,1},
-    {1,3},
-    {2,9},
-    {3,5},
-    {3,7},
-    {3,9},
-    {3,11},
-    {4,9},
-    {4,5},
-    {4,7},
-    {5,9},
-    {5,11},
-    {5,13},
-    {6,15},
-    {6,17},
-  }
-  m.d={retrig=0,ci=0,steps=1,retrigi=1,stretch=1,delay=1,gate=1}
+
+
   return m
 end
 
@@ -82,24 +60,40 @@ function GGrid:key_press(row,col,on)
     self.pressed_buttons[row..","..col]=nil
   end
 
-  if not on then
-    self.d.ci=0
-    do return end
-  end
-
-  if row<=2 and on then
-    self.d.ci=col+16*(row-1)
-  elseif row==STRETCH and on then
-    self.d.stretch=col
-  elseif row==DELAY and on then
-    self.d.delay=col
-  elseif row==GATE and on then
-    self.d.gate=col
-    print(self.d.gate)
-  elseif row==RETRIG and on then
-    self.d.retrigi=col
-    self.d.steps=self.retrigs[self.d.retrigi][1]
-    self.d.retrig=self.retrigs[self.d.retrigi][2]
+  if on and row==8 and col==1 then 
+    toggle_clock()
+  elseif on and col==1 then 
+    local bin=binary.encode(params:get("track"))
+    bin[row]=1-bin[row]
+    params:set("track",binary.decode(bin))
+  elseif on and col>=2 and col<=5 then 
+    local i=(row-1)*4+col-1
+    if clock_run==nil then 
+      ws[params:get("track")]:play{ci=i}
+    end  
+    if self.pattern_held~=nil then 
+      if self.pattern_held.first then 
+        pattern_store[self.pattern_held.row][self.pattern_held.col]={}
+        self.pattern_held.first=false
+      end
+      table.insert(pattern_store[self.pattern_held.row][self.pattern_held.col],i)
+      print(string.format("[grid] updating %s to pattern %d",PTTRN_NAME[self.pattern_held.row],self.pattern_held.col))
+      tab.print(pattern_store[self.pattern_held.row][self.pattern_held.col])
+    end
+  elseif col>5 then 
+    col=col-5
+    if on then
+      self.pattern_held={row=row,col=col,first=true}
+      if pattern_current[row]==col then 
+        print(string.format("[grid] disabling %s patterns",PTTRN_NAME[row]))
+        pattern_current[row]=0
+      elseif next(pattern_store[row][col])~=nil then 
+        print(string.format("[grid] switching %s to pattern %d",PTTRN_NAME[row],col))
+        pattern_current[row]=col
+      end
+    else
+      self.pattern_held=nil
+    end
   end
 end
 
@@ -113,20 +107,12 @@ function GGrid:get_visual()
     end
   end
 
-  if d_.ci~=nil then
-    local row=1
-    local col=d_.ci
-    while col>16 do
-      col=col-16
-      row=row+1
-    end
-    self.visual[row][col]=14
+  -- illuminate the current position
+  for i=1,params:get(params:get("track").."beats")*2 do 
+    local row=math.floor((i-1)/4)+1
+    local col=(i-1)%4+2
+    self.visual[row][col]=pos_last==i and 15 or (ws[params:get("track")].kick[i]>-48 and 9 or 4)
   end
-
-  self.visual[RETRIG][self.d.retrigi]=14
-  self.visual[STRETCH][self.d.stretch]=14
-  self.visual[DELAY][self.d.delay]=14
-  self.visual[GATE][self.d.gate]=14
 
   -- illuminate currently pressed button
   for k,_ in pairs(self.pressed_buttons) do
@@ -135,6 +121,30 @@ function GGrid:get_visual()
     col=tonumber(col)
     self.visual[row][col]=14
   end
+
+  -- illuminate the current track
+  local bin=binary.encode(params:get("track"))
+  for i,v in ipairs(bin) do 
+    if i<8 then 
+      self.visual[i][1]=v==1 and 15 or 2
+    end
+  end
+
+  -- illuminate which patterns are availble
+  for row,_ in ipairs(pattern_store) do 
+    for coll,v in ipairs(pattern_store[row]) do 
+      local col=coll+5
+      self.visual[row][col]=next(v)~=nil and 2 or 0
+    end
+  end
+  for row,col in ipairs(pattern_current) do 
+    if col>0 then
+      self.visual[row][col+5]=7
+    end
+  end
+
+  -- illuminate playing screen
+  self.visual[8][1]=clock_run==nil and 2 or 15
 
   return self.visual
 end

@@ -46,11 +46,7 @@ function GGrid:new(args)
   end
   m.grid_refresh:start()
 
-  m.patterns={}
-  for i=1,9 do 
-    table.insert(m.patterns,{})
-  end
-  m.pattern_loaded=0
+
   return m
 end
 
@@ -83,8 +79,8 @@ function GGrid:key_press(row,col,on)
     if self.pattern_step~=nil then 
       table.insert(self.pattern_step.pattern,i)
     end
-  elseif col>=2 and col<=4 then 
-    local i=(row-1)*3+col-1
+  elseif col>5 then 
+    col=col-4
     if on then 
       self.pattern_step={id=i,pattern={}}
     else

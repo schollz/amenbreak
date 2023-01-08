@@ -44,7 +44,14 @@ posit={
   inc={1},
 dur={1}}
 initital_monitor_level=0
-d_={}
+
+-- global constants (for grid)
+PTTRN_STEP=1
+PTTRN_AMEN=2
+PTTRN_BREK=3
+PTTRN_DRUM=4
+PTTRN_PNCH=5
+pattern_store={}
 
 UI=require 'ui'
 loaded_files=0
@@ -88,10 +95,14 @@ function init()
   show_message("loading...")
   redraw()
 
-  -- setup positions
-  pos_available={}
-  for i=1,64 do
-    table.insert(pos_available,i)
+  -- setup patterns
+  -- empty patterns means to ignore settings
+  pattern_current={0,0,0,0,0,0,0}
+  for row=1,8 do 
+    table.insert(pattern_store,{})
+    for col=1,11 do 
+      table.insert(pattern_store[row],{loaded=false,pattern={}})
+    end
   end
 
   initital_monitor_level=params:get('monitor_level')
@@ -327,17 +338,17 @@ function toggle_clock(on)
 
   -- do tape stuff
   if on then
-    params:set("tape_gate",1)
-    clock.run(function()
-      clock.sleep(0.25)
-      params:set("tape_gate",0)
-    end)
+    -- params:set("tape_gate",1)
+    -- clock.run(function()
+    --   clock.sleep(0.25)
+    --   params:set("tape_gate",0)
+    -- end)
     if clock_run~=nil then
       clock.cancel(clock_run)
       clock_run=nil
     end
   else
-    params:set("tape_gate",1)
+    -- params:set("tape_gate",1)
     clock.run(function()
       clock.sleep(0.5)
       if clock_run~=nil then
@@ -346,22 +357,30 @@ function toggle_clock(on)
       end
       toggling_clock=false
       clock.sleep(1)
-      params:set("tape_gate",0)
+      -- params:set("tape_gate",0)
     end)
     do return end
   end
 
   -- infinite loop
-  pos_i=#pos_available*1000
+  if pattern_current[PTTRN_STEP]==0 then 
+    pos_i=0
+  else
+    pos_i=#pattern_store[PTTRN_STEP][pattern_current[PTTRN_STEP]].pattern*1000
+  end
   clock_beat=-1
   local d={steps=0,ci=1}
   local switched_direction=false
   params:set("clock_reset",1)
   clock_run=clock.run(function()
+    while clock.get_beats()>1 do
+      clock.sleep(0.004)
+    end
     toggling_clock=false
     while true do
       local track_beats=params:get(params:get("track").."beats")
       clock_beat=clock_beat+1
+      local first_beat=true
       if d.steps==0 then
         d={ci=d.ci}
         d.beat=math.floor(clock_beat)
@@ -425,7 +444,12 @@ function toggle_clock(on)
             -- do a jump
             pos_i=pos_i+math.random(-1*track_beats,track_beats)
           end
-          d.ci=pos_available[(pos_i-1)%#pos_available+1]
+          if pattern_current[PTTRN_STEP]==0 then 
+            d.ci=(pos_i-1)%36+1
+          else
+            local pttrn=pattern_store[PTTRN_STEP][pattern_current[PTTRN_STEP]].pattern
+            d.ci=pttrn[(pos_i-1)%#pttrn+1]
+          end
         end
         -- do a small retrig sometimes based on amen
         local p=easing_function3(params:get("amen"),2.6,7.6,1.8,1.2)
@@ -448,6 +472,7 @@ function toggle_clock(on)
       end
 
       d.steps=d.steps-1
+      print(pos_i,d.ci,clock.get_beats())
       clock.sync(1/2)
     end
   end)

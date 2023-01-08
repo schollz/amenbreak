@@ -1,4 +1,4 @@
--- amenbreak v1.1.1
+-- amenbreak v1.2.0
 --
 --
 -- amen+break
@@ -51,7 +51,16 @@ PTTRN_AMEN=2
 PTTRN_BREK=3
 PTTRN_DRUM=4
 PTTRN_PNCH=5
+PTTRN_NAME={"STEP","AMEN","BREK","DRUM","PNCH","NAME"}
+PTTRN_FUNS={
+  function(v) end,
+  function(v) params:set_raw("amen",v) end,
+  function(v) params:set_raw("break",v) end,
+  function(v) params:set_raw("track",v) end,
+  function(v) params:set_raw("punch",v) end,
+}
 pattern_store={}
+pattern_current={0,0,0,0,0,0,0}
 
 UI=require 'ui'
 loaded_files=0
@@ -97,13 +106,14 @@ function init()
 
   -- setup patterns
   -- empty patterns means to ignore settings
-  pattern_current={0,0,0,0,0,0,0}
   for row=1,8 do 
     table.insert(pattern_store,{})
     for col=1,11 do 
-      table.insert(pattern_store[row],{loaded=false,pattern={}})
+      table.insert(pattern_store[row],{})
     end
   end
+  -- pattern_store[PTTRN_STEP][1]={1,2,3,4}
+  -- pattern_current[PTTRN_STEP]=1
 
   initital_monitor_level=params:get('monitor_level')
   params:set('monitor_level',-math.huge)
@@ -137,6 +147,8 @@ function init()
   params_kick()
   params_audioin()
   params_audioout()
+  params_action()
+  params:default()
 
   local params_menu={
     {id="db",name="volume",min=-48,max=12,exp=false,div=0.1,default=0,unit="db"},
@@ -287,7 +299,7 @@ function init()
     loading_screen=false
     clock.sleep(1)
     params:set("punch",0.3)
-    -- toggle_clock(true)
+    toggle_clock(true)
   end)
 end
 
@@ -363,10 +375,10 @@ function toggle_clock(on)
   end
 
   -- infinite loop
-  if pattern_current[PTTRN_STEP]==0 then 
+  if pattern_current[PTTRN_STEP]==0 or next(pattern_store[PTTRN_STEP][pattern_current[PTTRN_STEP]])~=nil then 
     pos_i=0
   else
-    pos_i=#pattern_store[PTTRN_STEP][pattern_current[PTTRN_STEP]].pattern*1000
+    pos_i=#pattern_store[PTTRN_STEP][pattern_current[PTTRN_STEP]]*1000
   end
   clock_beat=-1
   local d={steps=0,ci=1}
@@ -381,6 +393,16 @@ function toggle_clock(on)
       clock_beat=clock_beat+1
       local first_beat=true
       if d.steps==0 then
+
+        -- update the patterns
+        for row,col in ipairs(pattern_current) do
+          if col>0 and next(pattern_store[row][col])~=nil then 
+            local ptn=pattern_store[row][col]
+            local v=(ptn[(pos_i-1+1)%#ptn+1]-1)/31
+            PTTRN_FUNS[row](v)
+          end
+        end
+
         d={ci=d.ci}
         d.beat=math.floor(clock_beat)
         d.steps=1
@@ -446,7 +468,7 @@ function toggle_clock(on)
           if pattern_current[PTTRN_STEP]==0 then 
             d.ci=pos_i
           else
-            local pttrn=pattern_store[PTTRN_STEP][pattern_current[PTTRN_STEP]].pattern
+            local pttrn=pattern_store[PTTRN_STEP][pattern_current[PTTRN_STEP]]
             d.ci=pttrn[(pos_i-1)%#pttrn+1]
           end
         end
@@ -471,7 +493,7 @@ function toggle_clock(on)
       end
 
       d.steps=d.steps-1
-      print(pos_i,d.ci,clock.get_beats())
+      -- print(pos_i,d.ci,clock.get_beats())
     end
   end)
 end
@@ -782,5 +804,39 @@ function params_audioout()
     params:set_action(pram.id,function(v)
       engine.main_set(pram.id,pram.fn~=nil and pram.fn(v) or v)
     end)
+  end
+end
+
+
+function params_action()
+  params.action_write=function(filename,name)
+    print("[params.action_write]",filename,name)
+    local data={pattern_current=pattern_current,pattern_store=pattern_store}
+    filename=filename..".json"
+    local file=io.open(filename,"w+")
+    io.output(file)
+    io.write(json.encode(data))
+    io.close(file)
+  end
+
+  params.action_read=function(filename,silent)
+    print("[params.action_read]",filename,silent)
+    -- load all the patterns
+    filename=filename..".json"
+    if not util.file_exists(filename) then
+      do return end
+    end
+    local f=io.open(filename,"rb")
+    local content=f:read("*all")
+    f:close()
+    if content==nil then
+      do return end
+    end
+    local data=json.decode(content)
+    if data==nil then
+      do return end
+    end
+    pattern_current=data.pattern_current
+    pattern_store=data.pattern_store
   end
 end

@@ -1,10 +1,5 @@
 local GGrid={}
 
-local RETRIG=3
-local STRETCH=4
-local DELAY=5
-local GATE=6
-
 function GGrid:new(args)
   local m=setmetatable({},{__index=GGrid})
   local args=args==nil and {} or args
@@ -76,33 +71,28 @@ function GGrid:key_press(row,col,on)
     if clock_run==nil then 
       ws[params:get("track")]:play{ci=i}
     end  
-    if self.pattern_step~=nil then 
-      table.insert(self.pattern_step.pattern,i)
+    if self.pattern_held~=nil then 
+      if self.pattern_held.first then 
+        pattern_store[self.pattern_held.row][self.pattern_held.col]={}
+        self.pattern_held.first=false
+      end
+      table.insert(pattern_store[self.pattern_held.row][self.pattern_held.col],i)
+      print(string.format("[grid] updating %s to pattern %d",PTTRN_NAME[self.pattern_held.row],self.pattern_held.col))
+      tab.print(pattern_store[self.pattern_held.row][self.pattern_held.col])
     end
   elseif col>5 then 
-    col=col-4
-    if on then 
-      self.pattern_step={id=i,pattern={}}
-    else
-      tab.print(self.pattern_step.pattern)
-      if next(self.pattern_step.pattern)~=nil then 
-        self.patterns[self.pattern_step.id]=self.pattern_step.pattern
-      elseif next(self.patterns[self.pattern_step.id])~=nil then 
-        -- load pattern
-        if self.pattern_loaded>0 and self.pattern_loaded==i then 
-          self.pattern_loaded=0
-          pos_available={}
-          for i=1,64 do 
-            table.insert(pos_available,i)
-          end
-        else
-          self.pattern_loaded=self.pattern_step.id
-          pos_available=self.patterns[self.pattern_step.id]
-          print("loading pattern")
-          tab.print(pos_available)
-        end
+    col=col-5
+    if on then
+      self.pattern_held={row=row,col=col,first=true}
+      if pattern_current[row]==col then 
+        print(string.format("[grid] disabling %s patterns",PTTRN_NAME[row]))
+        pattern_current[row]=0
+      elseif next(pattern_store[row][col])~=nil then 
+        print(string.format("[grid] switching %s to pattern %d",PTTRN_NAME[row],col))
+        pattern_current[row]=col
       end
-      self.pattern_step=nil
+    else
+      self.pattern_held=nil
     end
   end
 end
@@ -121,7 +111,7 @@ function GGrid:get_visual()
   for i=1,params:get(params:get("track").."beats")*2 do 
     local row=math.floor((i-1)/4)+1
     local col=(i-1)%4+2
-    self.visual[row][col]=pos_last==i and 15 or (ws[params:get("track")].kick[i]>-48 and 5 or 2)
+    self.visual[row][col]=pos_last==i and 15 or (ws[params:get("track")].kick[i]>-48 and 9 or 4)
   end
 
   -- illuminate currently pressed button
@@ -140,12 +130,18 @@ function GGrid:get_visual()
     end
   end
 
-  -- -- illuminate which patterns are availble
-  -- for i,p in ipairs(self.patterns) do
-  --   local row=math.floor((i-1)/3)+1
-  --   local col=(i-1)%3+2
-  --   self.visual[row][col]=next(p)==nil and 0 or (self.pattern_loaded==i and 10 or 2)
-  -- end
+  -- illuminate which patterns are availble
+  for row,_ in ipairs(pattern_store) do 
+    for coll,v in ipairs(pattern_store[row]) do 
+      local col=coll+5
+      self.visual[row][col]=next(v)~=nil and 2 or 0
+    end
+  end
+  for row,col in ipairs(pattern_current) do 
+    if col>0 then
+      self.visual[row][col+5]=7
+    end
+  end
 
   -- illuminate playing screen
   self.visual[8][1]=clock_run==nil and 2 or 15

@@ -80,7 +80,7 @@ function GGrid:key_press(row,col,on)
       print(string.format("[grid] updating %s to pattern %d",PTTRN_NAME[self.pattern_held.row],self.pattern_held.col))
       tab.print(pattern_store[self.pattern_held.row][self.pattern_held.col])
     end
-  elseif col>5 then 
+  elseif col>5 and row<=5 then 
     col=col-5
     if on then
       self.pattern_held={row=row,col=col,first=true}

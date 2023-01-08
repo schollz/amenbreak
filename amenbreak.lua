@@ -350,7 +350,7 @@ function toggle_clock(on)
   else
     -- params:set("tape_gate",1)
     clock.run(function()
-      clock.sleep(0.5)
+      -- clock.sleep(0.5)
       if clock_run~=nil then
         clock.cancel(clock_run)
         clock_run=nil
@@ -372,12 +372,11 @@ function toggle_clock(on)
   local d={steps=0,ci=1}
   local switched_direction=false
   params:set("clock_reset",1)
+  -- clock.internal.start(-0.1) 
   clock_run=clock.run(function()
-    while clock.get_beats()>1 do
-      clock.sleep(0.004)
-    end
     toggling_clock=false
     while true do
+      clock.sync(1/2) -- needs to go first
       local track_beats=params:get(params:get("track").."beats")
       clock_beat=clock_beat+1
       local first_beat=true
@@ -427,14 +426,14 @@ function toggle_clock(on)
         end
 
         -- calculate the next position
-        if d.beat%(track_beats*4)==0 and math.random()<0.1 then
+        if d.beat%(track_beats*4)==0 and math.random()<0.1 and params:get("amen")>0 then
           d.ci=ws[params:get("track")]:random_kick_pos()
         else
           -- switching directions
           local p=easing_function3(params:get("amen"),2.1,5.9,1.4,0.8)
           if switched_direction and math.random()>p then
             switched_direction=false
-          elseif not switched_direction and math.random()<p then
+          elseif not switched_direction and math.random()<p and params:get("amen")>0 then
             switched_direction=true
           end
           pos_i=pos_i+(switched_direction and-1 or 1)
@@ -445,7 +444,7 @@ function toggle_clock(on)
             pos_i=pos_i+math.random(-1*track_beats,track_beats)
           end
           if pattern_current[PTTRN_STEP]==0 then 
-            d.ci=(pos_i-1)%36+1
+            d.ci=pos_i
           else
             local pttrn=pattern_store[PTTRN_STEP][pattern_current[PTTRN_STEP]].pattern
             d.ci=pttrn[(pos_i-1)%#pttrn+1]
@@ -453,7 +452,7 @@ function toggle_clock(on)
         end
         -- do a small retrig sometimes based on amen
         local p=easing_function3(params:get("amen"),2.6,7.6,1.8,1.2)
-        if d.retrig==0 and math.random()<p then
+        if d.retrig==0 and math.random()<p and params:get("amen")>0 then
           d.retrig=math.random(1,2)*2-1
         end
         d.duration=d.steps*clock.get_beat_sec()/2
@@ -473,7 +472,6 @@ function toggle_clock(on)
 
       d.steps=d.steps-1
       print(pos_i,d.ci,clock.get_beats())
-      clock.sync(1/2)
     end
   end)
 end

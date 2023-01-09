@@ -62,12 +62,30 @@ function GGrid:key_press(row,col,on)
 
   if on and row==8 and col==1 then 
     toggle_clock()
+  elseif row==8 and col>=6 then 
+    if col==6 then 
+      params:set("tape_gate",on and 1 or 0)
+    elseif col==7 then 
+      retrig_held=on and math.random(2,6) or 0
+    elseif col==8 then 
+      volup_held=on and math.random(1,2) or 0
+    elseif col==9 then 
+      pitchup_held=on and math.random(-2,2) or 0
+    elseif col==10 then 
+      moresteps_held=on and (math.random(2,5)) or 0
+    elseif col==11 then 
+      reverse_held=on and 1 or 0
+    end
   elseif on and col==1 then 
     local bin=binary.encode(params:get("track"))
     bin[row]=1-bin[row]
     params:set("track",binary.decode(bin))
+  elseif (not on) and col>=2 and col<=5 then 
+    local i=(row-1)*4+col-1
+    step_held=0
   elseif on and col>=2 and col<=5 then 
     local i=(row-1)*4+col-1
+    step_held=i
     if clock_run==nil then 
       ws[params:get("track")]:play{ci=i}
     end  
@@ -111,7 +129,11 @@ function GGrid:get_visual()
   for i=1,params:get(params:get("track").."beats")*2 do 
     local row=math.floor((i-1)/4)+1
     local col=(i-1)%4+2
-    self.visual[row][col]=pos_last==i and 15 or (ws[params:get("track")].kick[i]>-48 and 9 or 4)
+    if ws[params:get("track")]~=nil then 
+      if ws[params:get("track")].kick~=nil then 
+        self.visual[row][col]=pos_last==i and 15 or (ws[params:get("track")].kick[i]>-48 and 9 or 4)
+      end
+    end
   end
 
   -- illuminate currently pressed button
@@ -143,9 +165,21 @@ function GGrid:get_visual()
     end
   end
 
+  -- illuminate tape stop
+  self.visual[8][6]=params:get("tape_gate")==1 and 15 or 0
+
   -- illuminate playing screen
   self.visual[8][1]=clock_run==nil and 2 or 15
 
+  -- illuminate currently pressed button
+  for k,_ in pairs(self.pressed_buttons) do
+    local row,col=k:match("(%d+),(%d+)")
+    row=tonumber(row)
+    col=tonumber(col)
+    if row==8 and col>=6 then 
+      self.visual[row][col]=15
+    end
+  end
   return self.visual
 end
 

@@ -61,12 +61,7 @@ PTTRN_FUNS={
 }
 pattern_store={}
 pattern_current={0,0,0,0,0,0,0}
-step_held=0
-retrig_held=0
-pitchup_held=0
-volup_held=0
-moresteps_held=0
-reverse_held=0
+button_fns={}
 
 UI=require 'ui'
 loaded_files=0
@@ -491,12 +486,10 @@ function toggle_clock(on)
         if d.retrig==0 and math.random()<p and params:get("amen")>0 then
           d.retrig=math.random(1,2)*2-1
         end
-        d.ci=step_held~=0 and step_held or d.ci
-        d.retrig=retrig_held~=0 and retrig_held or d.retrig_held
-        d.db=volup_held~=0 and volup_held or d.db 
-        d.pitch=pitchup_held~=0 and pitchup_held or d.pitch
-        d.steps=moresteps_held~=0 and moresteps_held or d.steps
-        d.rate=reverse_held~=0 and -1 or d.rate
+        -- overwrite current data with button data from grid
+        for k, fn in pairs(button_fns) do
+          d[k]=fn()
+        end
         d.duration=d.steps*clock.get_beat_sec()/2
         ws[params:get("track")]:play(d)
         if params:get("efit")==1 and math.random()<lfos[5]/4 then

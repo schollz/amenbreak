@@ -42,6 +42,29 @@ function GGrid:new(args)
   m.grid_refresh:start()
 
 
+  -- in the grid loop, set the button fns
+  m.button_fns={{},{},{}}
+  m.button_fns[1]={
+    {db=function() return math.random(1,2) end},
+    {pitch=function() return math.random(1,2) end},
+    {retrig=function() return math.random(1,5) end},
+    {retrig=function() return math.random(3,7) end},
+    {retrig=function() return math.random(6,15) end},
+  }
+  m.button_fns[2]={
+    {delay=function() 1 end},
+    {uselast=function() return 1 end},
+    {retrig=function() return math.random(1,5) end,steps=function() return math.random(2,4) end},
+    {retrig=function() return math.random(3,7) end,steps=function() return math.random(2,4) end},
+    {retrig=function() return math.random(6,15) end,steps=function() return math.random(2,4) end},
+  }
+  m.button_fns[3]={
+    {on=function() params:set("tape_gate",1) end,off=function() params:set("tape_gate",0) end},
+    {rate=function() return -1 end},
+    {retrig=function() return math.random(1,5) end,steps=function() return math.random(5,8) end},
+    {retrig=function() return math.random(3,7) end,steps=function() return math.random(5,8) end},
+    {retrig=function() return math.random(6,15) end,steps=function() return math.random(5,8) end},
+  }
   return m
 end
 
@@ -62,19 +85,23 @@ function GGrid:key_press(row,col,on)
 
   if on and row==8 and col==1 then 
     toggle_clock()
-  elseif row==8 and col>=6 then 
-    if col==6 then 
-      params:set("tape_gate",on and 1 or 0)
-    elseif col==7 then 
-      retrig_held=on and math.random(2,6) or 0
-    elseif col==8 then 
-      volup_held=on and math.random(1,2) or 0
-    elseif col==9 then 
-      pitchup_held=on and math.random(-2,2) or 0
-    elseif col==10 then 
-      moresteps_held=on and (math.random(2,5)) or 0
-    elseif col==11 then 
-      reverse_held=on and 1 or 0
+  elseif row>=6 and col>=6 and col<=12 then 
+    local r=row-5
+    local c=col-5
+    local fns=self.button_fns[r][c]
+    if fns==nil then 
+      do return end 
+    end
+    if on and fns.on~=nil then 
+      fns.on()
+      do return end 
+    elseif (not on) and fns.off~=nil then 
+      fns.off()
+      do return end
+    else
+      for k,fn in pairs(fns) do 
+        button_fns[k]=on and fn or nil
+      end
     end
   elseif on and col==1 then 
     local bin=binary.encode(params:get("track"))
@@ -82,10 +109,10 @@ function GGrid:key_press(row,col,on)
     params:set("track",binary.decode(bin))
   elseif (not on) and col>=2 and col<=5 then 
     local i=(row-1)*4+col-1
-    step_held=0
+    button_fns.ci=nil
   elseif on and col>=2 and col<=5 then 
     local i=(row-1)*4+col-1
-    step_held=i
+    button_fns.ci=function() return i end 
     if clock_run==nil then 
       ws[params:get("track")]:play{ci=i}
     end  

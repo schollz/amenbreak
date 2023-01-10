@@ -290,14 +290,10 @@ Engine_AmenBreak1 : CroneEngine {
             this.synthChange(id,k,v);
         });
 
-        this.addCommand("tremolo","ffff",{ arg msg;
-            var min=msg[1];
-            var max=msg[2];
-            var duration=msg[3];
-            var rate=msg[4];
-            syns.at("filter").free;
-            syns.put("filter",Synth.new("tremolo",[\out,buses.at("filter"),\duration,duration,\min,min,\max,max,\rate,rate],s,\addToHead));
-            NodeWatcher.register(syns.at("filter"));
+        this.addCommand("filter_set","ff", { arg msg;
+            if (syns.at("filter").isRunning,{
+                syns.at("filter).set(\val,msg[1],\slew,msg[2]);                
+            }
         });
 
         this.addCommand("slice_on","ssffffffffffffffffffffffff",{ arg msg;
@@ -348,9 +344,12 @@ Engine_AmenBreak1 : CroneEngine {
                 if (retrig>3,{
                     if (100.rand<25,{
                         // create filter sweep
-                        syns.at("filter").free;
-                        syns.put("filter",Synth.new("rise",[\out,buses.at("filter"),\duration,duration_total,\min,200,\max,lpf],s,\addToHead));
-                        NodeWatcher.register(syns.at("filter"));
+                        Routine {
+                            syns.at("filter").set(\slew,0.1);
+                            syns.at("filter").set(\val,200);
+                            0.1.wait;
+                            syns.at("filter).set(\slew,duration_total,\val,lpf);                
+                        }.play;
                     });
                 });
             });

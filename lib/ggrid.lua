@@ -45,22 +45,22 @@ function GGrid:new(args)
   -- in the grid loop, set the button fns
   m.button_fns={{},{},{}}
   m.button_fns[1]={
-    {db=function() return math.random(1,2) end},
-    {pitch=function() return math.random(1,2) end},
-    {retrig=function() return math.random(1,5) end},
-    {retrig=function() return math.random(3,7) end},
-    {retrig=function() return math.random(6,15) end},
+    {db=function() return math.random(1,2) end,light=function() return global_played.db>0 and 14 or 0 end},
+    {pitch=function() return math.random(1,2) end,light=function() return global_played.pitch~=0 and 14 or 0 end},
+    {retrig=function() return math.random(1,5) end,light=function() return (global_played.retrig>0 and global_played.retrig<5) and 14 or 0 end},
+    {retrig=function() return math.random(3,7) end,light=function() return (global_played.retrig>3 and global_played.retrig<7) and 14 or 0 end},
+    {retrig=function() return math.random(6,15) end,light=function() return (global_played.retrig>6 and global_played.retrig<15) and 14 or 0 end},
   }
   m.button_fns[2]={
-    {delay=function() 1 end},
-    {uselast=function() return 1 end},
+    {delay=function() 1 end,light=function() return global_played.delay>0 and 14 or 0 end},
+    {uselast=function() return 1 end,light=function() return global_played.uselast>0 and 14 or 0 end},
     {retrig=function() return math.random(1,5) end,steps=function() return math.random(2,4) end},
     {retrig=function() return math.random(3,7) end,steps=function() return math.random(2,4) end},
     {retrig=function() return math.random(6,15) end,steps=function() return math.random(2,4) end},
   }
   m.button_fns[3]={
-    {on=function() params:set("tape_gate",1) end,off=function() params:set("tape_gate",0) end},
-    {rate=function() return -1 end},
+    {on=function() params:set("tape_gate",1) end,off=function() params:set("tape_gate",0) end,light=function() return params:get("tape_gate")>0 and 14 or 0 end},
+    {rate=function() return -1 end,light=function() return global_played.rate<0 and 14 or 0 end},
     {retrig=function() return math.random(1,5) end,steps=function() return math.random(5,8) end},
     {retrig=function() return math.random(3,7) end,steps=function() return math.random(5,8) end},
     {retrig=function() return math.random(6,15) end,steps=function() return math.random(5,8) end},
@@ -110,7 +110,10 @@ function GGrid:key_press(row,col,on)
       do return end
     else
       for k,fn in pairs(fns) do 
-        button_fns[k]=on and fn or nil
+        if k=="off" or k=="on" or k=="light" then 
+        else
+          button_fns[k]=on and fn or nil
+        end
       end
     end
   elseif on and col==1 then 
@@ -202,13 +205,19 @@ function GGrid:get_visual()
     end
   end
 
-  -- illuminate tape stop
-  self.visual[8][6]=params:get("tape_gate")==1 and 15 or 0
+  -- illuminate buttons
+  for row=6,8 do 
+    for col=6,10 do
+      if self.button_fns[row-5][col-5].light~=nil then
+        self.visual[row][col]=self.button_fns[row-5][col-5].light()
+      end
+    end
+  end
 
   -- illuminate playing screen
   self.visual[8][1]=clock_run==nil and 2 or 15
 
-  -- illuminate current settings (block out in light)
+  -- illuminate current db/lpf/gate settings (block out in light)
   for row=6,8 do
     for col=11,16 do 
       self.visual[row][col]=2

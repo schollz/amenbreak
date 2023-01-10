@@ -62,6 +62,7 @@ PTTRN_FUNS={
 pattern_store={}
 pattern_current={0,0,0,0,0,0,0}
 button_fns={}
+global_played={}
 
 UI=require 'ui'
 loaded_files=0
@@ -491,6 +492,10 @@ function toggle_clock(on)
           d[k]=fn()
         end
         d.duration=d.steps*clock.get_beat_sec()/2
+        global_played={}
+        for k,v in pairs(d) do
+          global_played[k]=v
+        end
         ws[params:get("track")]:play(d)
         if params:get("efit")==1 and math.random()<lfos[5]/4 then
           params:set_raw("track",math.random())

@@ -93,8 +93,8 @@ Engine_AmenBreak1 : CroneEngine {
         SynthDef("rise",{|out,duration=1,min=0.1,max=1|
             Out.kr(out,EnvGen.kr(Env.new([min,max],[duration],\exponential),doneAction:2));
         }).send(context.server);        
-        SynthDef("set",{|out,val,slew=0.5|
-            Out.kr(out,Lag.kr(val,slew));
+        SynthDef("set",{|out,val,slew=2|
+            Out.kr(out,VarLag.kr(val,slew,warp:\exponential));
         }).send(context.server);        
         SynthDef("tremolo",{|out,min=0.1,max=1,rate=0.5,duration=1|
             FreeSelf.kr(TDelay.kr(Impulse.kr(0), duration));
@@ -331,9 +331,9 @@ Engine_AmenBreak1 : CroneEngine {
             var db_orig=db_first;
             // TODO: set filter bus
             if (syns.at("filter").isRunning,{
-                syns.at("filter").set(\val,lpf);
+                syns.at("filter").set(\val,lpf,\slew,duration_total);
             },{
-                syns.put("filter",Synth.new("set",[\out,buses.at("filter"),\val,18000],s,\addToHead));
+                syns.put("filter",Synth.new("set",[\out,buses.at("filter"),\val,18000,\slew,duration_total],s,\addToHead));
                 NodeWatcher.register(syns.at("filter"));                
             });
             if (retrig>0,{

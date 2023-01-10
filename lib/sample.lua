@@ -236,13 +236,13 @@ function Sample:play(d)
   d.watch=d.watch or 1
   d.rate=d.rate or 1
   d.rate=d.rate*clock.get_tempo()/params:get(self.id.."bpm")*params:get("rate")
-  if d.uselast~=nil and d.uselast==1 and d.last_ci~=nil then 
-    d.ci==d.last_ci
+  if d.uselast==1 and self.last_ci~=nil then 
+    d.ci=self.last_ci
   else
     d.ci=d.ci or self.ci
     d.ci=(d.ci-1+params:get("rotate"))%(#self.cursors)+1
   end
-  d.last_ci=d.ci
+  self.last_ci=d.ci
   d.retrig=d.retrig or 0
   d.gate=d.gate or params:get("gate")
   d.hold=d.hold or params:get("hold")

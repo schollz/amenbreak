@@ -43,27 +43,27 @@ function GGrid:new(args)
 
 
   -- in the grid loop, set the button fns
-  m.button_fns={{},{},{}}
+  m.button_fns={}
   m.button_fns[1]={
-    {db=function() return math.random(1,2) end,light=function() return global_played.db>0 and 14 or 0 end},
-    {pitch=function() return math.random(1,2) end,light=function() return global_played.pitch~=0 and 14 or 0 end},
-    {retrig=function() return math.random(1,5) end,light=function() return (global_played.retrig>0 and global_played.retrig<5) and 14 or 0 end},
-    {retrig=function() return math.random(3,7) end,light=function() return (global_played.retrig>3 and global_played.retrig<7) and 14 or 0 end},
-    {retrig=function() return math.random(6,15) end,light=function() return (global_played.retrig>6 and global_played.retrig<15) and 14 or 0 end},
+    {db=function() return math.random(1,2) end,light=function() return (global_played.db~=nil and global_played.db>0) and 14 or 4 end},
+    {pitch=function() return math.random(1,2) end,light=function() return (global_played.pitch~=nil and global_played.pitch~=0) and 14 or 2 end},
+    {retrig=function() return math.random(1,5) end,light=function() return (global_played.retrig~=nil and global_played.retrig>0 and global_played.retrig<5) and 14 or 4 end},
+    {retrig=function() return math.random(3,7) end,light=function() return (global_played.retrig~=nil and global_played.retrig>3 and global_played.retrig<7) and 14 or 4 end},
+    {retrig=function() return math.random(6,15) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
   }
   m.button_fns[2]={
-    {delay=function() 1 end,light=function() return global_played.delay>0 and 14 or 0 end},
-    {uselast=function() return 1 end,light=function() return global_played.uselast>0 and 14 or 0 end},
-    {retrig=function() return math.random(1,5) end,steps=function() return math.random(2,4) end},
-    {retrig=function() return math.random(3,7) end,steps=function() return math.random(2,4) end},
-    {retrig=function() return math.random(6,15) end,steps=function() return math.random(2,4) end},
+    {delay=function() return 1 end,light=function() return  (global_played.delay~=nil and global_played.delay>0) and 14 or 2 end},
+    {uselast=function() return 1 end,light=function() return  (global_played.uselast~=nil and global_played.uselast>0) and 14 or 4 end},
+    {retrig=function() return math.random(1,5) end,steps=function() return math.random(2,4) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
+    {retrig=function() return math.random(3,7) end,steps=function() return math.random(2,4) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
+    {retrig=function() return math.random(6,15) end,steps=function() return math.random(2,4) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
   }
   m.button_fns[3]={
-    {on=function() params:set("tape_gate",1) end,off=function() params:set("tape_gate",0) end,light=function() return params:get("tape_gate")>0 and 14 or 0 end},
-    {rate=function() return -1 end,light=function() return global_played.rate<0 and 14 or 0 end},
-    {retrig=function() return math.random(1,5) end,steps=function() return math.random(5,8) end},
-    {retrig=function() return math.random(3,7) end,steps=function() return math.random(5,8) end},
-    {retrig=function() return math.random(6,15) end,steps=function() return math.random(5,8) end},
+    {on=function() params:set("tape_gate",1) end,off=function() params:set("tape_gate",0) end,light=function() return params:get("tape_gate")>0 and 14 or 4 end},
+    {rate=function() return -1 end,light=function() return (global_played.rate~=nil and global_played.rate<0) and 14 or 2 end},
+    {retrig=function() return math.random(1,5) end,steps=function() return math.random(5,8) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
+    {retrig=function() return math.random(3,7) end,steps=function() return math.random(5,8) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
+    {retrig=function() return math.random(6,15) end,steps=function() return math.random(5,8) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
   }
   return m
 end
@@ -208,8 +208,10 @@ function GGrid:get_visual()
   -- illuminate buttons
   for row=6,8 do 
     for col=6,10 do
-      if self.button_fns[row-5][col-5].light~=nil then
-        self.visual[row][col]=self.button_fns[row-5][col-5].light()
+      if global_played~=nil then 
+        if self.button_fns[row-5][col-5].light~=nil then
+          self.visual[row][col]=self.button_fns[row-5][col-5].light()
+        end
       end
     end
   end

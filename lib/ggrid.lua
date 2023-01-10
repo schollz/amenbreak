@@ -45,6 +45,7 @@ function GGrid:new(args)
   -- in the grid loop, set the button fns
   m.button_fns={}
   m.button_fns[1]={
+    {uselast=function() return 1 end,light=function() return  (global_played.uselast~=nil and global_played.uselast>0) and 14 or 4 end},
     {db=function() return math.random(1,2) end,light=function() return (global_played.db~=nil and global_played.db>0) and 14 or 4 end},
     {pitch=function() return math.random(1,2) end,light=function() return (global_played.pitch~=nil and global_played.pitch~=0) and 14 or 2 end},
     {retrig=function() return math.random(1,5) end,light=function() return (global_played.retrig~=nil and global_played.retrig>0 and global_played.retrig<5) and 14 or 4 end},
@@ -53,7 +54,8 @@ function GGrid:new(args)
   }
   m.button_fns[2]={
     {delay=function() return 1 end,light=function() return  (global_played.delay~=nil and global_played.delay>0) and 14 or 2 end},
-    {uselast=function() return 1 end,light=function() return  (global_played.uselast~=nil and global_played.uselast>0) and 14 or 4 end},
+    {rate=function() return -1 end,light=function() return (global_played.rate~=nil and global_played.rate<0) and 14 or 2 end},
+    {stretch=function() return -1 end,light=function() return (global_played.stretch~=nil and global_played.stretch>0) and 14 or 2 end},
     {retrig=function() return math.random(1,5) end,steps=function() return math.random(2,4) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
     {retrig=function() return math.random(3,7) end,steps=function() return math.random(2,4) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
     {retrig=function() return math.random(6,15) end,steps=function() return math.random(2,4) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
@@ -63,7 +65,6 @@ function GGrid:new(args)
     {on=function() params:set("tape_gate",1) end,off=function() params:set("tape_gate",0) end,light=function() return params:get("tape_gate")>0 and 14 or 4 end},
     {on=function() engine.filter_set(200,clock.get_beat_sec()*math.random(1,4)) end,off=function() engine.filter_set(musicutil.note_num_to_freq(params:get("lpf")),clock.get_beat_sec()*math.random(1,4)) end,light=function() return params:get("db")<-32 and 14 or 4 end},
     {on=function() m.db_store=params:get("db"); params:set("db",-96) end,off=function() params:set("db",m.db_store) end,light=function() return params:get("db")<-32 and 14 or 4 end},
-    {rate=function() return -1 end,light=function() return (global_played.rate~=nil and global_played.rate<0) and 14 or 2 end},
     {retrig=function() return math.random(1,5) end,steps=function() return math.random(5,8) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
     {retrig=function() return math.random(3,7) end,steps=function() return math.random(5,8) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
     {retrig=function() return math.random(6,15) end,steps=function() return math.random(5,8) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
@@ -95,10 +96,10 @@ function GGrid:key_press(row,col,on)
   elseif on and row==7 and col>=11 then 
     local x=(col-11)/5
     params:set_raw("lpf",x)
-  elseif on and row==8 and col>=11 then 
-    local x=(col-11)/5
+  elseif on and row==8 and col>=12 then 
+    local x=(col-12)/4
     params:set_raw("gate",x)
-  elseif row>=6 and col>=6 and col<=10 then 
+  elseif row>=6 and col>=6 and col<=11 then 
     local r=row-5
     local c=col-5
     local fns=self.button_fns[r][c]
@@ -210,7 +211,7 @@ function GGrid:get_visual()
 
   -- illuminate buttons
   for row=6,8 do 
-    for col=6,10 do
+    for col=6,11 do
       if global_played~=nil then 
         if self.button_fns[row-5][col-5].light~=nil then
           self.visual[row][col]=self.button_fns[row-5][col-5].light()
@@ -224,13 +225,13 @@ function GGrid:get_visual()
 
   -- illuminate current db/lpf/gate settings (block out in light)
   for row=6,8 do
-    for col=11,16 do 
+    for col=12,16 do 
       self.visual[row][col]=2
     end
   end
-  self.visual[6][util.round(util.linlin(0,1,11,16,params:get_raw("db")))]=14
-  self.visual[7][util.round(util.linlin(0,1,11,16,params:get_raw("lpf")))]=14
-  self.visual[8][util.round(util.linlin(0,1,11,16,params:get_raw("gate")))]=14
+  self.visual[6][util.round(util.linlin(0,1,12,16,params:get_raw("db")))]=14
+  self.visual[7][util.round(util.linlin(0,1,12,16,params:get_raw("lpf")))]=14
+  self.visual[8][util.round(util.linlin(0,1,12,16,params:get_raw("gate")))]=14
   
   -- illuminate currently pressed button
   for k,_ in pairs(self.pressed_buttons) do

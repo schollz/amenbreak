@@ -325,13 +325,6 @@ Engine_AmenBreak1 : CroneEngine {
             var res=msg[26];
             var db_first=db+db_add;
             var db_orig=db_first;
-            // TODO: set filter bus
-            if (syns.at("filter").isRunning,{
-                syns.at("filter").set(\val,lpf,\slew,duration_total);
-            },{
-                syns.put("filter",Synth.new("set",[\out,buses.at("filter"),\val,18000,\slew,duration_total],s,\addToHead));
-                NodeWatcher.register(syns.at("filter"));                
-            });
             if (retrig>0,{
                 db_first=db;
                 if (db_add>0,{

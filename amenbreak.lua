@@ -189,6 +189,11 @@ function init()
     if pram.hide then
       params:hide(pram.id)
     end
+    if pram.id=="lpf" then 
+      params:set_action(pram.id,function(x)
+        engine.filter_set(musicutil.note_num_to_freq(x),clock.get_beat_sec()*math.random(1,4))
+      end)
+    end
   end
   params:add_separator("current sample")
   params:set_action("track",function(x)

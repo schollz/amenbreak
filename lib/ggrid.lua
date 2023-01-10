@@ -85,7 +85,17 @@ function GGrid:key_press(row,col,on)
 
   if on and row==8 and col==1 then 
     toggle_clock()
-  elseif row>=6 and col>=6 and col<=12 then 
+  elseif on and row==6 and col>=11 then 
+    local x=(col-11)/5
+    params:set_raw("db",x)
+    params:set("kick_db",params:get("db")-6)
+  elseif on and row==7 and col>=11 then 
+    local x=(col-11)/5
+    params:set_raw("lpf",x)
+  elseif on and row==8 and col>=11 then 
+    local x=(col-11)/5
+    params:set_raw("gate",x)
+  elseif row>=6 and col>=6 and col<=10 then 
     local r=row-5
     local c=col-5
     local fns=self.button_fns[r][c]
@@ -198,12 +208,22 @@ function GGrid:get_visual()
   -- illuminate playing screen
   self.visual[8][1]=clock_run==nil and 2 or 15
 
+  -- illuminate current settings (block out in light)
+  for row=6,8 do
+    for col=11,16 do 
+      self.visual[row][col]=2
+    end
+  end
+  self.visual[6][util.round(util.linlin(0,1,11,16,params:get_raw("db")))]=14
+  self.visual[7][util.round(util.linlin(0,1,11,16,params:get_raw("lpf")))]=14
+  self.visual[8][util.round(util.linlin(0,1,11,16,params:get_raw("gate")))]=14
+  
   -- illuminate currently pressed button
   for k,_ in pairs(self.pressed_buttons) do
     local row,col=k:match("(%d+),(%d+)")
     row=tonumber(row)
     col=tonumber(col)
-    if row==8 and col>=6 then 
+    if row>=6 and col>=6 then 
       self.visual[row][col]=15
     end
   end

@@ -244,7 +244,7 @@ function Sample:play(d)
   end
   d.last_ci=d.ci
   d.retrig=d.retrig or 0
-  d.gate=d.gate or 1.0 -- vestigial, it should probably alwasy be 1
+  d.gate=d.gate or params:get("gate")
   d.hold=d.hold or params:get("hold")
   d.compressing=d.compressing or params:get("compressing")
   d.compressible=d.compressible or params:get("compressible")

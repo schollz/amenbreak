@@ -142,8 +142,10 @@ Engine_AmenBreak1 : CroneEngine {
             compress_curve_wet=0,compress_curve_drive=1,bufCompress,
             expand_curve_wet=0,expand_curve_drive=1,bufExpand,
 			dist_wet=0.05,dist_on=0,drivegain=0.5,dist_bias=0,lowgain=0.1,highgain=0.1,
+            beat_repeat_duration=1,beat_repeat_num=4,beat_repeat_on=0,
 			shelvingfreq=600,dist_oversample=2;
             var snd,sndSC,sndNSC,sndDelay,tapePosRec,tapePosStretch,local,tape_slow2,snd_db,snd_db_max;
+            var beat_repeat_start,beat_repeat_total_time;
             snd=In.ar(inBus,2);
             sndNSC=In.ar(inBusNSC,2);
             sndSC=In.ar(inSC,2);
@@ -180,6 +182,27 @@ Engine_AmenBreak1 : CroneEngine {
             tape_slow2=EnvGen.kr(Env.new([1,0.047,1],[LFNoise0.kr(1).range(0.75,1.5),LFNoise0.kr(1).range(0.25,0.75)],\exponential,releaseNode:1),tape_gate);
             snd = SelectX.ar(VarLag.kr((tape_slow>0)+(tape_slow2<1),0.05,warp:\sine),[snd,PlayBuf.ar(2,tape_buf,tape_slow2*Lag.kr(1/(tape_slow+1),1),startPos:tapePosRec-10,loop:1,trigger:Trig.kr((tape_slow+tape_gate)>0))]);
             snd = snd*Lag.kr(tape_slow2>0.04701);
+
+            // beat repeat
+            beat_repeat_total_time = beat_repeat_duration * beat_repeat_num;
+            beat_repeat_ramp_volume = EnvGen.kr(Env.new([1,0.5],[beat_repeat_total_time]),gate: beat_repeat_on);
+            beat_repeat_ramp_pitch = EnvGen.kr(Env.new([1,0.7],[beat_repeat_total_time]),gate: beat_repeat_on);
+            beat_repeat_envelope = EnvGen.kr(Env.new([0,1,0,1],[beat_repeat_duration,beat_repeat_duration,beat_repeat_duration],
+                releaseNode:2, loopNode: 0),gate: beat_repeat_on);
+            // TODO: add beat_repeat envelope for volume/pitch?
+            beat_repeat_start = Latch.ar((tapePosRec-(beat_repeat_duration*48000)).mod(BufFrames.ir(tape_buf)),beat_repeat_on)
+            beat_repeat_snd = SelectX.ar(Lag.kr(beat_repeat_envelope,0.05),[
+            PlayBuf.ar(2,tape_buf,loop:1,
+                rate:beat_repeat_ramp_pitch,
+                trigger: 1-beat_repeat_envelope,
+                startPos: beat_repeat_start,
+            ),
+            PlayBuf.ar(2,tape_buf,loop:1,
+                rate:beat_repeat_ramp_pitch,
+                trigger: beat_repeat_envelope,
+                startPos: beat_repeat_start,
+            )]) * beat_repeat_ramp_volume;
+            snd=SelectX.ar(Lag.kr(beat_repeat_on),[snd,beat_repeat_snd]);
 
             // sinoid drive
             snd=SelectX.ar(Lag.kr(sine_drive),[snd,Shaper.ar(sine_buf,snd)]);

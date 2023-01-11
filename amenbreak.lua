@@ -782,10 +782,30 @@ function params_kick()
 end
 
 function params_audioout()
+  local offset_fn=function(v)
+    if params:get("beat_repeat_duration")>v then 
+      params:set("beat_repeat_duration",v)
+    end
+    return v*clock.get_beat_sec()
+  end
+  local duration_fn=function(v)
+    if v>params:get("beat_repeat_offset") then 
+      params:set("beat_repeat_offset",v)
+    end
+    return v*clock.get_beat_sec()
+  end
   local params_menu={
     {id="tape_gate",name="tape stop",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
     {id="tape_start_stop",name="tape auto start/stop",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
     {id="tape_slow",name="tape slow",min=0,max=2,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="beat_repeat_on",name="repeat toggle",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
+    {id="beat_repeat_num",name="repeat num",min=1,max=32,exp=false,div=1,default=4,formatter=function(param) return string.format("x%d",param:get()) end},
+    {id="beat_repeat_offset",name="repeat offset",min=1,max=64,exp=false,div=0.125,default=1,formatter=function(param) return string.format("%d beats",param:get()) end,fn=offset_fn},
+    {id="beat_repeat_duration",name="repeat duration",min=1,max=64,exp=false,div=0.125,default=1,formatter=function(param) return string.format("%d beats",param:get()) end,fn=duration_fn},
+    {id="vol_full",name="repeat vol ramp",min=0,max=2,exp=false,div=0.01,default=1.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="vol_each",name="repeat vol ramp each",min=0,max=2,exp=false,div=0.01,default=1.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="pitch_full",name="repeat pitch ramp",min=0,max=2,exp=false,div=0.01,default=1.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="pitch_each",name="repeat pitch ramp each",min=0,max=2,exp=false,div=0.01,default=1.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="sidechain_mult",name="sidechain amount",min=0,max=8,exp=false,div=0.1,default=2.0},
     {id="compress_thresh",name="sidechain threshold",min=0,max=1,exp=false,div=0.01,default=0.1},
     {id="compress_level",name="sidechain level",min=0,max=1,exp=false,div=0.01,default=0.1},

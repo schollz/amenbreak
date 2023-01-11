@@ -291,9 +291,11 @@ Engine_AmenBreak1 : CroneEngine {
         });
 
         this.addCommand("filter_set","ff", { arg msg;
+            var val=msg[1];
+            var slew=msg[2];
             if (syns.at("filter").isRunning,{
-                syns.at("filter).set(\val,msg[1],\slew,msg[2]);                
-            }
+                syns.at("filter").set(\val,val,\slew,slew);
+            });
         });
 
         this.addCommand("slice_on","ssffffffffffffffffffffffff",{ arg msg;
@@ -341,7 +343,7 @@ Engine_AmenBreak1 : CroneEngine {
                             syns.at("filter").set(\slew,0.1);
                             syns.at("filter").set(\val,200);
                             0.1.wait;
-                            syns.at("filter).set(\slew,duration_total,\val,lpf);                
+                            syns.at("filter").set(\slew,duration_total,\val,lpf);
                         }.play;
                     });
                 });

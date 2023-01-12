@@ -799,6 +799,7 @@ function params_audioout()
     {id="tape_start_stop",name="tape auto start/stop",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
     {id="tape_slow",name="tape slow",min=0,max=2,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="beat_repeat_on",name="repeat toggle",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
+    {id="beat_repeat_wet",name="repeat wet/dry",min=0,max=1,exp=false,div=0.01,default=1.0,formatter=function(param) return string.format("%2.0f%% wet",param:get()*100) end},
     {id="beat_repeat_num",name="repeat num",min=1,max=32,exp=false,div=1,default=4,formatter=function(param) return string.format("x%d",param:get()) end},
     {id="beat_repeat_offset",name="repeat offset",min=1,max=64,exp=false,div=0.125,default=1,formatter=function(param) return string.format("%2.3f beats",param:get()) end,fn=offset_fn},
     {id="beat_repeat_duration",name="repeat duration",min=1,max=64,exp=false,div=0.125,default=1,formatter=function(param) return string.format("%2.3f beats",param:get()) end,fn=duration_fn},

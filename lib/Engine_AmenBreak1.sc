@@ -142,7 +142,7 @@ Engine_AmenBreak1 : CroneEngine {
             compress_curve_wet=0,compress_curve_drive=1,bufCompress,
             expand_curve_wet=0,expand_curve_drive=1,bufExpand,
 			dist_wet=0.05,dist_on=0,drivegain=0.5,dist_bias=0,lowgain=0.1,highgain=0.1,
-            beat_repeat_offset=1,beat_repeat_duration=1,beat_repeat_num=4,beat_repeat_on=0,
+            beat_repeat_offset=1,beat_repeat_duration=1,beat_repeat_num=4,beat_repeat_on=0,beat_repeat_wet=1,
             vol_full=1,vol_each=1,pitch_full=1,pitch_each=1,
 			shelvingfreq=600,dist_oversample=2;
             var snd,sndSC,sndNSC,sndDelay,tapePosRec,tapePosStretch,local,tape_slow2,snd_db,snd_db_max;
@@ -210,7 +210,7 @@ Engine_AmenBreak1 : CroneEngine {
                 trigger: beat_repeat_envelope,
                 startPos: beat_repeat_start,
             )]) * beat_repeat_ramp_volume * beat_repeat_env_volume;
-            snd=SelectX.ar(Lag.kr(beat_repeat_on),[snd,beat_repeat_snd]);
+            snd=SelectX.ar(Lag.kr(beat_repeat_on*beat_repeat_wet),[snd,beat_repeat_snd]);
 
             // sinoid drive
             snd=SelectX.ar(Lag.kr(sine_drive),[snd,Shaper.ar(sine_buf,snd)]);

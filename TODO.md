@@ -1,3 +1,6 @@
+- test reese bass
+- test looping
+- does looping start over from the beginning when starting at the beginning?
 - change the kick frequency based on reese bass
 - evaluate option 1) reese bass should be compressed, output into its own channel? (no distortion)
 - evaluate option 2) reese bass should go to main channel

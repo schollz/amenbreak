@@ -114,6 +114,19 @@ Engine_AmenBreak1 : CroneEngine {
             Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);
         }).send(context.server);
 
+        (1..2).do({arg ch;
+        SynthDef("loop"++ch,{ 
+            arg buf,amp=1,startPos=0,gate=1;
+            var env = EnvGen.ar(Env.asr(0.5,1,0.5),gate,doneAction:2);
+            var snd = PlayBuf.ar(numChannels:ch, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos, loop: 1, doneAction: 0);
+            snd = snd * env * Lag.kr(amp);
+            Out.ar(\out.kr(0),\compressible.kr(0)*snd);
+            Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
+            Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);
+            Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);            
+        }).send(context.server);
+        });
+
         SynthDef("reese", { |note=32,amp=1.0,gate=1|
             var snd;
             var env = EnvGen.ar(Env.asr(0.1,1,3),gate:gate,doneAction:2);
@@ -456,6 +469,7 @@ Engine_AmenBreak1 : CroneEngine {
                 });
             });
         });
+
         this.addCommand("load_slow","s",{ arg msg;
             var id=msg[1];
             // ["loading"+id].postln;
@@ -524,6 +538,7 @@ Engine_AmenBreak1 : CroneEngine {
                     compressing: 0,
                     amp: amp,
                 ], syns.at("main"), \addBefore));
+                NodeWatcher.register(syns.at("reese"));
             });
         });
 
@@ -546,6 +561,45 @@ Engine_AmenBreak1 : CroneEngine {
             });
         });
 
+        this.addCommand("loop","sfff",{
+            var filename=msg[1];
+            var amp=msg[2].dbamp;
+            var startPos=msg[3];
+            if (syns.at(filename).notNil,{
+                if (syns.at(filename).isRunning,{
+                    syns.at(filename).set(\gate,0);
+                });
+            });
+            if (bufs.at(filename).notNil,{
+                syns.put(filename,Synth.new("loop"++bufs.at(filename).numChannels, [
+                    out: buses.at("busCompressible"),
+                    outsc: buses.at("busCompressing"),
+                    outnsc: buses.at("busNotCompressible"),
+                    compressible: 1,
+                    compressing: 0,
+                    amp: amp,
+                    startPos: startPos,
+                    buf: bufs.at(filename)
+                ], syns.at("main"), \addBefore));
+                NodeWatcher.register(syns.at(filename));
+            });
+        });
+
+        this.addCommand("loop_set","sf",{
+            if (syns.at(filename).notNil,{
+                if (syns.at(filename).isRunning,{
+                    syns.at(filename).set(msg[1],msg[2]);
+                });
+            });
+        });
+
+        this.addCommand("loop_stop","s",{
+            if (syns.at(filename).notNil,{
+                if (syns.at(filename).isRunning,{
+                    syns.at(filename).set(\gate,0);
+                });
+            });
+        });
 
     }
 

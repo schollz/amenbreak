@@ -128,9 +128,9 @@ function init()
     if not string.find(fname,"slow") then
       if util.file_exists(_path.audio.."amenbreak/"..fname..".json") then
         table.insert(amen_files,fname)
-        if #amen_files==10 then
-          break
-        end
+        -- if #amen_files==10 then
+        --   break
+        -- end
       end
     end
   end

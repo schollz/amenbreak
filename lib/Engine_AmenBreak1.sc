@@ -117,8 +117,14 @@ Engine_AmenBreak1 : CroneEngine {
         SynthDef("reese", { |note=32,amp=1.0,gate=1|
             var snd;
             var env = EnvGen.ar(Env.asr(0.1,1,3),gate:gate,doneAction:2);
-            snd = SinOsc.ar(note.midicps);
-            snd = snd * env * amp;
+        	var detune=VarLag.kr(LFNoise0.kr(1/2),2,warp:\sine).range(0,2);
+            var distLFO=VarLag.kr(LFNoise0.kr(1/2),2,warp:\sine).range(0.1,4);
+            snd = SinOsc.ar((note+12).midicps+detune);
+            snd = snd + SinOsc.ar((note+12).midicps-detune);	
+        	snd = Splay.ar(snd);
+	        snd = RHPF.ar(snd,(note+12).midicps,0.7);
+	        snd = snd + SinOsc.ar((note).midicps!2);
+	        snd = (snd*distLFO).softclip;
             Out.ar(\out.kr(0),\compressible.kr(0)*snd);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
             Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);

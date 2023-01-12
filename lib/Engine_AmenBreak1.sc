@@ -113,6 +113,16 @@ Engine_AmenBreak1 : CroneEngine {
             Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);
             Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);
         }).send(context.server);
+
+        SynthDef("reese", { |note=32,amp=1.0,gate=1|
+            var snd;
+            var env = EnvGen.ar(Env.asr(0.1,1,3),gate:gate,doneAction:2);
+            snd = SinOsc.ar(note.midicps);
+            snd = snd * env * amp;
+            Out.ar(\out.kr(0),\compressible.kr(0)*snd);
+            Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
+            Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);
+        }).send(context.server);
         
         SynthDef("lfos", {
             5.do({ arg i;
@@ -488,6 +498,36 @@ Engine_AmenBreak1 : CroneEngine {
             ],syns.at("main"),\addBefore).onFree({"freed!"});
         });
 
+        this.addCommand("reese_on","ff",{
+            var note=msg[1];
+            var amp=msg[2].dbamp;
+            var synExists=false;
+            if (syns.at("reese").notNil,{
+                if (syns.at("reese").isRunning,{
+                    synExists=true;
+                });
+            });
+            if (synExists,{
+                syns.at("reese").set(\note,note);
+            },{
+                syns.put("reese",Synth.new("reese", [
+                    out: buses.at("busCompressible"),
+                    outsc: buses.at("busCompressing"),
+                    outnsc: buses.at("busNotCompressible"),
+                    compressible: 1,
+                    compressing: 0,
+                    amp: amp,
+                ], syns.at("main"), \addBefore));
+            });
+        });
+
+        this.addCommand("reese_off","",{
+            if (syns.at("reese").notNil,{
+                if (syns.at("reese").isRunning,{
+                    syns.at("reese").set(\gate,0);
+                });
+            });
+        });
 
         this.addCommand("main_set","sf",{ arg msg;
             var k=msg[1];

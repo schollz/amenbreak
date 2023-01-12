@@ -118,7 +118,7 @@ Engine_AmenBreak1 : CroneEngine {
         SynthDef("loop"++ch,{ 
             arg buf,amp=1,startPos=0,gate=1;
             var env = EnvGen.ar(Env.asr(0.5,1,0.5),gate,doneAction:2);
-            var snd = PlayBuf.ar(numChannels:ch, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos, loop: 1, doneAction: 0);
+            var snd = PlayBuf.ar(numChannels:ch, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: 1, doneAction: 0);
             snd = snd * env * Lag.kr(amp);
             Out.ar(\out.kr(0),\compressible.kr(0)*snd);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);

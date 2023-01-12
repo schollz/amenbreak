@@ -31,6 +31,7 @@ include("lib/utils")
 musicutil=require("musicutil")
 sample_=include("lib/sample")
 ggrid_=include("lib/ggrid")
+loop_=include("lib/loop")
 
 pos_last=0
 param_switch=true
@@ -44,6 +45,7 @@ posit={
   inc={1},
 dur={1}}
 initital_monitor_level=0
+loops={}
 
 -- global constants (for grid)
 PTTRN_STEP=1
@@ -288,6 +290,21 @@ function init()
     end
   end
 
+  -- load audio file loops
+  loops = {}
+  for row=1,4 do 
+    loops[row]={}
+    local folder=_path.audio.."amenbreak/row"..row
+    os.execute("mkdir -p "..folder)
+    for col=1,8 do 
+      table.insert(loops[row],loop_:init())
+    end
+    for i,fname in ipairs(find_files(folder)) do 
+      if i<=8 then 
+        loops[row][i]:load_sample(fname)
+      end
+    end
+  end
 
 
   -- debug
@@ -407,6 +424,13 @@ function toggle_clock(on)
       clock.sync(1/2) -- needs to go first
       local track_beats=params:get(params:get("track").."beats")
       clock_beat=clock_beat+1
+
+      -- iterate the loops
+      for row=1,4 do 
+        for col=1,8 do 
+          loops[row][col]:emit(clock_beat)
+        end
+      end
       local first_beat=true
       if d.steps==0 then
 

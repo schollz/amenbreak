@@ -146,7 +146,7 @@ Engine_AmenBreak1 : CroneEngine {
             vol_full=1,vol_each=1,pitch_full=1,pitch_each=1,
 			shelvingfreq=600,dist_oversample=2;
             var snd,sndSC,sndNSC,sndDelay,tapePosRec,tapePosStretch,local,tape_slow2,snd_db,snd_db_max;
-            var beat_repeat_start,beat_repeat_total_time;
+            var beat_repeat_start,beat_repeat_total_time,beat_repeat_ramp_volume,beat_repeat_ramp_pitch,beat_repeat_env_volume,beat_repeat_env_pitch,beat_repeat_snd,beat_repeat_envelope;
             snd=In.ar(inBus,2);
             sndNSC=In.ar(inBusNSC,2);
             sndSC=In.ar(inSC,2);
@@ -198,7 +198,7 @@ Engine_AmenBreak1 : CroneEngine {
             beat_repeat_env_volume = EnvGen.kr(Env.new([1,vol_each],[beat_repeat_duration]),gate: Changed.kr(beat_repeat_envelope));
             beat_repeat_env_pitch = EnvGen.kr(Env.new([1,pitch_each],[beat_repeat_duration]),gate: Changed.kr(beat_repeat_envelope));
             // TODO: add beat_repeat envelope for volume/pitch?
-            beat_repeat_start = Latch.ar((tapePosRec-(beat_repeat_offset*48000)).mod(BufFrames.ir(tape_buf)),beat_repeat_on)
+            beat_repeat_start = Latch.ar((tapePosRec-(beat_repeat_offset*48000)).mod(BufFrames.ir(tape_buf)),beat_repeat_on);
             beat_repeat_snd = SelectX.ar(Lag.kr(beat_repeat_envelope,0.05),[
             PlayBuf.ar(2,tape_buf,loop:1,
                 rate:beat_repeat_ramp_pitch*beat_repeat_env_pitch,

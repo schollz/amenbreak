@@ -93,8 +93,8 @@ Engine_AmenBreak1 : CroneEngine {
         SynthDef("rise",{|out,duration=1,min=0.1,max=1|
             Out.kr(out,EnvGen.kr(Env.new([min,max],[duration],\exponential),doneAction:2));
         }).send(context.server);        
-        SynthDef("set",{|out,val,slew=0.5|
-            Out.kr(out,Lag.kr(val,slew));
+        SynthDef("set",{|out,val,slew=2|
+            Out.kr(out,VarLag.kr(val,slew,warp:\exponential));
         }).send(context.server);        
         SynthDef("tremolo",{|out,min=0.1,max=1,rate=0.5,duration=1|
             FreeSelf.kr(TDelay.kr(Impulse.kr(0), duration));
@@ -142,8 +142,11 @@ Engine_AmenBreak1 : CroneEngine {
             compress_curve_wet=0,compress_curve_drive=1,bufCompress,
             expand_curve_wet=0,expand_curve_drive=1,bufExpand,
 			dist_wet=0.05,dist_on=0,drivegain=0.5,dist_bias=0,lowgain=0.1,highgain=0.1,
+            beat_repeat_offset=1,beat_repeat_duration=1,beat_repeat_num=4,beat_repeat_on=0,beat_repeat_wet=1,
+            vol_full=1,vol_each=1,pitch_full=1,pitch_each=1,
 			shelvingfreq=600,dist_oversample=2;
             var snd,sndSC,sndNSC,sndDelay,tapePosRec,tapePosStretch,local,tape_slow2,snd_db,snd_db_max;
+            var beat_repeat_start,beat_repeat_total_time,beat_repeat_ramp_volume,beat_repeat_ramp_pitch,beat_repeat_env_volume,beat_repeat_env_pitch,beat_repeat_snd,beat_repeat_envelope;
             snd=In.ar(inBus,2);
             sndNSC=In.ar(inBusNSC,2);
             sndSC=In.ar(inSC,2);
@@ -180,6 +183,34 @@ Engine_AmenBreak1 : CroneEngine {
             tape_slow2=EnvGen.kr(Env.new([1,0.047,1],[LFNoise0.kr(1).range(0.75,1.5),LFNoise0.kr(1).range(0.25,0.75)],\exponential,releaseNode:1),tape_gate);
             snd = SelectX.ar(VarLag.kr((tape_slow>0)+(tape_slow2<1),0.05,warp:\sine),[snd,PlayBuf.ar(2,tape_buf,tape_slow2*Lag.kr(1/(tape_slow+1),1),startPos:tapePosRec-10,loop:1,trigger:Trig.kr((tape_slow+tape_gate)>0))]);
             snd = snd*Lag.kr(tape_slow2>0.04701);
+
+            // beat repeat
+            // offset = time ago to start the beat repeat
+            // duration = duration of a single repeat (cannot exceed offset)
+            // num = number of times to repeat
+            // vol_[full|each] = final setting of a volume ramp for the full beat repeat or each beat repeat
+            // pitch_[full|each] = final setting of a pitch ramp for the full beat repeat or each beat repeat
+            beat_repeat_total_time = beat_repeat_duration * beat_repeat_num;
+            beat_repeat_ramp_volume = EnvGen.kr(Env.new([1,vol_full],[beat_repeat_total_time]),gate: beat_repeat_on);
+            beat_repeat_ramp_pitch = EnvGen.kr(Env.new([1,pitch_full],[beat_repeat_total_time]),gate: beat_repeat_on);
+            beat_repeat_envelope = EnvGen.kr(Env.new([0,1,0,1],[beat_repeat_duration,beat_repeat_duration,beat_repeat_duration],
+                releaseNode:2, loopNode: 0),gate: beat_repeat_on);
+            beat_repeat_env_volume = EnvGen.kr(Env.new([1,vol_each],[beat_repeat_duration]),gate: Changed.kr(beat_repeat_envelope));
+            beat_repeat_env_pitch = EnvGen.kr(Env.new([1,pitch_each],[beat_repeat_duration]),gate: Changed.kr(beat_repeat_envelope));
+            // TODO: add beat_repeat envelope for volume/pitch?
+            beat_repeat_start = Latch.ar((tapePosRec-(beat_repeat_offset*48000)).mod(BufFrames.ir(tape_buf)),beat_repeat_on);
+            beat_repeat_snd = SelectX.ar(Lag.kr(beat_repeat_envelope,0.05),[
+            PlayBuf.ar(2,tape_buf,loop:1,
+                rate:beat_repeat_ramp_pitch*beat_repeat_env_pitch,
+                trigger: 1-beat_repeat_envelope,
+                startPos: beat_repeat_start,
+            ),
+            PlayBuf.ar(2,tape_buf,loop:1,
+                rate:beat_repeat_ramp_pitch,
+                trigger: beat_repeat_envelope,
+                startPos: beat_repeat_start,
+            )]) * beat_repeat_ramp_volume * beat_repeat_env_volume;
+            snd=SelectX.ar(Lag.kr(beat_repeat_on*beat_repeat_wet),[snd,beat_repeat_snd]);
 
             // sinoid drive
             snd=SelectX.ar(Lag.kr(sine_drive),[snd,Shaper.ar(sine_buf,snd)]);
@@ -290,14 +321,12 @@ Engine_AmenBreak1 : CroneEngine {
             this.synthChange(id,k,v);
         });
 
-        this.addCommand("tremolo","ffff",{ arg msg;
-            var min=msg[1];
-            var max=msg[2];
-            var duration=msg[3];
-            var rate=msg[4];
-            syns.at("filter").free;
-            syns.put("filter",Synth.new("tremolo",[\out,buses.at("filter"),\duration,duration,\min,min,\max,max,\rate,rate],s,\addToHead));
-            NodeWatcher.register(syns.at("filter"));
+        this.addCommand("filter_set","ff", { arg msg;
+            var val=msg[1];
+            var slew=msg[2];
+            if (syns.at("filter").isRunning,{
+                syns.at("filter").set(\val,val,\slew,slew);
+            });
         });
 
         this.addCommand("slice_on","ssffffffffffffffffffffffff",{ arg msg;
@@ -329,13 +358,6 @@ Engine_AmenBreak1 : CroneEngine {
             var res=msg[26];
             var db_first=db+db_add;
             var db_orig=db_first;
-            // TODO: set filter bus
-            if (syns.at("filter").isRunning,{
-                syns.at("filter").set(\val,lpf);
-            },{
-                syns.put("filter",Synth.new("set",[\out,buses.at("filter"),\val,18000],s,\addToHead));
-                NodeWatcher.register(syns.at("filter"));                
-            });
             if (retrig>0,{
                 db_first=db;
                 if (db_add>0,{
@@ -348,9 +370,12 @@ Engine_AmenBreak1 : CroneEngine {
                 if (retrig>3,{
                     if (100.rand<25,{
                         // create filter sweep
-                        syns.at("filter").free;
-                        syns.put("filter",Synth.new("rise",[\out,buses.at("filter"),\duration,duration_total,\min,200,\max,lpf],s,\addToHead));
-                        NodeWatcher.register(syns.at("filter"));
+                        Routine {
+                            syns.at("filter").set(\slew,0.1);
+                            syns.at("filter").set(\val,200);
+                            0.1.wait;
+                            syns.at("filter").set(\slew,duration_total,\val,lpf);
+                        }.play;
                     });
                 });
             });

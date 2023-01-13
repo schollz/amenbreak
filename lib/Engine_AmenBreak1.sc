@@ -136,7 +136,7 @@ Engine_AmenBreak1 : CroneEngine {
             snd = snd + SinOsc.ar((note+12).midicps-detune);	
         	snd = Splay.ar(snd);
 	        snd = RHPF.ar(snd,(note+12).midicps,0.7)*0.25;
-	        snd = snd + SinOsc.ar((note).midicps!2);
+	        snd = snd + SinOsc.ar((note-12).midicps!2);
 	        snd = (snd*distLFO).softclip*amp*env;
             Out.ar(\out.kr(0),\compressible.kr(0)*snd);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);

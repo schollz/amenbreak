@@ -1,7 +1,6 @@
-- test reese bass
-- test looping
-- does looping start over from the beginning when starting at the beginning?
 - change the kick frequency based on reese bass
-- evaluate option 1) reese bass should be compressed, output into its own channel? (no distortion)
-- evaluate option 2) reese bass should go to main channel
-- allow programmed release for samples
+- allow programmed release for samples (slow for start/stop, fast for switching positions)
+- reese bass needs current tempo as argument
+- move the retrig to correct position
+- make the musical grid keyboard lightup
+- make the root note of the musical grid keyboard a parameter

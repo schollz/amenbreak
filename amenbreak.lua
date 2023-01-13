@@ -74,7 +74,7 @@ engine.name=Engine_Exists and 'AmenBreak1' or nil
 
 -- other stuff
 function init()
-        os.execute("mkdir -p ".._path.data.."amenbreak/resampled/")
+  os.execute("mkdir -p ".._path.data.."amenbreak/resampled/")
   Needs_Restart=false
   Data_Exists=util.file_exists(_path.data.."amenbreak/dats/")
   if (not Data_Exists) or (not Engine_Exists) then

@@ -45,7 +45,7 @@ function GGrid:new(args)
   m.octave=0
   m.reese_keys_on=0
   m.keyboard={}
-  m.reese_amp=0.5
+  m.reese_amp=-6
   m.reese_off=function()
 	  m.reese_keys_on=m.reese_keys_on-1
     print(m.reese_keys_on)
@@ -54,14 +54,14 @@ function GGrid:new(args)
     end
   end
   m.keyboard[1]={
-	{on=function() m.octave=m.octave+1 end},
+	{on=function() m.octave=m.octave-1 end},
 	{on=function() engine.reese_on(37+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
 	{on=function() engine.reese_on(39+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
 	{},
 	{on=function() engine.reese_on(42+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
 	{on=function() engine.reese_on(44+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
 	{on=function() engine.reese_on(46+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
-	{on=function() m.octave=m.octave-1 end},
+	{on=function() m.octave=m.octave+1 end},
   }
   m.keyboard[2]={
 	{on=function() engine.reese_on(36+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
@@ -122,7 +122,9 @@ function GGrid:key_press(row,col,on)
   if on and row==8 and col==1 then 
     toggle_clock()
    elseif row>=1 and row<=4 and col>=9 then 
+    if on then
 	   loops[row][col-8]:toggle()
+    end
    elseif row>=7 and col>=9 then 
     local fn = self.keyboard[row-6][col-8]
     if on and fn.on then 

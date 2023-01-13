@@ -4,3 +4,4 @@
 - change the kick frequency based on reese bass
 - evaluate option 1) reese bass should be compressed, output into its own channel? (no distortion)
 - evaluate option 2) reese bass should go to main channel
+- allow programmed release for samples

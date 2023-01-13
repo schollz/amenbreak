@@ -10,7 +10,7 @@ end
 
 function Loop:init()
     self.oneshot=self.oneshot or false
-    self.db=0
+    self.db=self.db or 0
     self.tick=0
     self.loaded=false
     self.playing=false
@@ -64,26 +64,35 @@ function Loop:emit(beat)
     if not self.loaded then 
         do return end 
     end
-    if not self.playing then 
+    if (not self.playing) and (not self.primed) then 
         do return end 
     end
     if self.primed then 
         self.playing=true 
         self.primed = false 
+        engine.loop_stop(self.path)
         engine.loop(self.path,self.db,(beat%self.ticks)/self.ticks,self.oneshot and 0 or 1)
         do return end 
     elseif beat%self.ticks==0 then 
+        print("reset loop")
         engine.loop_stop(self.path)
         engine.loop(self.path,self.db,0,self.oneshot and 0 or 1)
     end
 end
 
 function Loop:play()
-    self.primed=true
+	if not self.oneshot then 
+        self.playing=true
+        engine.loop(self.path,self.db,0,1)
+        self.primed=true
+    else
+        engine.loop(self.path,self.db,0,0)
+    end
 end
 
 function Loop:stop()
     self.playing=false
+    self.primed=false
     engine.loop_stop(self.path)
 end
 

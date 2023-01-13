@@ -243,6 +243,7 @@ function Sample:play(d)
     d.ci=(d.ci-1+params:get("rotate"))%(#self.cursors)+1
   end
   self.last_ci=d.ci
+  pos_last=d.ci
   d.retrig=d.retrig or 0
   d.gate=d.gate or params:get("gate")
   d.hold=d.hold or params:get("hold")

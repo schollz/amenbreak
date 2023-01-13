@@ -534,6 +534,7 @@ Engine_AmenBreak1 : CroneEngine {
                     out: buses.at("busCompressible"),
                     outsc: buses.at("busCompressing"),
                     outnsc: buses.at("busNotCompressible"),
+                    note: note,
                     compressible: 1,
                     compressing: 0,
                     amp: amp,

@@ -116,9 +116,9 @@ Engine_AmenBreak1 : CroneEngine {
 
         (1..2).do({arg ch;
         SynthDef("loop"++ch,{ 
-            arg buf,amp=1,startPos=0,gate=1;
+            arg buf,amp=1,startPos=0,gate=1,loop:1;
             var env = EnvGen.ar(Env.asr(0.5,1,0.5),gate,doneAction:2);
-            var snd = PlayBuf.ar(numChannels:ch, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: 1, doneAction: 0);
+            var snd = PlayBuf.ar(numChannels:ch, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop, doneAction: 0);
             snd = snd * env * Lag.kr(amp);
             Out.ar(\out.kr(0),\compressible.kr(0)*snd);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
@@ -561,10 +561,11 @@ Engine_AmenBreak1 : CroneEngine {
             });
         });
 
-        this.addCommand("loop","sfff",{ arg msg;
+        this.addCommand("loop","sffd",{ arg msg;
             var filename=msg[1];
             var amp=msg[2].dbamp;
             var startPos=msg[3];
+	    var loop=msg[4];
             if (syns.at(filename).notNil,{
                 if (syns.at(filename).isRunning,{
                     syns.at(filename).set(\gate,0);
@@ -578,6 +579,7 @@ Engine_AmenBreak1 : CroneEngine {
                     compressible: 1,
                     compressing: 0,
                     amp: amp,
+		    loop: loop,
                     startPos: startPos,
                     buf: bufs.at(filename)
                 ], syns.at("main"), \addBefore));

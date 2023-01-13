@@ -89,6 +89,8 @@ function GGrid:key_press(row,col,on)
 
   if on and row==8 and col==1 then 
     toggle_clock()
+   elseif row>=1 and row<=4 and col>=9 then 
+	   loops[row][col-8]:toggle()
   elseif on and row==6 and col>=11 then 
     local x=(col-11)/5
     params:set_raw("db",x)
@@ -218,6 +220,16 @@ function GGrid:get_visual()
         end
       end
     end
+  end
+
+  -- illuminate loops
+  for row=1,4 do 
+	  for col=1,8 do 
+		  if loops[row][col].playing then 
+		  self.visual[row][col+8]=14
+	  elseif loosp[row][col].loaded then 
+		  self.visual[row][col+8]=4
+	  end
   end
 
   -- illuminate playing screen

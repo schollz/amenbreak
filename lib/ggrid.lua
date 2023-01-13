@@ -56,7 +56,18 @@ function GGrid:new(args)
   m.root_note=36
   m.note_on=function(x)
     local note=x+m.root_note+m.octave*12
-    engine.reese_on(note,m.reese_amp)
+    engine.reese_on(note,util.dbamp(params:get("bass_db")),
+      params:get("bass_mod1"),
+      params:get("bass_mod2"),
+      params:get("bass_mod3"),
+      params:get("bass_mod4"),
+      params:get("bass_attack"),
+      params:get("bass_decay"),
+      params:get("bass_sustain"),
+      params:get("bass_release"),
+      params:get("bass_pan"),
+      params:get("bass_portamento")
+    )
     m.reese_keys_on=m.reese_keys_on+1
     while note>36 do 
       note = note - 12

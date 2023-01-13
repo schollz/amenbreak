@@ -114,28 +114,38 @@ Engine_AmenBreak1 : CroneEngine {
             Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);
         }).send(context.server);
 
-        (1..2).do({arg ch;
-        SynthDef("loop"++ch,{ 
+        SynthDef("loop1",{ 
             arg buf,amp=1,startPos=0,gate=1,loop=1,slew=1;
             var env = EnvGen.ar(Env.asr(slew,1,slew),gate,doneAction:2);
             var snd = PlayBuf.ar(numChannels:ch, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop, doneAction: 0);
             snd = snd * env * Lag.kr(amp);
+            snd = Pan2.ar(snd,\pan.kr(0));
             Out.ar(\out.kr(0),\compressible.kr(0)*snd);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
             Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);
             Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);            
         }).send(context.server);
-        });
+
+        SynthDef("loop2",{ 
+            arg buf,amp=1,startPos=0,gate=1,loop=1,slew=1;
+            var env = EnvGen.ar(Env.asr(slew,1,slew),gate,doneAction:2);
+            var snd = PlayBuf.ar(numChannels:ch, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop, doneAction: 0);
+            snd = snd * env * Lag.kr(amp);
+            snd = Balance2.ar(snd[0],snd[1],\pan.kr(0));
+            Out.ar(\out.kr(0),\compressible.kr(0)*snd);
+            Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
+            Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);
+            Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);            
+        }).send(context.server);
 
         SynthDef("reese", { |note=32,amp=1.0,gate=1|
             var sub=0,portamento=1,bend=0,
             attack=0.01,decay=0.2,sustain=0.9,release=5,
-            mod1=0,mod2=0,mod3=0,mod4=0,lpf=18000,pan=0,duration=600;
+            mod1=0,mod2=0,mod3=0,mod4=0,pan=0,duration=600;
             var snd,freq,oscfreq,env,envFilter,detune,distortion,lowcut,chorus,res;
             mod1=Lag.kr(mod1);mod2=Lag.kr(mod2);mod3=Lag.kr(mod3);mod4=Lag.kr(mod4);
-            //note=Lag.kr(hz,portamento).cpsmidi+bend;
+            note=Lag.kr(note,portamento);
             env=EnvGen.ar(Env.adsr(attack,decay,sustain,release),(gate-EnvGen.kr(Env.new([0,0,1],[duration,0]))),doneAction:2);
-            sub=Lag.kr(sub,1);
             distortion=LinLin.kr(mod1,-1,1,1,20);
             lowcut=LinLin.kr(mod2,-1,1,1,16);
             res=LinLin.kr(mod3,-1,1,-4,8);
@@ -150,7 +160,7 @@ Engine_AmenBreak1 : CroneEngine {
             snd = (snd*1).tanh;
 
             snd = Balance2.ar(snd[0],snd[1],Lag.kr(pan,0.1));
-            snd = LPF.ar(snd,Lag.kr(lpf)) * env * amp / 2;
+            snd = snd * env * amp / 2;
             snd = snd * LinLin.kr(note,20,120,6,12.neg).dbamp;
 
             // var snd;
@@ -543,9 +553,27 @@ Engine_AmenBreak1 : CroneEngine {
             ],syns.at("main"),\addBefore).onFree({"freed!"});
         });
 
-        this.addCommand("reese_on","ff",{ arg msg;
+        this.addCommand("reese_set","sf",{ arg msg;
+            if (syns.at("reese").notNil,{
+                if (syns.at("reese").isRunning,{
+                    syns.at("reese").set(msg[1],msg[2]);
+                });
+            });
+        });
+
+        this.addCommand("reese_on","ffffffffffff",{ arg msg;
             var note=msg[1];
             var amp=msg[2].dbamp;
+            var mod1=msg[3];
+            var mod2=msg[4];
+            var mod3=msg[5];
+            var mod4=msg[6];
+            var attack=msg[7];
+            var decay=msg[8];
+            var sustain=msg[9];
+            var release=msg[10];
+            var pan=msg[11];
+            var portamento=msg[12];
             var synExists=false;
             if (syns.at("reese").notNil,{
                 if (syns.at("reese").isRunning,{
@@ -563,6 +591,16 @@ Engine_AmenBreak1 : CroneEngine {
                     compressible: 1,
                     compressing: 0,
                     amp: amp,
+                    mod1: mod1,
+                    mod2: mod2,
+                    mod3: mod3,
+                    mod4: mod4,
+                    attack: attack,
+                    decay: decay,
+                    sustain: sutain,
+                    release: release,
+                    pan: pan,
+                    portamento: portamento
                 ], syns.at("main"), \addBefore));
                 NodeWatcher.register(syns.at("reese"));
             });

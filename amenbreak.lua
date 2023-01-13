@@ -766,19 +766,64 @@ end
 function params_grid()
  local params_menu={}
  for row=1,4 do 
-  -- add filename
   local ps={
-    {id="db",name="volume",min=-48,max=16,div=0.5,default=-12,unit="dB",action=function(x) -- add filename and change 
-    end}
+    {id="db",name="volume",min=-48,max=16,div=0.5,default=-12,unit="dB",kind="loop",row=row,fn=function(x) util.dbamp(x) end},
+    {id="pan",name="pan",min=-1,max=1,div=0.05,default=0,kind="loop",row=row},
+    {id="slew",name="fade time",min=0.1,max=20,div=0.1,default=4,unit="sec",kind="loop",row=row},
+    {id="oneshot",name="oneshot",min=0,max=1,div=1,default=0,formatter=function(param) return param:get()==1 and "yes" or "no" end},
   }
   for _, p in ipairs(ps) do 
     p.id=p.id..row
     table.insert(params_menu,v)
   end
  end
- -- bass parameters
- -- row parameters (volume in db, pan, slew, one shot)
+ local params_menu2={
+    {id="db",name="volume",min=-48,max=16,div=0.5,default=-12,unit="dB",fn=function(x) util.dbamp(x) end},
+    {id="mod1",name="mod1",min=-1,max=1,exp=false,div=0.1,default=0.0},
+    {id="mod2",name="mod2",min=-1,max=1,exp=false,div=0.1,default=0.0},
+    {id="mod3",name="mod3",min=-1,max=1,exp=false,div=0.1,default=0.0},
+    {id="mod4",name="mod4",min=-1,max=1,exp=false,div=0.1,default=0.0},
+    {id="attack",name="attack",min=0.01,max=20,exp=false,div=0.1,default=0.1,unit="sec"},
+    {id="decay",name="decay",min=0.01,max=20,exp=false,div=0.1,default=0.2,unit="sec"},
+    {id="sustain",name="sustain",min=0.0,max=1,exp=false,div=0.1,default=0.9,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="release",name="release",min=0.01,max=20,exp=false,div=0.1,default=2,unit="sec"},
+    {id="pan",name="pan",min=-1,max=1,div=0.05,default=0,kind="loop",row=row},
+    {id="portamento",name="portamento",min=0.0,max=20,exp=false,div=0.1,default=0.1,unit="sec"},
+  }
 
+ params:add_group("GRID",#params_menu+#params_menu2+1)
+ for _,pram in ipairs(params_menu) do
+    params:add{
+      type="control",
+      id=pram.kind.."_"..pram.id,
+      name=pram.name,
+      controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
+      formatter=pram.formatter,
+    }
+    params:set_action(pram.kind.."_"..pram.id,function(v)
+      if pram.kind=="loop" then 
+        -- set all loops simultaneously
+        for col=1,8 do 
+          if loops[pram.row][col].playing then 
+            engine.loop_set(loops[pram.row][col].path,pram.id,pram.fn and pram.fn(v) or v)
+          end
+        end
+      end
+    end)
+  end
+  param:add_separator("BASS")
+  for _,pram in ipairs(params_menu2) do
+     params:add{
+       type="control",
+       id="bass_"..pram.id,
+       name=pram.name,
+       controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
+       formatter=pram.formatter,
+     }
+     params:set_action("bass_"..pram.id,function(v)
+      engine.reese_set(pram.id,pram.fn and pram.fn(v) or v)
+     end)
+   end
 end
 
 function params_audioin()

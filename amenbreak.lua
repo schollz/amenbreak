@@ -74,6 +74,7 @@ engine.name=Engine_Exists and 'AmenBreak1' or nil
 
 -- other stuff
 function init()
+        os.execute("mkdir -p ".._path.data.."amenbreak/resampled/")
   Needs_Restart=false
   Data_Exists=util.file_exists(_path.data.."amenbreak/dats/")
   if (not Data_Exists) or (not Engine_Exists) then
@@ -297,7 +298,7 @@ function init()
     local folder=_path.audio.."amenbreak/row"..row
     os.execute("mkdir -p "..folder)
     for col=1,8 do 
-      table.insert(loops[row],loop_:init())
+      table.insert(loops[row],loop_:new())
     end
     for i,fname in ipairs(find_files(folder)) do 
       if i<=8 then 
@@ -324,6 +325,7 @@ function init()
       g_=ggrid_:new()
       clock.sleep(1)
     params:set("punch",0.3)
+    tab.print(loops[1][1])
     -- toggle_clock(true)
   end)
 end

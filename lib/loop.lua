@@ -35,7 +35,7 @@ function Loop:load_sample(path)
                 self.scale_ratio=scale_ratio
             end
         end
-        local path_new=_path.data.."amenbreak/resampled/"..string.format("%s_scale%2.6f.flac",self.filename)
+        local path_new=_path.data.."amenbreak/resampled/"..string.format("%s_scale%2.6f.flac",self.filename,self.scale_ratio)
         if not util.file_exists(path_new) then 
             local cmd=string.format("sox %s %s tempo -m %2.6f",self.path,path_new,self.scale_ratio)
             print(cmd)
@@ -53,7 +53,7 @@ function Loop:load_sample(path)
     do return end
   end
   self.duration=self.samples/self.sample_rate
-  self.ticks=self.duration/(clock.get_beat_sec()/2)
+  self.ticks=math.floor(util.round(self.duration/(clock.get_beat_sec()/2)))
   print(string.format("[loop] loaded %s with %d ticks",self.filename,self.ticks))
 
   self.loaded=true

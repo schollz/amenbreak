@@ -518,7 +518,7 @@ Engine_AmenBreak1 : CroneEngine {
             ],syns.at("main"),\addBefore).onFree({"freed!"});
         });
 
-        this.addCommand("reese_on","ff",{
+        this.addCommand("reese_on","ff",{ arg msg;
             var note=msg[1];
             var amp=msg[2].dbamp;
             var synExists=false;
@@ -542,7 +542,7 @@ Engine_AmenBreak1 : CroneEngine {
             });
         });
 
-        this.addCommand("reese_off","",{
+        this.addCommand("reese_off","",{ arg msg;
             if (syns.at("reese").notNil,{
                 if (syns.at("reese").isRunning,{
                     syns.at("reese").set(\gate,0);
@@ -561,7 +561,7 @@ Engine_AmenBreak1 : CroneEngine {
             });
         });
 
-        this.addCommand("loop","sfff",{
+        this.addCommand("loop","sfff",{ arg msg;
             var filename=msg[1];
             var amp=msg[2].dbamp;
             var startPos=msg[3];
@@ -585,15 +585,17 @@ Engine_AmenBreak1 : CroneEngine {
             });
         });
 
-        this.addCommand("loop_set","sf",{
+        this.addCommand("loop_set","ssf",{ arg msg;
+	    var filename=msg[1];
             if (syns.at(filename).notNil,{
                 if (syns.at(filename).isRunning,{
-                    syns.at(filename).set(msg[1],msg[2]);
+                    syns.at(filename).set(msg[2],msg[3]);
                 });
             });
         });
 
-        this.addCommand("loop_stop","s",{
+        this.addCommand("loop_stop","s",{ arg msg;
+	    var filename=msg[1];
             if (syns.at(filename).notNil,{
                 if (syns.at(filename).isRunning,{
                     syns.at(filename).set(\gate,0);

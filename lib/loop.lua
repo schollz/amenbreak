@@ -9,13 +9,17 @@ function Loop:new(o)
 end
 
 function Loop:init()
-    self.slew=self.slew or 1
-    self.oneshot=self.oneshot or false
-    self.db=self.db or 0
     self.tick=0
     self.loaded=false
     self.playing=false
     self.primed=false
+end
+
+function Loop:loop_start(pos,slew)
+    pos=pos or 0
+    slew=slew or params:get("loop"..row.."_slew")
+    local do_loop=1-params:get("loop"..row.."_oneshot")
+    engine.loop(self.path,params:get("loop"..row.."_db"),pos,do_loop,slew,params:get("loop"..row.."_pan"))
 end
 
 function Loop:load_sample(path)
@@ -72,12 +76,12 @@ function Loop:emit(beat)
         self.playing=true 
         self.primed = false 
         engine.loop_stop(self.path,self.slew)
-        engine.loop(self.path,self.db,(beat%self.ticks)/self.ticks,self.oneshot and 0 or 1,self.slew)
+        self:play((beat%self.ticks)/self.ticks)
         do return end 
     elseif beat%self.ticks==0 then 
         print("reset loop")
         engine.loop_stop(self.path,0.2)
-        engine.loop(self.path,self.db,0,self.oneshot and 0 or 1,0.2)
+        self:play(0,0.2)
     end
 end
 
@@ -85,11 +89,8 @@ function Loop:play()
 	if not self.oneshot then 
         self.playing=true
         self.primed=true
-        engine.loop(self.path,self.db,0,1,self.slew)
-        print("looping")
-    else
-        engine.loop(self.path,self.db,0,0,self.slew)
     end
+    self:loop_start()
 end
 
 function Loop:stop()
@@ -99,11 +100,11 @@ function Loop:stop()
 end
 
 function Loop:toggle()
-if self.playing then 
-	self:stop()
-elseif not self.primed then 
-	self:play()
-end
+    if self.playing then 
+        self:stop()
+    elseif not self.primed then 
+        self:play()
+    end
 end
 
 return Loop

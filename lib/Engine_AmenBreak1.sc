@@ -625,12 +625,13 @@ Engine_AmenBreak1 : CroneEngine {
             });
         });
 
-        this.addCommand("loop","sffff",{ arg msg;
+        this.addCommand("loop","sfffff",{ arg msg;
             var filename=msg[1];
             var amp=msg[2].dbamp;
             var startPos=msg[3];
 	        var loop=msg[4];
             var slew=msg[5];
+            var pan=msg[6];
             ["loop",loop].postln;
             if (syns.at(filename).notNil,{
                 if (syns.at(filename).isRunning,{
@@ -647,6 +648,7 @@ Engine_AmenBreak1 : CroneEngine {
                     amp: amp,
                     slew: slew,
                     loop: loop,
+                    pan: pan,
                     startPos: startPos,
                     buf: bufs.at(filename)
                 ], syns.at("main"), \addBefore));

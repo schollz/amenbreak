@@ -298,11 +298,7 @@ function init()
     local folder=_path.audio.."amenbreak/row"..row
     os.execute("mkdir -p "..folder)
     for col=1,8 do 
-      table.insert(loops[row],loop_:new{
-        oneshot=row==1 and true or false,
-        db=row==1 and 0 or -12,
-        slew=row==1 and 0.05 or 6,
-      })
+      table.insert(loops[row],loop_:new{row=row})
     end
     for i,fname in ipairs(find_files(folder)) do 
       if i<=8 then 
@@ -773,7 +769,6 @@ function params_grid()
     {id="oneshot",name="oneshot",min=0,max=1,div=1,default=0,formatter=function(param) return param:get()==1 and "yes" or "no" end},
   }
   for _, p in ipairs(ps) do 
-    p.id=p.id..row
     table.insert(params_menu,v)
   end
  end
@@ -795,7 +790,7 @@ function params_grid()
  for _,pram in ipairs(params_menu) do
     params:add{
       type="control",
-      id=pram.kind.."_"..pram.id,
+      id="loop"..pram.row.."_"..pram.id,
       name=pram.name,
       controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
       formatter=pram.formatter,
@@ -805,7 +800,7 @@ function params_grid()
         -- set all loops simultaneously
         for col=1,8 do 
           if loops[pram.row][col].playing then 
-            engine.loop_set(loops[pram.row][col].path,pram.id,pram.fn and pram.fn(v) or v)
+            engine.loop_set(loops[pram.row][col].path,pram.id=="db" and "amp" or pram.id,pram.fn and pram.fn(v) or v)
           end
         end
       end
@@ -821,7 +816,7 @@ function params_grid()
        formatter=pram.formatter,
      }
      params:set_action("bass_"..pram.id,function(v)
-      engine.reese_set(pram.id,pram.fn and pram.fn(v) or v)
+      engine.reese_set(pram.id=="db" and "amp" or pram.id,pram.fn and pram.fn(v) or v)
      end)
    end
 end

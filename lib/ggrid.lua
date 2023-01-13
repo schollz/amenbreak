@@ -41,6 +41,37 @@ function GGrid:new(args)
   end
   m.grid_refresh:start()
 
+  -- musical keyboard
+  m.octave=0
+  m.reese_keys_on=0
+  m.keyboard={}
+  m.reese_amp=1
+  m.reese_off=function()
+	  m.reese_keys_on=m.reese_keys_on-1
+	if m.reese_keys_on==0 then 
+		engine.reese_off()
+	end
+  end
+  m.keyboard[1]={
+	{on=function() m.octave=m.octave+1 end},
+	{on=function() engine.reese_on(37+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
+	{on=function() engine.reese_on(39+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
+	{},
+	{on=function() engine.reese_on(42+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
+	{on=function() engine.reese_on(44+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
+	{on=function() engine.reese_on(46+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
+	{on=function() m.octave=m.octave-1 end},
+  }
+  m.keyboard[2]={
+	{on=function() engine.reese_on(36+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
+	{on=function() engine.reese_on(38+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
+	{on=function() engine.reese_on(40+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
+	{on=function() engine.reese_on(41+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
+	{on=function() engine.reese_on(43+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
+	{on=function() engine.reese_on(45+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
+	{on=function() engine.reese_on(47+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
+	{on=function() engine.reese_on(48+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
+  }
 
   -- in the grid loop, set the button fns
   m.button_fns={}
@@ -91,6 +122,13 @@ function GGrid:key_press(row,col,on)
     toggle_clock()
    elseif row>=1 and row<=4 and col>=9 then 
 	   loops[row][col-8]:toggle()
+   elseif row>=7 and col>=9 then 
+	   local fn = self.keyboard[row-6][col-8]
+	   if on and fn.on then 
+		   fn.on()
+	   elseif (not on) and fn.off then 
+		   fn.off()
+	   end
   elseif on and row==6 and col>=11 then 
     local x=(col-11)/5
     params:set_raw("db",x)

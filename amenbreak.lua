@@ -763,6 +763,24 @@ function redraw()
   screen.update()
 end
 
+function params_grid()
+ local params_menu={}
+ for row=1,4 do 
+  -- add filename
+  local ps={
+    {id="db",name="volume",min=-48,max=16,div=0.5,default=-12,unit="dB",action=function(x) -- add filename and change 
+    end}
+  }
+  for _, p in ipairs(ps) do 
+    p.id=p.id..row
+    table.insert(params_menu,v)
+  end
+ end
+ -- bass parameters
+ -- row parameters (volume in db, pan, slew, one shot)
+
+end
+
 function params_audioin()
   local params_menu={
     {id="amp",name="amp",min=0,max=4,exp=false,div=0.01,default=1.0},

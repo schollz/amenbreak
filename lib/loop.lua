@@ -9,6 +9,7 @@ function Loop:new(o)
 end
 
 function Loop:init()
+    self.slew=self.slew or 1
     self.oneshot=self.oneshot or false
     self.db=self.db or 0
     self.tick=0
@@ -70,30 +71,31 @@ function Loop:emit(beat)
     if self.primed then 
         self.playing=true 
         self.primed = false 
-        engine.loop_stop(self.path)
-        engine.loop(self.path,self.db,(beat%self.ticks)/self.ticks,self.oneshot and 0 or 1)
+        engine.loop_stop(self.path,self.slew)
+        engine.loop(self.path,self.db,(beat%self.ticks)/self.ticks,self.oneshot and 0 or 1,self.slew)
         do return end 
     elseif beat%self.ticks==0 then 
         print("reset loop")
-        engine.loop_stop(self.path)
-        engine.loop(self.path,self.db,0,self.oneshot and 0 or 1)
+        engine.loop_stop(self.path,0.2)
+        engine.loop(self.path,self.db,0,self.oneshot and 0 or 1,0.2)
     end
 end
 
 function Loop:play()
 	if not self.oneshot then 
         self.playing=true
-        engine.loop(self.path,self.db,0,1)
         self.primed=true
+        engine.loop(self.path,self.db,0,1,self.slew)
+        print("looping")
     else
-        engine.loop(self.path,self.db,0,0)
+        engine.loop(self.path,self.db,0,0,self.slew)
     end
 end
 
 function Loop:stop()
     self.playing=false
     self.primed=false
-    engine.loop_stop(self.path)
+    engine.loop_stop(self.path,self.slew)
 end
 
 function Loop:toggle()

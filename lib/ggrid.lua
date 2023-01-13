@@ -45,7 +45,7 @@ function GGrid:new(args)
   m.octave=0
   m.reese_keys_on=0
   m.keyboard={}
-  m.reese_amp=-6
+  m.reese_amp=0
   m.reese_off=function()
 	  m.reese_keys_on=m.reese_keys_on-1
     print(m.reese_keys_on)
@@ -53,25 +53,38 @@ function GGrid:new(args)
       engine.reese_off()
     end
   end
+  m.root_note=36
+  m.note_on=function(x)
+    local note=x+m.root_note+m.octave*12
+    engine.reese_on(note,m.reese_amp)
+    m.reese_keys_on=m.reese_keys_on+1
+    while note>36 do 
+      note = note - 12
+    end
+    while note<24 do 
+      note = note + 12
+    end
+    params:set("kick_basenote",note)
+  end
   m.keyboard[1]={
-	{on=function() m.octave=m.octave-1 end},
-	{on=function() engine.reese_on(37+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
-	{on=function() engine.reese_on(39+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
-	{},
-	{on=function() engine.reese_on(42+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
-	{on=function() engine.reese_on(44+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
-	{on=function() engine.reese_on(46+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
-	{on=function() m.octave=m.octave+1 end},
+    {on=function() m.octave=m.octave-1 end},
+    {on=function() m.note_on(1) end,off=m.reese_off},
+    {on=function() m.note_on(3) end,off=m.reese_off},
+    {},
+    {on=function() m.note_on(6) end,off=m.reese_off},
+    {on=function() m.note_on(8) end,off=m.reese_off},
+    {on=function() m.note_on(10) end,off=m.reese_off},
+    {on=function() m.octave=m.octave+1 end},
   }
   m.keyboard[2]={
-	{on=function() engine.reese_on(36+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
-	{on=function() engine.reese_on(38+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
-	{on=function() engine.reese_on(40+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
-	{on=function() engine.reese_on(41+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
-	{on=function() engine.reese_on(43+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
-	{on=function() engine.reese_on(45+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
-	{on=function() engine.reese_on(47+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
-	{on=function() engine.reese_on(48+m.octave*12,m.reese_amp); m.reese_keys_on=m.reese_keys_on+1 end,off=m.reese_off},
+    {on=function() m.note_on(0) end,off=m.reese_off},
+    {on=function() m.note_on(2) end,off=m.reese_off},
+    {on=function() m.note_on(4) end,off=m.reese_off},
+    {on=function() m.note_on(5) end,off=m.reese_off},
+    {on=function() m.note_on(7) end,off=m.reese_off},
+    {on=function() m.note_on(9) end,off=m.reese_off},
+    {on=function() m.note_on(11) end,off=m.reese_off},
+    {on=function() m.note_on(12) end,off=m.reese_off},
   }
 
   -- in the grid loop, set the button fns

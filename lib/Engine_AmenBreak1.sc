@@ -116,9 +116,9 @@ Engine_AmenBreak1 : CroneEngine {
 
         (1..2).do({arg ch;
         SynthDef("loop"++ch,{ 
-            arg buf,amp=1,startPos=0,gate=1,loop=1;
-            var env = EnvGen.ar(Env.asr(0.5,1,0.5),gate,doneAction:2);
-            var snd = PlayBuf.ar(numChannels:ch, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop, doneAction: 0);
+            arg buf,amp=1,startPos=0,gate=1,loop=1,slew=1;
+            var env = EnvGen.ar(Env.asr(slew,1,slew),gate.poll,doneAction:2);
+            var snd = PlayBuf.ar(numChannels:ch, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop.poll, doneAction: 0);
             snd = snd * env * Lag.kr(amp);
             Out.ar(\out.kr(0),\compressible.kr(0)*snd);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
@@ -128,16 +128,41 @@ Engine_AmenBreak1 : CroneEngine {
         });
 
         SynthDef("reese", { |note=32,amp=1.0,gate=1|
-            var snd;
-            var env = EnvGen.ar(Env.asr(0.01,1,0.5),gate:gate,doneAction:2);
-        	var detune=200/60;//VarLag.kr(LFNoise0.kr(1/2),2,warp:\sine).range(0,2);
-            var distLFO=3;//VarLag.kr(LFNoise0.kr(1/2),2,warp:\sine).range(1,4);
-            snd = SinOsc.ar((note+12).midicps+detune);
-            snd = snd + SinOsc.ar((note+12).midicps-detune);	
-        	snd = Splay.ar(snd);
-	        snd = RHPF.ar(snd,(note+12).midicps,0.7)*0.25;
-	        snd = snd + SinOsc.ar((note-12).midicps!2);
-	        snd = (snd*distLFO).softclip*amp*env;
+            var sub=0,portamento=1,bend=0,
+            attack=0.01,decay=0.2,sustain=0.9,release=5,
+            mod1=0,mod2=0,mod3=0,mod4=0,lpf=18000,pan=0,duration=600;
+            var snd,freq,oscfreq,env,envFilter,detune,distortion,lowcut,chorus,res;
+            mod1=Lag.kr(mod1);mod2=Lag.kr(mod2);mod3=Lag.kr(mod3);mod4=Lag.kr(mod4);
+            //note=Lag.kr(hz,portamento).cpsmidi+bend;
+            env=EnvGen.ar(Env.adsr(attack,decay,sustain,release),(gate-EnvGen.kr(Env.new([0,0,1],[duration,0]))),doneAction:2);
+            sub=Lag.kr(sub,1);
+            distortion=LinLin.kr(mod1,-1,1,1,20);
+            lowcut=LinLin.kr(mod2,-1,1,1,16);
+            res=LinLin.kr(mod3,-1,1,-4,8);
+            detune=LinLin.kr(mod4,-1,1,-0.6,0.62);
+            freq=note.midicps/2;
+
+            oscfreq = {freq * LFNoise2.kr(0.5).range(1-detune, 1+detune)}!3;
+            snd = Splay.ar(LFSaw.ar(oscfreq));
+            envFilter = Env.adsr(attack/4, 4, 0.99, release).kr(gate: (gate-EnvGen.kr(Env.new([0,0,1],[duration,0]))));
+            snd = (snd*distortion).tanh;
+            snd=BLowShelf.ar(snd,freq,1,res);
+            snd = LPF.ar(snd, (envFilter*freq*lowcut) + (2*freq));
+            snd = (snd*envFilter).tanh;
+
+            snd = Balance2.ar(snd[0],snd[1],Lag.kr(pan,0.1));
+            snd = LPF.ar(snd,Lag.kr(lpf)) * env * amp / 2;
+
+            // var snd;
+            // var env = EnvGen.ar(Env.asr(0.01,1,0.5),gate:gate,doneAction:2);
+        	// var detune=200/60;//VarLag.kr(LFNoise0.kr(1/2),2,warp:\sine).range(0,2);
+            // var distLFO=3;//VarLag.kr(LFNoise0.kr(1/2),2,warp:\sine).range(1,4);
+            // snd = SinOsc.ar((note+12).midicps+detune);
+            // snd = snd + SinOsc.ar((note+12).midicps-detune);	
+        	// snd = Splay.ar(snd);
+	        // snd = RHPF.ar(snd,(note+12).midicps,0.7)*0.25;
+	        // snd = snd + SinOsc.ar((note-12).midicps!2);
+	        // snd = (snd*distLFO).softclip*amp*env;
             Out.ar(\out.kr(0),\compressible.kr(0)*snd);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
             Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);
@@ -562,11 +587,13 @@ Engine_AmenBreak1 : CroneEngine {
             });
         });
 
-        this.addCommand("loop","sffd",{ arg msg;
+        this.addCommand("loop","sffff",{ arg msg;
             var filename=msg[1];
             var amp=msg[2].dbamp;
             var startPos=msg[3];
-	    var loop=msg[4];
+	        var loop=msg[4];
+            var slew=msg[5];
+            ["loop",loop].postln;
             if (syns.at(filename).notNil,{
                 if (syns.at(filename).isRunning,{
                     syns.at(filename).set(\gate,0);
@@ -580,7 +607,8 @@ Engine_AmenBreak1 : CroneEngine {
                     compressible: 1,
                     compressing: 0,
                     amp: amp,
-		    loop: loop,
+                    slew: slew,
+                    loop: loop,
                     startPos: startPos,
                     buf: bufs.at(filename)
                 ], syns.at("main"), \addBefore));
@@ -589,7 +617,7 @@ Engine_AmenBreak1 : CroneEngine {
         });
 
         this.addCommand("loop_set","ssf",{ arg msg;
-	    var filename=msg[1];
+    	    var filename=msg[1];
             if (syns.at(filename).notNil,{
                 if (syns.at(filename).isRunning,{
                     syns.at(filename).set(msg[2],msg[3]);
@@ -597,11 +625,12 @@ Engine_AmenBreak1 : CroneEngine {
             });
         });
 
-        this.addCommand("loop_stop","s",{ arg msg;
-	    var filename=msg[1];
+        this.addCommand("loop_stop","sf",{ arg msg;
+    	    var filename=msg[1];
+            var slew=msg[2];
             if (syns.at(filename).notNil,{
                 if (syns.at(filename).isRunning,{
-                    syns.at(filename).set(\gate,0);
+                    syns.at(filename).set(\gate,0,\slew,slew);
                 });
             });
         });

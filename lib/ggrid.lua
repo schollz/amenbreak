@@ -45,12 +45,13 @@ function GGrid:new(args)
   m.octave=0
   m.reese_keys_on=0
   m.keyboard={}
-  m.reese_amp=1
+  m.reese_amp=0.5
   m.reese_off=function()
 	  m.reese_keys_on=m.reese_keys_on-1
-	if m.reese_keys_on==0 then 
-		engine.reese_off()
-	end
+    print(m.reese_keys_on)
+    if m.reese_keys_on==0 then 
+      engine.reese_off()
+    end
   end
   m.keyboard[1]={
 	{on=function() m.octave=m.octave+1 end},
@@ -123,8 +124,8 @@ function GGrid:key_press(row,col,on)
    elseif row>=1 and row<=4 and col>=9 then 
 	   loops[row][col-8]:toggle()
    elseif row>=7 and col>=9 then 
-	   local fn = self.keyboard[row-6][col-8]
-	   if on and fn.on then 
+    local fn = self.keyboard[row-6][col-8]
+    if on and fn.on then 
 		   fn.on()
 	   elseif (not on) and fn.off then 
 		   fn.off()
@@ -263,11 +264,12 @@ function GGrid:get_visual()
   -- illuminate loops
   for row=1,4 do 
 	  for col=1,8 do 
-		  if loops[row][col].playing then 
-		  self.visual[row][col+8]=14
-	  elseif loosp[row][col].loaded then 
-		  self.visual[row][col+8]=4
-	  end
+      if loops[row][col].playing then 
+        self.visual[row][col+8]=14
+      elseif loops[row][col].loaded then 
+        self.visual[row][col+8]=4
+      end
+    end
   end
 
   -- illuminate playing screen

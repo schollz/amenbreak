@@ -116,7 +116,7 @@ Engine_AmenBreak1 : CroneEngine {
 
         (1..2).do({arg ch;
         SynthDef("loop"++ch,{ 
-            arg buf,amp=1,startPos=0,gate=1,loop:1;
+            arg buf,amp=1,startPos=0,gate=1,loop=1;
             var env = EnvGen.ar(Env.asr(0.5,1,0.5),gate,doneAction:2);
             var snd = PlayBuf.ar(numChannels:ch, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop, doneAction: 0);
             snd = snd * env * Lag.kr(amp);
@@ -129,15 +129,15 @@ Engine_AmenBreak1 : CroneEngine {
 
         SynthDef("reese", { |note=32,amp=1.0,gate=1|
             var snd;
-            var env = EnvGen.ar(Env.asr(0.1,1,3),gate:gate,doneAction:2);
-        	var detune=VarLag.kr(LFNoise0.kr(1/2),2,warp:\sine).range(0,2);
-            var distLFO=VarLag.kr(LFNoise0.kr(1/2),2,warp:\sine).range(0.1,4);
+            var env = EnvGen.ar(Env.asr(0.01,1,0.5),gate:gate,doneAction:2);
+        	var detune=200/60;//VarLag.kr(LFNoise0.kr(1/2),2,warp:\sine).range(0,2);
+            var distLFO=3;//VarLag.kr(LFNoise0.kr(1/2),2,warp:\sine).range(1,4);
             snd = SinOsc.ar((note+12).midicps+detune);
             snd = snd + SinOsc.ar((note+12).midicps-detune);	
         	snd = Splay.ar(snd);
-	        snd = RHPF.ar(snd,(note+12).midicps,0.7);
+	        snd = RHPF.ar(snd,(note+12).midicps,0.7)*0.25;
 	        snd = snd + SinOsc.ar((note).midicps!2);
-	        snd = (snd*distLFO).softclip;
+	        snd = (snd*distLFO).softclip*amp*env;
             Out.ar(\out.kr(0),\compressible.kr(0)*snd);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
             Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);
@@ -528,7 +528,7 @@ Engine_AmenBreak1 : CroneEngine {
                 });
             });
             if (synExists,{
-                syns.at("reese").set(\note,note);
+                syns.at("reese").set(\note,note,\gate,1);
             },{
                 syns.put("reese",Synth.new("reese", [
                     out: buses.at("busCompressible"),

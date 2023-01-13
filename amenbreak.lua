@@ -131,9 +131,9 @@ function init()
     if not string.find(fname,"slow") then
       if util.file_exists(_path.audio.."amenbreak/"..fname..".json") then
         table.insert(amen_files,fname)
-        -- if #amen_files==10 then
-        --   break
-        -- end
+        if #amen_files==10 then
+          break
+        end
       end
     end
   end
@@ -298,7 +298,11 @@ function init()
     local folder=_path.audio.."amenbreak/row"..row
     os.execute("mkdir -p "..folder)
     for col=1,8 do 
-      table.insert(loops[row],loop_:new{oneshot=row==1 and true or false,db=row==1 and 6 or 0})
+      table.insert(loops[row],loop_:new{
+        oneshot=row==1 and true or false,
+        db=row==1 and 0 or -12,
+        slew=row==1 and 0.05 or 6,
+      })
     end
     for i,fname in ipairs(find_files(folder)) do 
       if i<=8 then 

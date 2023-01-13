@@ -117,8 +117,8 @@ Engine_AmenBreak1 : CroneEngine {
         (1..2).do({arg ch;
         SynthDef("loop"++ch,{ 
             arg buf,amp=1,startPos=0,gate=1,loop=1,slew=1;
-            var env = EnvGen.ar(Env.asr(slew,1,slew),gate.poll,doneAction:2);
-            var snd = PlayBuf.ar(numChannels:ch, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop.poll, doneAction: 0);
+            var env = EnvGen.ar(Env.asr(slew,1,slew),gate,doneAction:2);
+            var snd = PlayBuf.ar(numChannels:ch, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop, doneAction: 0);
             snd = snd * env * Lag.kr(amp);
             Out.ar(\out.kr(0),\compressible.kr(0)*snd);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
@@ -143,15 +143,15 @@ Engine_AmenBreak1 : CroneEngine {
             freq=note.midicps/2;
 
             oscfreq = {freq * LFNoise2.kr(0.5).range(1-detune, 1+detune)}!3;
-            snd = Splay.ar(LFSaw.ar(oscfreq));
-            envFilter = Env.adsr(attack/4, 4, 0.99, release).kr(gate: (gate-EnvGen.kr(Env.new([0,0,1],[duration,0]))));
+            snd = Splay.ar(SawDPW.ar(oscfreq));
             snd = (snd*distortion).tanh;
             snd=BLowShelf.ar(snd,freq,1,res);
-            snd = LPF.ar(snd, (envFilter*freq*lowcut) + (2*freq));
-            snd = (snd*envFilter).tanh;
+            snd = LPF.ar(snd, (1*freq*lowcut) + (2*freq));
+            snd = (snd*1).tanh;
 
             snd = Balance2.ar(snd[0],snd[1],Lag.kr(pan,0.1));
             snd = LPF.ar(snd,Lag.kr(lpf)) * env * amp / 2;
+            snd = snd * LinLin.kr(note,20,120,6,12.neg).dbamp;
 
             // var snd;
             // var env = EnvGen.ar(Env.asr(0.01,1,0.5),gate:gate,doneAction:2);

@@ -45,7 +45,7 @@ function GGrid:new(args)
   m.octave=0
   m.reese_keys_on=0
   m.keyboard={}
-  m.reese_amp=0
+  m.reese_amp=-8
   m.reese_off=function()
 	  m.reese_keys_on=m.reese_keys_on-1
     print(m.reese_keys_on)
@@ -230,8 +230,9 @@ function GGrid:get_visual()
     local row=math.floor((i-1)/4)+1
     local col=(i-1)%4+2
     if ws[params:get("track")]~=nil then 
-      if ws[params:get("track")].kick~=nil then 
-        self.visual[row][col]=pos_last==i and 15 or (ws[params:get("track")].kick[i]>-48 and 9 or 4)
+      self.visual[row][col]=pos_last==i and 15
+      if ws[params:get("track")].kick~=nil and pos_last~=i then 
+        self.visual[row][col]=ws[params:get("track")].kick[i]>-48 and 9 or 4
       end
     end
   end

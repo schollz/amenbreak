@@ -4,11 +4,13 @@ import os
 import math
 import json
 import glob
+import traceback
 
 from icecream import ic
 import numpy as np
 import librosa
 from tqdm import tqdm
+import click
 
 doplot = False
 if not doplot:
@@ -112,9 +114,18 @@ def gather2(fname):
     return data
 
 
-for fname in tqdm(list(glob.glob("amens/*.flac"))):
-    if "slow" in fname:
-        continue
-    analyze(fname)
-# gather2("output001.wav")
-# analyze("lyncollins_beats16_bpm114.flac")
+@click.command()
+@click.option("--folder", help="folder to analyze", required=True)
+def hello(folder):
+    for fname in tqdm(list(glob.glob(folder + "/*.flac"))):
+        if "slow" in fname:
+            continue
+        try:
+            analyze(fname)
+        except Exception as e:
+            traceback.print_exc()
+            os.remove(fname)
+
+
+if __name__ == "__main__":
+    hello()

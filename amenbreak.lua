@@ -808,6 +808,7 @@ function params_grid()
   end
  end
  local params_menu2={
+    {id="basenote",name="root note",min=0,max=128,exp=false,div=1,default=36,noaction=true,formatter=function(param) return musicutil.note_num_to_name(param:get(),true)end},
     {id="db",name="volume",min=-96,max=16,div=0.5,default=-6,unit="dB",fn=function(x) return util.dbamp(x) end},
     {id="mod1",name="mod1",min=-1,max=1,exp=false,div=0.1,default=0.0},
     {id="mod2",name="mod2",min=-1,max=1,exp=false,div=0.1,default=0.0},
@@ -819,10 +820,24 @@ function params_grid()
     {id="release",name="release",min=0.01,max=20,exp=false,div=0.1,default=2,unit="sec"},
     {id="pan",name="pan",min=-1,max=1,div=0.05,default=0,kind="loop",row=row},
     {id="portamento",name="portamento",min=0.0,max=20,exp=false,div=0.1,default=0.1,unit="sec"},
-    {id="basenote",name="root note",min=0,max=128,exp=false,div=1,default=36,noaction=true,formatter=function(param) return musicutil.note_num_to_name(param:get(),true)end},
   }
 
- params:add_group("GRID",#params_menu+#params_menu2+5)
+ params:add_group("GRID > BASS",#params_menu2)
+ for _,pram in ipairs(params_menu2) do
+  params:add{
+    type="control",
+    id="bass_"..pram.id,
+    name=pram.name,
+    controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
+    formatter=pram.formatter,
+  }
+  if not pram.noaction then 
+   params:set_action("bass_"..pram.id,function(v)
+     engine.reese_set(pram.id=="db" and "amp" or pram.id,pram.fn and pram.fn(v) or v)
+    end)  
+  end
+end
+params:add_group("GRID > LOOPS",#params_menu+5)
  local current_row=0
  for _,pram in ipairs(params_menu) do
     if pram.row~=current_row then 
@@ -847,21 +862,6 @@ function params_grid()
       end
     end)
   end
-  params:add_separator("BASS")
-  for _,pram in ipairs(params_menu2) do
-     params:add{
-       type="control",
-       id="bass_"..pram.id,
-       name=pram.name,
-       controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
-       formatter=pram.formatter,
-     }
-     if not pram.noaction then 
-      params:set_action("bass_"..pram.id,function(v)
-        engine.reese_set(pram.id=="db" and "amp" or pram.id,pram.fn and pram.fn(v) or v)
-       end)  
-     end
-   end
 end
 
 function params_audioin()

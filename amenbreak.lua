@@ -67,6 +67,7 @@ button_fns={}
 global_played={}
 bass_pattern_store={}
 bass_pattern_current=0
+bass_sequenced=-1
 
 UI=require 'ui'
 loaded_files=0
@@ -118,6 +119,9 @@ function init()
     for col=1,11 do 
       table.insert(pattern_store[row],{})
     end
+  end
+  for col=1,6 do 
+    table.insert(bass_pattern_store,{})
   end
   -- pattern_store[PTTRN_STEP][1]={1,2,3,4}
   -- pattern_current[PTTRN_STEP]=1
@@ -412,6 +416,9 @@ function toggle_clock(on)
       clock_run=nil
     end
   else
+    if bass_pattern_current>0 then 
+      engine.reese_off()
+    end
     if params:get("tape_start_stop")==1 then 
       params:set("tape_gate",1)
     end
@@ -462,11 +469,12 @@ function toggle_clock(on)
       -- iterate the bass
       if bass_pattern_current>0 then 
         local ptn=bass_pattern_store[bass_pattern_current]
-        local note=ptn[(clock_beat%#ptn)+1]
-        if note==0 then 
+        local x=ptn[(clock_beat%#ptn)+1]
+        bass_sequenced=x
+        if x==-1 then 
           engine.reese_off()
         else
-          bass_note_on(note)
+          bass_note_on(x+params:get("bass_basenote"))
         end
       end
       
@@ -975,7 +983,7 @@ end
 function params_action()
   params.action_write=function(filename,name)
     print("[params.action_write]",filename,name)
-    local data={pattern_current=pattern_current,pattern_store=pattern_store}
+    local data={pattern_current=pattern_current,pattern_store=pattern_store,bass_pattern_current=bass_pattern_current,bass_pattern_store=bass_pattern_store}
     filename=filename..".json"
     local file=io.open(filename,"w+")
     io.output(file)
@@ -1002,6 +1010,8 @@ function params_action()
     end
     pattern_current=data.pattern_current
     pattern_store=data.pattern_store
+    bass_pattern_current=data.bass_pattern_current
+    bass_pattern_store=data.bass_pattern_store
   end
 end
 

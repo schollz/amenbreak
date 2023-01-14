@@ -44,19 +44,18 @@ function GGrid:new(args)
   -- musical keyboard
   m.reese_keys_on={}
   m.keyboard={}
-  m.note_on=function(x,note)
-    if note==nil then 
+  m.note_on=function(x,sequenced)
+    note=x+params:get("bass_basenote")
+    if sequenced==nil then 
       table.insert(m.reese_keys_on,x)
-      note=x+params:get("bass_basenote")
-
-      if self.bass_pattern_held~=nil then 
-        if self.bass_pattern_held.first then 
-          bass_pattern_store[self.bass_pattern_held.col]={}
-          self.bass_pattern_held.first=false
+      if m.bass_pattern_held~=nil then 
+        if m.bass_pattern_held.first then 
+          bass_pattern_store[m.bass_pattern_held.col]={}
+          m.bass_pattern_held.first=false
         end
-        table.insert(bass_pattern_store[self.bass_pattern_held.col],note)
-        print(string.format("[grid] updating to pattern %d",self.bass_pattern_held.col))
-        tab.print(bass_pattern_store[self.bass_pattern_held.col])
+        table.insert(bass_pattern_store[m.bass_pattern_held.col],x)
+        print(string.format("[grid] updating to pattern %d",m.bass_pattern_held.col))
+        tab.print(bass_pattern_store[m.bass_pattern_held.col])
       end
     end
     bass_note_on(note)
@@ -68,8 +67,6 @@ function GGrid:new(args)
         table.insert(new_keys,v)
       end
     end
-    print("new_keys")
-    tab.print(new_keys)
     m.reese_keys_on=new_keys
     if next(m.reese_keys_on)==nil then 
       engine.reese_off()
@@ -79,23 +76,23 @@ function GGrid:new(args)
   end
   m.keyboard[1]={
     {},
-    {on=function() m.note_on(1) end,off=function() m.reese_off(1) end},
-    {on=function() m.note_on(3) end,off=function() m.reese_off(3) end},
+    {on=function() m.note_on(1) end,off=function() m.reese_off(1) end,light=function() return bass_sequenced==1 and 14 or 8 end},
+    {on=function() m.note_on(3) end,off=function() m.reese_off(3) end,light=function() return bass_sequenced==3 and 14 or 8 end},
     {},
-    {on=function() m.note_on(6) end,off=function() m.reese_off(6) end},
-    {on=function() m.note_on(8) end,off=function() m.reese_off(8) end},
-    {on=function() m.note_on(10) end,off=function() m.reese_off(10) end},
+    {on=function() m.note_on(6) end,off=function() m.reese_off(6) end,light=function() return bass_sequenced==6 and 14 or 8 end},
+    {on=function() m.note_on(8) end,off=function() m.reese_off(8) end,light=function() return bass_sequenced==8 and 14 or 8 end},
+    {on=function() m.note_on(10) end,off=function() m.reese_off(10) end,light=function() return bass_sequenced==10 and 14 or 8 end},
     {},
   }
   m.keyboard[2]={
-    {on=function() m.note_on(0) end,off=function() m.reese_off(0) end},
-    {on=function() m.note_on(2) end,off=function() m.reese_off(2) end},
-    {on=function() m.note_on(4) end,off=function() m.reese_off(4) end},
-    {on=function() m.note_on(5) end,off=function() m.reese_off(5) end},
-    {on=function() m.note_on(7) end,off=function() m.reese_off(7) end},
-    {on=function() m.note_on(9) end,off=function() m.reese_off(9) end},
-    {on=function() m.note_on(11) end,off=function() m.reese_off(11) end},
-    {on=function() m.note_on(12) end,off=function() m.reese_off(12) end},
+    {on=function() m.note_on(0) end,off=function() m.reese_off(0) end,light=function() return bass_sequenced==0 and 14 or 4 end},
+    {on=function() m.note_on(2) end,off=function() m.reese_off(2) end,light=function() return bass_sequenced==2 and 14 or 4 end},
+    {on=function() m.note_on(4) end,off=function() m.reese_off(4) end,light=function() return bass_sequenced==4 and 14 or 4 end},
+    {on=function() m.note_on(5) end,off=function() m.reese_off(5) end,light=function() return bass_sequenced==5 and 14 or 4 end},
+    {on=function() m.note_on(7) end,off=function() m.reese_off(7) end,light=function() return bass_sequenced==7 and 14 or 4 end},
+    {on=function() m.note_on(9) end,off=function() m.reese_off(9) end,light=function() return bass_sequenced==9 and 14 or 4 end},
+    {on=function() m.note_on(11) end,off=function() m.reese_off(11) end,light=function() return bass_sequenced==11 and 14 or 4 end},
+    {on=function() m.note_on(12) end,off=function() m.reese_off(12) end,light=function() return bass_sequenced==12 and 14 or 4 end},
   }
 
   -- in the grid loop, set the button fns
@@ -183,7 +180,14 @@ function GGrid:key_press(row,col,on)
 		   fn.on()
 	   elseif (not on) and fn.off then 
 		   fn.off()
-	   end
+     elseif on and self.bass_pattern_held~=nil then 
+        if self.bass_pattern_held.first then 
+          bass_pattern_store[self.bass_pattern_held.col]={}
+          self.bass_pattern_held.first=false
+        end
+        table.insert(bass_pattern_store[self.bass_pattern_held.col],-1)
+        print(string.format("[grid] updating to pattern %d with reset",self.bass_pattern_held.col))
+    end
   elseif row>=3 and row<=8 and col>=6 and col<=8 then 
     -- fx / retrig
     local r=row-2
@@ -232,12 +236,15 @@ function GGrid:key_press(row,col,on)
       tab.print(pattern_store[self.pattern_held.row][self.pattern_held.col])
     end
   elseif row==6 and col>=9 and col<=14 then 
+    print("[grid] bass pattern click",row,col,on)
     col=col-8
     if on then
       self.bass_pattern_held={col=col,first=true}
       if bass_pattern_current==col then 
         print(string.format("[grid] disabling bass patterns"))
         bass_pattern_current=0
+        bass_sequenced=-1
+        engine.reese_off()
       elseif next(bass_pattern_store[col])~=nil then 
         print(string.format("[grid] switching to bass pattern %d",col))
         bass_pattern_current=col
@@ -337,14 +344,11 @@ function GGrid:get_visual()
   end
 
   -- illuminate keyboard
-  for col=9,16 do 
-    self.visual[8][col]=4
+  for row=7,8 do 
+    for col=9,16 do 
+      self.visual[row][col]=self.keyboard[row-6][col-8].light and self.keyboard[row-6][col-8].light() or 0
+    end
   end
-  self.visual[7][10]=8
-  self.visual[7][11]=8
-  self.visual[7][13]=8
-  self.visual[7][14]=8
-  self.visual[7][15]=8
   self.visual[6][15]=util.round(params:get_raw("bass_basenote")*15)
   self.visual[6][16]=self.visual[6][15]
 

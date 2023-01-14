@@ -145,7 +145,7 @@ Engine_AmenBreak1 : CroneEngine {
             var snd,freq,oscfreq,env,envFilter,detune,distortion,lowcut,chorus,res;
             mod1=Lag.kr(mod1);mod2=Lag.kr(mod2);mod3=Lag.kr(mod3);mod4=Lag.kr(mod4);
             note=Lag.kr(note,portamento);
-            env=EnvGen.ar(Env.adsr(attack,decay,sustain,release),(gate-EnvGen.kr(Env.new([0,0,1],[duration,0]))),doneAction:2);
+            env=EnvGen.ar(Env.adsr(attack+0.01,decay+0.01,sustain,release+0.01),(gate-EnvGen.kr(Env.new([0,0,1],[duration,0]))),doneAction:2);
             distortion=LinLin.kr(mod1,-1,1,1,20);
             lowcut=LinLin.kr(mod2,-1,1,1,16);
             res=LinLin.kr(mod3,-1,1,-4,8);

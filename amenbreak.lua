@@ -441,6 +441,8 @@ function toggle_clock(on)
   clock_beat=-1
   local d={steps=0,ci=1}
   local switched_direction=false
+  local switched_gate=false
+  local gate_on=nil
   params:set("clock_reset",1)
   -- clock.internal.start(-0.1) 
   clock_run=clock.run(function()
@@ -489,6 +491,7 @@ function toggle_clock(on)
         d.stretch=0
         d.rate=1
         d.pitch=0
+        d.gate=gate_on
         -- retriggering
         local refractory=math.random(15*1,15*10)
         if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.3)*1.5 and debounce_fn["retrig"]==nil then
@@ -518,6 +521,11 @@ function toggle_clock(on)
           d.gate=math.random(25,75)/100
           d.steps=d.steps>1 and d.steps or d.steps*math.random(2,8)
           debounce_fn["delay"]={refractory*2,function()end}
+        end
+        if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.7)*0.4 and debounce_fn["gate"]==nil then
+          gate_on=0.5
+          debounce_fn["gate_off"]={math.random(16,64),function() gate_on=nil end}
+          debounce_fn["gate"]={refractory,function() end}
         end
         if math.random()<easing_function2(params:get("amen"),-3.1,-1.3,0.177,0.5) then
           d.rate=-1

@@ -174,7 +174,7 @@ function init()
   -- params:default()
 
   local params_menu={
-    {id="db",name="volume",min=-48,max=12,exp=false,div=0.1,default=0,unit="db"},
+    {id="db",name="volume",min=-96,max=12,exp=false,div=0.1,default=0,unit="db"},
     {id="punch",name="punch",min=0,max=1,exp=false,div=0.01,default=0,unit="punches"},
     {id="amen",name="amen",min=0,max=1,exp=false,div=0.01,default=0,unit="amens"},
     {id="break",name="break",min=0,max=1,exp=false,div=0.01,default=0,unit="break"},
@@ -248,6 +248,20 @@ function init()
   }
   -- setup osc
   osc_fun={
+    loopdone=function(args)
+      print("loopdone")
+      tab.print(args)
+      for row=1,4 do 
+        for col=1,8 do 
+          if loops[row][col].loaded then 
+            if loops[row][col].path==args[1] then 
+              loops[row][col].playing=false
+              loops[row][col].primed=false
+            end
+          end
+        end
+      end
+    end,
     progressbar=function(args)
       show_message(args[1])
       show_progress(tonumber(args[2]))
@@ -311,6 +325,10 @@ function init()
   end
 
 
+  -- setup
+  params:set("loop1_db",0)
+  params:set("loop1_slew",0.05)
+  params:set("loop1_oneshot",1)
   -- debug
   clock.run(function()
     -- startup
@@ -766,7 +784,7 @@ function params_grid()
  local params_menu={}
  for row=1,4 do 
   local ps={
-    {id="db",name="volume",min=-48,max=16,div=0.5,default=-12,unit="dB",kind="loop",row=row,fn=function(x) return util.dbamp(x) end},
+    {id="db",name="volume",min=-96,max=16,div=0.5,default=-12,unit="dB",kind="loop",row=row,fn=function(x) return util.dbamp(x) end},
     {id="pan",name="pan",min=-1,max=1,div=0.05,default=0,kind="loop",row=row},
     {id="slew",name="fade time",min=0.1,max=20,div=0.1,default=4,unit="sec",kind="loop",row=row},
     {id="oneshot",name="oneshot",min=0,max=1,div=1,default=0,row=row,formatter=function(param) return param:get()==1 and "yes" or "no" end},
@@ -776,8 +794,8 @@ function params_grid()
   end
  end
  local params_menu2={
-    {id="basenote",name="root note",min=10,max=90,exp=false,div=1,default=24,noaction=true,formatter=function(param) return musicutil.note_num_to_name(param:get(),true)end},
-    {id="db",name="volume",min=-48,max=16,div=0.5,default=-12,unit="dB",fn=function(x) return util.dbamp(x) end},
+    {id="basenote",name="root note",min=10,max=90,exp=false,div=1,default=36,noaction=true,formatter=function(param) return musicutil.note_num_to_name(param:get(),true)end},
+    {id="db",name="volume",min=-96,max=16,div=0.5,default=-12,unit="dB",fn=function(x) return util.dbamp(x) end},
     {id="mod1",name="mod1",min=-1,max=1,exp=false,div=0.1,default=0.0},
     {id="mod2",name="mod2",min=-1,max=1,exp=false,div=0.1,default=0.0},
     {id="mod3",name="mod3",min=-1,max=1,exp=false,div=0.1,default=0.0},
@@ -891,7 +909,7 @@ function params_audioout()
     {id="compress_attack",name="sidechain attack",min=0,max=1,exp=false,div=0.001,default=0.01,formatter=function(param) return (param:get()*1000).." ms" end},
     {id="compress_release",name="sidechain release",min=0,max=2,exp=false,div=0.01,default=0.2,formatter=function(param) return (param:get()*1000).." ms" end},
     {id="lpshelf",name="lp boost freq",min=12,max=127,exp=false,div=1,default=23,formatter=function(param) return musicutil.note_num_to_name(math.floor(param:get()),true)end,fn=function(x) return musicutil.note_num_to_freq(x) end},
-    {id="lpgain",name="lp boost db",min=-48,max=36,exp=false,div=1,default=0,unit="dB"},
+    {id="lpgain",name="lp boost db",min=-96,max=36,exp=false,div=1,default=0,unit="dB"},
     {id="noise_gate_db",name="noise gate threshold",min=-60,max=0,exp=false,div=0.5,default=-60,unit="dB"},
     {id="noise_gate_attack",name="noise gate attack",min=0,max=1,exp=false,div=0.001,default=0.01,unit="s"},
     {id="noise_gate_release",name="noise gate release",min=0,max=1,exp=false,div=0.001,default=0.01,unit="s"},

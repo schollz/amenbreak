@@ -99,35 +99,50 @@ function GGrid:new(args)
 
   -- in the grid loop, set the button fns
   m.button_fns={}
+  local choices_steps={{1,4},{5,12},{13,32}}
+  local choices_retrigs={{1,5},{6,13},{14,32}}
+  for row=1,3 do 
+    m.button_fns[row]={}
+    for col=1,3 do 
+      m.button_fns[row][col]={
+        retrig=function() return math.random(choices_retrigs[col][1],choices_retrigs[col][2]) end,
+        steps=function() return math.random(choices_steps[row][1],choices_steps[row][2]) end,
+        light=function() 
+          return (global_played.retrig~=nil and 
+          global_played.retrig>=choices_retrigs[col][1] and 
+          global_played.retrig<=choices_retrigs[col][2] and
+          global_played.steps>=choices_steps[row][1] and 
+          global_played.steps<=choices_steps[row][2]) and 14 or (row*1+col*1) 
+        end}
+    end
+  end
+  m.toggle_mute=function()
+    print("TOGGLE")
+    if params:get("db")>-32 then 
+      m.db_store=params:get("db")
+      m.kick_db_store=params:get("kick_db")
+      params:set("db",-96)
+      params:set("kick_db",-96)
+    elseif m.db_store~=nil then 
+      params:set("db",m.db_store)
+      params:set("kick_db",m.kick_db_store)
+    end
+  end
+  m.filter_on=false
   table.insert(m.button_fns,{
-    {retrig=function() return math.random(1,5) end,light=function() return (global_played.retrig~=nil and global_played.retrig>0 and global_played.retrig<5) and 14 or 4 end},
-    {retrig=function() return math.random(3,7) end,light=function() return (global_played.retrig~=nil and global_played.retrig>3 and global_played.retrig<7) and 14 or 4 end},
-    {retrig=function() return math.random(6,15) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
-  })
-  table.insert(m.button_fns,{
-    {retrig=function() return math.random(1,5) end,steps=function() return math.random(2,4) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
-    {retrig=function() return math.random(3,7) end,steps=function() return math.random(2,4) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
-    {retrig=function() return math.random(6,15) end,steps=function() return math.random(2,4) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
-  })
-  table.insert(m.button_fns,{
-    {retrig=function() return math.random(1,5) end,steps=function() return math.random(5,8) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
-    {retrig=function() return math.random(3,7) end,steps=function() return math.random(5,8) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
-    {retrig=function() return math.random(6,15) end,steps=function() return math.random(5,8) end,light=function() return (global_played.retrig~=nil and global_played.retrig>6 and global_played.retrig<15) and 14 or 4 end},
-  })
-  table.insert(m.button_fns,{
-    {uselast=function() return 1 end,light=function() return  (global_played.uselast~=nil and global_played.uselast>0) and 14 or 4 end},
-    {db=function() return math.random(1,2) end,light=function() return (global_played.db~=nil and global_played.db>0) and 14 or 4 end},
+    {uselast=function() return 1 end,light=function() return  (global_played.uselast~=nil and global_played.uselast>0) and 14 or 2 end},
+    {db=function() return math.random(1,2) end,light=function() return (global_played.db~=nil and global_played.db>0) and 14 or 2 end},
     {pitch=function() return math.random(1,2) end,light=function() return (global_played.pitch~=nil and global_played.pitch~=0) and 14 or 2 end},
   })
   table.insert(m.button_fns,{
     {delay=function() return 1 end,light=function() return  (global_played.delay~=nil and global_played.delay>0) and 14 or 2 end},
     {rate=function() return -1 end,light=function() return (global_played.rate~=nil and global_played.rate<0) and 14 or 2 end},
-    {stretch=function() return -1 end,light=function() return (global_played.stretch~=nil and global_played.stretch>0) and 14 or 2 end},
+    {on=function() params:set("gate",0.5) end,off=function() params:set("gate",1) end,light=function() return (global_played.stretch~=nil and global_played.stretch>0) and 14 or 2 end},
   })
   table.insert(m.button_fns,{
-    {on=function() params:set("tape_gate",1) end,off=function() params:set("tape_gate",0) end,light=function() return params:get("tape_gate")>0 and 14 or 4 end},
-    {on=function() engine.filter_set(200,clock.get_beat_sec()*math.random(1,4)) end,off=function() engine.filter_set(musicutil.note_num_to_freq(params:get("lpf")),clock.get_beat_sec()*math.random(1,4)) end,light=function() return params:get("db")<-32 and 14 or 4 end},
-    {on=function() m.db_store=params:get("db"); params:set("db",-96) end,off=function() params:set("db",m.db_store) end,light=function() return params:get("db")<-32 and 14 or 4 end},
+    {on=function() params:set("tape_gate",1) end,off=function() params:set("tape_gate",0) end,light=function() return params:get("tape_gate")>0 and 14 or 2 end},
+    {on=function() m.filter_on=true;engine.filter_set(200,clock.get_beat_sec()*math.random(1,4)) end,off=function() m.filter_on=false;engine.filter_set(musicutil.note_num_to_freq(params:get("lpf")),clock.get_beat_sec()*math.random(1,4)) end,light=function() return m.filter_on and 14 or 2 end},
+    {on=m.toggle_mute,light=function() return params:get("db")<-32 and 14 or 2 end},
   })
 
   return m
@@ -287,9 +302,9 @@ function GGrid:get_visual()
   for row=1,4 do 
 	  for col=1,8 do 
       if loops[row][col].playing then 
-        self.visual[row][col+8]=14
+        self.visual[row][col+8]=9
       elseif loops[row][col].loaded then 
-        self.visual[row][col+8]=4
+        self.visual[row][col+8]=2
       end
     end
   end

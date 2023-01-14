@@ -117,7 +117,7 @@ Engine_AmenBreak1 : CroneEngine {
         SynthDef("loop1",{ 
             arg buf,amp=1,startPos=0,gate=1,loop=1,slew=1;
             var env = EnvGen.ar(Env.asr(slew,1,slew),gate,doneAction:2);
-            var snd = PlayBuf.ar(numChannels:1, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop, doneAction: 0);
+            var snd = PlayBuf.ar(numChannels:1, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop, doneAction: 2);
             snd = snd * env * Lag.kr(amp);
             snd = Pan2.ar(snd,\pan.kr(0));
             Out.ar(\out.kr(0),\compressible.kr(0)*snd);
@@ -129,7 +129,7 @@ Engine_AmenBreak1 : CroneEngine {
         SynthDef("loop2",{ 
             arg buf,amp=1,startPos=0,gate=1,loop=1,slew=1;
             var env = EnvGen.ar(Env.asr(slew,1,slew),gate,doneAction:2);
-            var snd = PlayBuf.ar(numChannels:2, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop, doneAction: 0);
+            var snd = PlayBuf.ar(numChannels:2, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop, doneAction: 2);
             snd = snd * env * Lag.kr(amp);
             snd = Balance2.ar(snd[0],snd[1],\pan.kr(0));
             Out.ar(\out.kr(0),\compressible.kr(0)*snd);
@@ -138,8 +138,8 @@ Engine_AmenBreak1 : CroneEngine {
             Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);            
         }).send(context.server);
 
-        SynthDef("reese", { |note=32,amp=1.0,gate=1|
-            var sub=0,portamento=1,bend=0,
+        SynthDef("reese", { 
+            arg note=32,amp=1.0,gate=1,sub=0,portamento=1,bend=0,
             attack=0.01,decay=0.2,sustain=0.9,release=5,
             mod1=0,mod2=0,mod3=0,mod4=0,pan=0,duration=600;
             var snd,freq,oscfreq,env,envFilter,detune,distortion,lowcut,chorus,res;
@@ -301,7 +301,7 @@ Engine_AmenBreak1 : CroneEngine {
 
             snd = SelectX.ar(drive,[snd,sndD]);
 
-            snd = Compander.ar(snd,snd,compression,0.5,clampTime:0.01,relaxTime:0.01);
+            // snd = Compander.ar(snd,snd,compression,0.5,clampTime:0.01,relaxTime:0.01);
 
             snd = RLPF.ar(snd,In.kr(lpfIn,1),res);
 
@@ -554,7 +554,9 @@ Engine_AmenBreak1 : CroneEngine {
         });
 
         this.addCommand("reese_set","sf",{ arg msg;
+            msg.postln;
             if (syns.at("reese").notNil,{
+                [syns.at("reese"),syns.at("reese").isRunning].postln;
                 if (syns.at("reese").isRunning,{
                     syns.at("reese").set(msg[1],msg[2]);
                 });
@@ -575,6 +577,7 @@ Engine_AmenBreak1 : CroneEngine {
             var pan=msg[11];
             var portamento=msg[12];
             var synExists=false;
+            msg.postln;
             if (syns.at("reese").notNil,{
                 if (syns.at("reese").isRunning,{
                     synExists=true;
@@ -651,14 +654,18 @@ Engine_AmenBreak1 : CroneEngine {
                     pan: pan,
                     startPos: startPos,
                     buf: bufs.at(filename)
-                ], syns.at("main"), \addBefore));
+                ], syns.at("main"), \addBefore).onFree({
+                    if (loop<1,{
+                        ["[loop]",filename,"freed"].postln;
+                        NetAddr("127.0.0.1", 10111).sendMsg("loopdone",filename,filename);
+                    });
+                }));
                 NodeWatcher.register(syns.at(filename));
             });
         });
 
         this.addCommand("loop_set","ssf",{ arg msg;
     	    var filename=msg[1];
-            msg.postln;
             if (syns.at(filename).notNil,{
                 if (syns.at(filename).isRunning,{
                     syns.at(filename).set(msg[2],msg[3]);
@@ -671,6 +678,7 @@ Engine_AmenBreak1 : CroneEngine {
             var slew=msg[2];
             if (syns.at(filename).notNil,{
                 if (syns.at(filename).isRunning,{
+                    ["[loop_stop]",filename,slew].postln;
                     syns.at(filename).set(\gate,0,\slew,slew);
                 });
             });

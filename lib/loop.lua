@@ -73,30 +73,30 @@ function Loop:emit(beat)
         do return end 
     end
     if self.primed then 
+        print("unpriming")
         self.playing=true 
-        self.primed = false 
-        engine.loop_stop(self.path,self.slew)
-        self:play((beat%self.ticks)/self.ticks)
-        do return end 
-    elseif beat%self.ticks==0 then 
+        self.primed=false 
+        engine.loop_stop(self.path,params:get("loop"..self.row.."_slew"))
+        self:loop_start((beat%self.ticks)/self.ticks)
+    elseif beat%self.ticks==0 and params:get("loop"..self.row.."_oneshot")==0 then 
         print("reset loop")
         engine.loop_stop(self.path,0.2)
-        self:play(0,0.2)
+        self:loop_start(0,0.2)
     end
 end
 
 function Loop:play()
-	if not self.oneshot then 
-        self.playing=true
+	if params:get("loop"..self.row.."_oneshot")==0 then 
         self.primed=true
     end
+    self.playing=true
     self:loop_start()
 end
 
 function Loop:stop()
     self.playing=false
     self.primed=false
-    engine.loop_stop(self.path,self.slew)
+    engine.loop_stop(self.path,params:get("loop"..self.row.."_slew"))
 end
 
 function Loop:toggle()

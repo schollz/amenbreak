@@ -150,7 +150,7 @@ function init()
 
   -- load audio file loops
   loops = {}
-  for row=1,4 do 
+  for row=1,5 do 
     loops[row]={}
     local folder=_path.audio.."amenbreak/row"..row
     os.execute("mkdir -p "..folder)
@@ -251,7 +251,7 @@ function init()
     loopdone=function(args)
       print("loopdone")
       tab.print(args)
-      for row=1,4 do 
+      for row=1,5 do 
         for col=1,8 do 
           if loops[row][col].loaded then 
             if loops[row][col].path==args[1] then 
@@ -449,7 +449,7 @@ function toggle_clock(on)
       clock_beat=clock_beat+1
 
       -- iterate the loops
-      for row=1,4 do 
+      for row=1,5 do 
         for col=1,8 do 
           loops[row][col]:emit(clock_beat)
         end
@@ -782,7 +782,7 @@ end
 
 function params_grid()
  local params_menu={}
- for row=1,4 do 
+ for row=1,5 do 
   local ps={
     {id="db",name="volume",min=-96,max=16,div=0.5,default=-12,unit="dB",kind="loop",row=row,fn=function(x) return util.dbamp(x) end},
     {id="pan",name="pan",min=-1,max=1,div=0.05,default=0,kind="loop",row=row},

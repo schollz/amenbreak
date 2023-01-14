@@ -177,7 +177,7 @@ function GGrid:key_press(row,col,on)
     if on then 
       params:delta("bass_basenote",col==15 and -12 or 12)
     end
-  elseif row>=1 and row<=4 and col>=9 then 
+  elseif row>=1 and row<=5 and col>=9 then 
     -- loops
     if on then
 	   loops[row][col-8]:toggle()
@@ -310,7 +310,7 @@ function GGrid:get_visual()
   end
 
   -- illuminate loops
-  for row=1,4 do 
+  for row=1,5 do 
 	  for col=1,8 do 
       if loops[row][col].playing then 
         self.visual[row][col+8]=9

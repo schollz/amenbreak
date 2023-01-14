@@ -65,6 +65,8 @@ pattern_store={}
 pattern_current={0,0,0,0,0,0,0}
 button_fns={}
 global_played={}
+bass_pattern_store={}
+bass_pattern_current=0
 
 UI=require 'ui'
 loaded_files=0
@@ -454,6 +456,18 @@ function toggle_clock(on)
           loops[row][col]:emit(clock_beat)
         end
       end
+
+      -- iterate the bass
+      if bass_pattern_current>0 then 
+        local ptn=bass_pattern_store[bass_pattern_current]
+        local note=ptn[(clock_beat%#ptn)+1]
+        if note==0 then 
+          engine.reese_off()
+        else
+          bass_note_on(note)
+        end
+      end
+      
       local first_beat=true
       if d.steps==0 then
 
@@ -981,4 +995,26 @@ function params_action()
     pattern_current=data.pattern_current
     pattern_store=data.pattern_store
   end
+end
+
+function bass_note_on(note)
+  engine.reese_on(note,params:get("bass_db"),
+    params:get("bass_mod1"),
+    params:get("bass_mod2"),
+    params:get("bass_mod3"),
+    params:get("bass_mod4"),
+    params:get("bass_attack"),
+    params:get("bass_decay"),
+    params:get("bass_sustain"),
+    params:get("bass_release"),
+    params:get("bass_pan"),
+    params:get("bass_portamento")
+  )
+  while note>36 do 
+    note = note - 12
+  end
+  while note<24 do 
+    note = note + 12
+  end
+  params:set("kick_basenote",note)
 end

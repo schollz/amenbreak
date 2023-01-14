@@ -44,28 +44,22 @@ function GGrid:new(args)
   -- musical keyboard
   m.reese_keys_on={}
   m.keyboard={}
-  m.note_on=function(x)
-    table.insert(m.reese_keys_on,x)
-    local note=x+params:get("bass_basenote")
-    engine.reese_on(note,params:get("bass_db"),
-      params:get("bass_mod1"),
-      params:get("bass_mod2"),
-      params:get("bass_mod3"),
-      params:get("bass_mod4"),
-      params:get("bass_attack"),
-      params:get("bass_decay"),
-      params:get("bass_sustain"),
-      params:get("bass_release"),
-      params:get("bass_pan"),
-      params:get("bass_portamento")
-    )
-    while note>36 do 
-      note = note - 12
+  m.note_on=function(x,note)
+    if note==nil then 
+      table.insert(m.reese_keys_on,x)
+      note=x+params:get("bass_basenote")
+
+      if self.bass_pattern_held~=nil then 
+        if self.bass_pattern_held.first then 
+          bass_pattern_store[self.bass_pattern_held.col]={}
+          self.bass_pattern_held.first=false
+        end
+        table.insert(bass_pattern_store[self.bass_pattern_held.col],note)
+        print(string.format("[grid] updating to pattern %d",self.bass_pattern_held.col))
+        tab.print(bass_pattern_store[self.bass_pattern_held.col])
+      end
     end
-    while note<24 do 
-      note = note + 12
-    end
-    params:set("kick_basenote",note)
+    bass_note_on(note)
   end
   m.reese_off=function(x)
     local new_keys={}
@@ -237,6 +231,20 @@ function GGrid:key_press(row,col,on)
       print(string.format("[grid] updating %s to pattern %d",PTTRN_NAME[self.pattern_held.row],self.pattern_held.col))
       tab.print(pattern_store[self.pattern_held.row][self.pattern_held.col])
     end
+  elseif row==6 and col>=9 and col<=14 then 
+    col=col-8
+    if on then
+      self.bass_pattern_held={col=col,first=true}
+      if bass_pattern_current==col then 
+        print(string.format("[grid] disabling bass patterns"))
+        bass_pattern_current=0
+      elseif next(bass_pattern_store[col])~=nil then 
+        print(string.format("[grid] switching to bass pattern %d",col))
+        bass_pattern_current=col
+      end
+    else
+      self.bass_pattern_held=nil
+    end
   elseif col>5 and row<=5 then 
     col=col-5
     if on then
@@ -296,6 +304,14 @@ function GGrid:get_visual()
     if col>0 then
       self.visual[row][col+5]=7
     end
+  end
+
+  -- illuminate which bass patterns are availble
+  for col,v in ipairs(bass_pattern_store) do 
+    self.visual[6][col+8]=next(v)~=nil and 2 or 0
+  end
+  if bass_pattern_current>0 then
+    self.visual[6][bass_pattern_current+8]=7
   end
 
   -- illuminate retrig / fx buttons

@@ -150,29 +150,23 @@ function GGrid:key_press(row,col,on)
   end
 
   if on and row==8 and col==1 then 
+    -- main start
     toggle_clock()
-   elseif row>=1 and row<=4 and col>=9 then 
+  elseif row>=1 and row<=4 and col>=9 then 
+    -- loops
     if on then
 	   loops[row][col-8]:toggle()
     end
-   elseif row>=7 and col>=9 then 
+  elseif row>=7 and col>=9 then 
+    -- bass keyboard
     local fn = self.keyboard[row-6][col-8]
     if on and fn.on then 
 		   fn.on()
 	   elseif (not on) and fn.off then 
 		   fn.off()
 	   end
-  elseif on and row==6 and col>=11 then 
-    local x=(col-11)/5
-    params:set_raw("db",x)
-    params:set("kick_db",params:get("db")-6)
-  elseif on and row==7 and col>=11 then 
-    local x=(col-11)/5
-    params:set_raw("lpf",x)
-  elseif on and row==8 and col>=12 then 
-    local x=(col-12)/4
-    params:set_raw("gate",x)
   elseif row>=3 and row<=8 and col>=6 and col<=8 then 
+    -- fx / retrig
     local r=row-2
     local c=col-5
     local fns=self.button_fns[r][c]
@@ -194,13 +188,16 @@ function GGrid:key_press(row,col,on)
       end
     end
   elseif on and col==1 then 
+    -- sample select
     local bin=binary.encode(params:get("track"))
     bin[row]=1-bin[row]
     params:set("track",binary.decode(bin))
   elseif (not on) and col>=2 and col<=5 then 
+    -- step deselect
     local i=(row-1)*4+col-1
     button_fns.ci=nil
   elseif on and col>=2 and col<=5 then 
+    -- step select
     local i=(row-1)*4+col-1
     button_fns.ci=function() return i end 
     if clock_run==nil then 
@@ -247,19 +244,12 @@ function GGrid:get_visual()
     local row=math.floor((i-1)/4)+1
     local col=(i-1)%4+2
     if ws[params:get("track")]~=nil then 
-      self.visual[row][col]=pos_last==i and 15
-      if ws[params:get("track")].kick~=nil and pos_last~=i then 
+      if pos_last==i then 
+        self.visual[row][col] = 15
+      elseif ws[params:get("track")].kick~=nil then 
         self.visual[row][col]=ws[params:get("track")].kick[i]>-48 and 9 or 4
       end
     end
-  end
-
-  -- illuminate currently pressed button
-  for k,_ in pairs(self.pressed_buttons) do
-    local row,col=k:match("(%d+),(%d+)")
-    row=tonumber(row)
-    col=tonumber(col)
-    self.visual[row][col]=14
   end
 
   -- illuminate the current track

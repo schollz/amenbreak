@@ -174,7 +174,7 @@ function init()
   -- params:default()
 
   local params_menu={
-    {id="db",name="volume",min=-96,max=12,exp=false,div=0.1,default=0,unit="db"},
+    {id="db",name="volume",min=-96,max=12,exp=false,div=0.1,default=-6,unit="db"},
     {id="punch",name="punch",min=0,max=1,exp=false,div=0.01,default=0,unit="punches"},
     {id="amen",name="amen",min=0,max=1,exp=false,div=0.01,default=0,unit="amens"},
     {id="break",name="break",min=0,max=1,exp=false,div=0.01,default=0,unit="break"},
@@ -795,7 +795,7 @@ function params_grid()
  end
  local params_menu2={
     {id="basenote",name="root note",min=10,max=90,exp=false,div=1,default=36,noaction=true,formatter=function(param) return musicutil.note_num_to_name(param:get(),true)end},
-    {id="db",name="volume",min=-96,max=16,div=0.5,default=-12,unit="dB",fn=function(x) return util.dbamp(x) end},
+    {id="db",name="volume",min=-96,max=16,div=0.5,default=-6,unit="dB",fn=function(x) return util.dbamp(x) end},
     {id="mod1",name="mod1",min=-1,max=1,exp=false,div=0.1,default=0.0},
     {id="mod2",name="mod2",min=-1,max=1,exp=false,div=0.1,default=0.0},
     {id="mod3",name="mod3",min=-1,max=1,exp=false,div=0.1,default=0.0},

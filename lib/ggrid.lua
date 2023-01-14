@@ -148,7 +148,7 @@ function GGrid:new(args)
   })
   table.insert(m.button_fns,{
     {on=function() params:set("tape_gate",1) end,off=function() params:set("tape_gate",0) end,light=function() return params:get("tape_gate")>0 and 14 or 2 end},
-    {on=function() m.filter_on=true;engine.filter_set(200,clock.get_beat_sec()*math.random(1,4)) end,off=function() m.filter_on=false;engine.filter_set(musicutil.note_num_to_freq(params:get("lpf")),clock.get_beat_sec()*math.random(1,4)) end,light=function() return m.filter_on and 14 or 2 end},
+    {on=function() m.filter_on=true;engine.filter_set(200,clock.get_beat_sec()*math.random(1,4)) end,off=function() m.filter_on=false;engine.filter_set(musicutil.note_num_to_freq(params:get("lpf")),clock.get_beat_sec()*math.random(1,4)*2) end,light=function() return m.filter_on and 14 or 2 end},
     {on=m.toggle_mute,light=function() return params:get("db")<-32 and 14 or 2 end},
   })
 

@@ -42,17 +42,10 @@ function GGrid:new(args)
   m.grid_refresh:start()
 
   -- musical keyboard
-  m.reese_keys_on=0
+  m.reese_keys_on={}
   m.keyboard={}
-  m.reese_amp=-8
-  m.reese_off=function()
-	  m.reese_keys_on=m.reese_keys_on-1
-    print(m.reese_keys_on)
-    if m.reese_keys_on==0 then 
-      engine.reese_off()
-    end
-  end
   m.note_on=function(x)
+    table.insert(m.reese_keys_on,x)
     local note=x+params:get("bass_basenote")
     engine.reese_on(note,params:get("bass_db"),
       params:get("bass_mod1"),
@@ -66,7 +59,6 @@ function GGrid:new(args)
       params:get("bass_pan"),
       params:get("bass_portamento")
     )
-    m.reese_keys_on=m.reese_keys_on+1
     while note>36 do 
       note = note - 12
     end
@@ -75,25 +67,41 @@ function GGrid:new(args)
     end
     params:set("kick_basenote",note)
   end
+  m.reese_off=function(x)
+    local new_keys={}
+    for _, v in ipairs(m.reese_keys_on) do 
+      if v~=x then 
+        table.insert(new_keys,v)
+      end
+    end
+    print("new_keys")
+    tab.print(new_keys)
+    m.reese_keys_on=new_keys
+    if next(m.reese_keys_on)==nil then 
+      engine.reese_off()
+    else
+      m.note_on(m.reese_keys_on[#m.reese_keys_on])
+    end
+  end
   m.keyboard[1]={
     {},
-    {on=function() m.note_on(1) end,off=m.reese_off},
-    {on=function() m.note_on(3) end,off=m.reese_off},
+    {on=function() m.note_on(1) end,off=function() m.reese_off(1) end},
+    {on=function() m.note_on(3) end,off=function() m.reese_off(3) end},
     {},
-    {on=function() m.note_on(6) end,off=m.reese_off},
-    {on=function() m.note_on(8) end,off=m.reese_off},
-    {on=function() m.note_on(10) end,off=m.reese_off},
+    {on=function() m.note_on(6) end,off=function() m.reese_off(6) end},
+    {on=function() m.note_on(8) end,off=function() m.reese_off(8) end},
+    {on=function() m.note_on(10) end,off=function() m.reese_off(10) end},
     {},
   }
   m.keyboard[2]={
-    {on=function() m.note_on(0) end,off=m.reese_off},
-    {on=function() m.note_on(2) end,off=m.reese_off},
-    {on=function() m.note_on(4) end,off=m.reese_off},
-    {on=function() m.note_on(5) end,off=m.reese_off},
-    {on=function() m.note_on(7) end,off=m.reese_off},
-    {on=function() m.note_on(9) end,off=m.reese_off},
-    {on=function() m.note_on(11) end,off=m.reese_off},
-    {on=function() m.note_on(12) end,off=m.reese_off},
+    {on=function() m.note_on(0) end,off=function() m.reese_off(0) end},
+    {on=function() m.note_on(2) end,off=function() m.reese_off(2) end},
+    {on=function() m.note_on(4) end,off=function() m.reese_off(4) end},
+    {on=function() m.note_on(5) end,off=function() m.reese_off(5) end},
+    {on=function() m.note_on(7) end,off=function() m.reese_off(7) end},
+    {on=function() m.note_on(9) end,off=function() m.reese_off(9) end},
+    {on=function() m.note_on(11) end,off=function() m.reese_off(11) end},
+    {on=function() m.note_on(12) end,off=function() m.reese_off(12) end},
   }
 
   -- in the grid loop, set the button fns

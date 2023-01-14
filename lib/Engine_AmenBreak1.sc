@@ -117,7 +117,7 @@ Engine_AmenBreak1 : CroneEngine {
         SynthDef("loop1",{ 
             arg buf,amp=1,startPos=0,gate=1,loop=1,slew=1;
             var env = EnvGen.ar(Env.asr(slew,1,slew),gate,doneAction:2);
-            var snd = PlayBuf.ar(numChannels:ch, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop, doneAction: 0);
+            var snd = PlayBuf.ar(numChannels:1, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop, doneAction: 0);
             snd = snd * env * Lag.kr(amp);
             snd = Pan2.ar(snd,\pan.kr(0));
             Out.ar(\out.kr(0),\compressible.kr(0)*snd);
@@ -129,7 +129,7 @@ Engine_AmenBreak1 : CroneEngine {
         SynthDef("loop2",{ 
             arg buf,amp=1,startPos=0,gate=1,loop=1,slew=1;
             var env = EnvGen.ar(Env.asr(slew,1,slew),gate,doneAction:2);
-            var snd = PlayBuf.ar(numChannels:ch, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop, doneAction: 0);
+            var snd = PlayBuf.ar(numChannels:2, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop, doneAction: 0);
             snd = snd * env * Lag.kr(amp);
             snd = Balance2.ar(snd[0],snd[1],\pan.kr(0));
             Out.ar(\out.kr(0),\compressible.kr(0)*snd);
@@ -597,7 +597,7 @@ Engine_AmenBreak1 : CroneEngine {
                     mod4: mod4,
                     attack: attack,
                     decay: decay,
-                    sustain: sutain,
+                    sustain: sustain,
                     release: release,
                     pan: pan,
                     portamento: portamento
@@ -658,6 +658,7 @@ Engine_AmenBreak1 : CroneEngine {
 
         this.addCommand("loop_set","ssf",{ arg msg;
     	    var filename=msg[1];
+            msg.postln;
             if (syns.at(filename).notNil,{
                 if (syns.at(filename).isRunning,{
                     syns.at(filename).set(msg[2],msg[3]);

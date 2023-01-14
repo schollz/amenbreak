@@ -296,7 +296,7 @@ function GGrid:get_visual()
 
   -- illuminate keyboard
   for col=9,16 do 
-    self.visual[row][col]=4
+    self.visual[8][col]=4
   end
   self.visual[7][10]=8
   self.visual[7][11]=8

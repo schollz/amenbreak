@@ -17,9 +17,9 @@ end
 
 function Loop:loop_start(pos,slew)
     pos=pos or 0
-    slew=slew or params:get("loop"..row.."_slew")
-    local do_loop=1-params:get("loop"..row.."_oneshot")
-    engine.loop(self.path,params:get("loop"..row.."_db"),pos,do_loop,slew,params:get("loop"..row.."_pan"))
+    slew=slew or params:get("loop"..self.row.."_slew")
+    local do_loop=1-params:get("loop"..self.row.."_oneshot")
+    engine.loop(self.path,params:get("loop"..self.row.."_db"),pos,do_loop,slew,params:get("loop"..self.row.."_pan"))
 end
 
 function Loop:load_sample(path)

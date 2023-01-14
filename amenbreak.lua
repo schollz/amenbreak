@@ -147,7 +147,26 @@ function init()
     audiowaveform="/home/we/dust/code/amenbreak/lib/audiowaveform"
   end
 
+
+  -- load audio file loops
+  loops = {}
+  for row=1,4 do 
+    loops[row]={}
+    local folder=_path.audio.."amenbreak/row"..row
+    os.execute("mkdir -p "..folder)
+    for col=1,8 do 
+      table.insert(loops[row],loop_:new{row=row})
+    end
+    for i,fname in ipairs(find_files(folder)) do 
+      if i<=8 then 
+        loops[row][i]:load_sample(fname)
+      end
+    end
+  end
+
+
   -- add major parameters
+  params_grid()
   params_kick()
   params_audioin()
   params_audioout()
@@ -287,22 +306,6 @@ function init()
         elseif msg.type=="stop" then
           toggle_clock(false)
         end
-      end
-    end
-  end
-
-  -- load audio file loops
-  loops = {}
-  for row=1,4 do 
-    loops[row]={}
-    local folder=_path.audio.."amenbreak/row"..row
-    os.execute("mkdir -p "..folder)
-    for col=1,8 do 
-      table.insert(loops[row],loop_:new{row=row})
-    end
-    for i,fname in ipairs(find_files(folder)) do 
-      if i<=8 then 
-        loops[row][i]:load_sample(fname)
       end
     end
   end
@@ -763,18 +766,18 @@ function params_grid()
  local params_menu={}
  for row=1,4 do 
   local ps={
-    {id="db",name="volume",min=-48,max=16,div=0.5,default=-12,unit="dB",kind="loop",row=row,fn=function(x) util.dbamp(x) end},
+    {id="db",name="volume",min=-48,max=16,div=0.5,default=-12,unit="dB",kind="loop",row=row,fn=function(x) return util.dbamp(x) end},
     {id="pan",name="pan",min=-1,max=1,div=0.05,default=0,kind="loop",row=row},
     {id="slew",name="fade time",min=0.1,max=20,div=0.1,default=4,unit="sec",kind="loop",row=row},
-    {id="oneshot",name="oneshot",min=0,max=1,div=1,default=0,formatter=function(param) return param:get()==1 and "yes" or "no" end},
+    {id="oneshot",name="oneshot",min=0,max=1,div=1,default=0,row=row,formatter=function(param) return param:get()==1 and "yes" or "no" end},
   }
   for _, p in ipairs(ps) do 
-    table.insert(params_menu,v)
+    table.insert(params_menu,p)
   end
  end
  local params_menu2={
     {id="basenote",name="root note",min=10,max=90,exp=false,div=1,default=24,noaction=true,formatter=function(param) return musicutil.note_num_to_name(param:get(),true)end},
-    {id="db",name="volume",min=-48,max=16,div=0.5,default=-12,unit="dB",fn=function(x) util.dbamp(x) end},
+    {id="db",name="volume",min=-48,max=16,div=0.5,default=-12,unit="dB",fn=function(x) return util.dbamp(x) end},
     {id="mod1",name="mod1",min=-1,max=1,exp=false,div=0.1,default=0.0},
     {id="mod2",name="mod2",min=-1,max=1,exp=false,div=0.1,default=0.0},
     {id="mod3",name="mod3",min=-1,max=1,exp=false,div=0.1,default=0.0},
@@ -787,8 +790,13 @@ function params_grid()
     {id="portamento",name="portamento",min=0.0,max=20,exp=false,div=0.1,default=0.1,unit="sec"},
   }
 
- params:add_group("GRID",#params_menu+#params_menu2+1)
+ params:add_group("GRID",#params_menu+#params_menu2+5)
+ local current_row=0
  for _,pram in ipairs(params_menu) do
+    if pram.row~=current_row then 
+      params:add_separator("ROW "..pram.row)
+      current_row=pram.row
+    end
     params:add{
       type="control",
       id="loop"..pram.row.."_"..pram.id,
@@ -796,7 +804,7 @@ function params_grid()
       controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
       formatter=pram.formatter,
     }
-    params:set_action(pram.kind.."_"..pram.id,function(v)
+    params:set_action("loop"..pram.row.."_"..pram.id,function(v)
       if pram.kind=="loop" then 
         -- set all loops simultaneously
         for col=1,8 do 
@@ -807,7 +815,7 @@ function params_grid()
       end
     end)
   end
-  param:add_separator("BASS")
+  params:add_separator("BASS")
   for _,pram in ipairs(params_menu2) do
      params:add{
        type="control",

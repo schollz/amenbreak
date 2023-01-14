@@ -51,13 +51,13 @@ Engine_AmenBreak1 : CroneEngine {
         var mips=0.0;
         var piped = Pipe.new("lscpu | grep BogoMIPS | awk '{print $2}'", "r"); 
         var oversample=1;
-        var oversampleDist=1;
+        var oversampleDist=0;
         mips = piped.getLine.asFloat;
         piped.close;
         ["BogoMIPS: ",mips].postln;
         if (mips>200,{
-            oversample=3;
-            oversampleDist=2;
+            oversample=2;
+            oversampleDist=1;
         });
 
 
@@ -158,6 +158,7 @@ Engine_AmenBreak1 : CroneEngine {
             snd=BLowShelf.ar(snd,freq,1,res);
             snd = LPF.ar(snd, (1*freq*lowcut) + (2*freq));
             snd = (snd*1).tanh;
+            // snd = snd+Mix.new(SinOsc.ar((note).midicps+(200/60*[1,-1])));
 
             snd = Balance2.ar(snd[0],snd[1],Lag.kr(pan,0.1));
             snd = snd * env * amp / 2;
@@ -167,8 +168,6 @@ Engine_AmenBreak1 : CroneEngine {
             // var env = EnvGen.ar(Env.asr(0.01,1,0.5),gate:gate,doneAction:2);
         	// var detune=200/60;//VarLag.kr(LFNoise0.kr(1/2),2,warp:\sine).range(0,2);
             // var distLFO=3;//VarLag.kr(LFNoise0.kr(1/2),2,warp:\sine).range(1,4);
-            // snd = SinOsc.ar((note+12).midicps+detune);
-            // snd = snd + SinOsc.ar((note+12).midicps-detune);	
         	// snd = Splay.ar(snd);
 	        // snd = RHPF.ar(snd,(note+12).midicps,0.7)*0.25;
 	        // snd = snd + SinOsc.ar((note-12).midicps!2);

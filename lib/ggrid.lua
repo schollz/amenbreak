@@ -42,7 +42,6 @@ function GGrid:new(args)
   m.grid_refresh:start()
 
   -- musical keyboard
-  m.octave=0
   m.reese_keys_on=0
   m.keyboard={}
   m.reese_amp=-8
@@ -54,7 +53,7 @@ function GGrid:new(args)
     end
   end
   m.note_on=function(x)
-    local note=x+params:get("bass_basenote")+m.octave*12
+    local note=x+params:get("bass_basenote")
     engine.reese_on(note,params:get("bass_db"),
       params:get("bass_mod1"),
       params:get("bass_mod2"),
@@ -77,14 +76,14 @@ function GGrid:new(args)
     params:set("kick_basenote",note)
   end
   m.keyboard[1]={
-    {on=function() m.octave=m.octave-1 end},
+    {},
     {on=function() m.note_on(1) end,off=m.reese_off},
     {on=function() m.note_on(3) end,off=m.reese_off},
     {},
     {on=function() m.note_on(6) end,off=m.reese_off},
     {on=function() m.note_on(8) end,off=m.reese_off},
     {on=function() m.note_on(10) end,off=m.reese_off},
-    {on=function() m.octave=m.octave+1 end},
+    {},
   }
   m.keyboard[2]={
     {on=function() m.note_on(0) end,off=m.reese_off},
@@ -166,6 +165,10 @@ function GGrid:key_press(row,col,on)
   if on and row==8 and col==1 then 
     -- main start
     toggle_clock()
+  elseif row==6 and col>=15 then 
+    if on then 
+      params:delta("bass_basenote",col==15 and -12 or 12)
+    end
   elseif row>=1 and row<=4 and col>=9 then 
     -- loops
     if on then
@@ -318,8 +321,8 @@ function GGrid:get_visual()
   self.visual[7][13]=8
   self.visual[7][14]=8
   self.visual[7][15]=8
-  self.visual[7][9]=util.round(util.clamp(util.linlin(-1,4,0,15,self.octave),0,15))
-  self.visual[7][16]=self.visual[7][9]
+  self.visual[6][15]=util.round(params:get_raw("bass_basenote")*15)
+  self.visual[6][16]=self.visual[6][15]
 
   -- illuminate playing screen
   self.visual[8][1]=clock_run==nil and 2 or 15

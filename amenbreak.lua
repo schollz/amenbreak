@@ -773,6 +773,7 @@ function params_grid()
   end
  end
  local params_menu2={
+    {id="basenote",name="root note",min=10,max=90,exp=false,div=1,default=24,noaction=true,formatter=function(param) return musicutil.note_num_to_name(param:get(),true)end},
     {id="db",name="volume",min=-48,max=16,div=0.5,default=-12,unit="dB",fn=function(x) util.dbamp(x) end},
     {id="mod1",name="mod1",min=-1,max=1,exp=false,div=0.1,default=0.0},
     {id="mod2",name="mod2",min=-1,max=1,exp=false,div=0.1,default=0.0},
@@ -815,9 +816,11 @@ function params_grid()
        controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
        formatter=pram.formatter,
      }
-     params:set_action("bass_"..pram.id,function(v)
-      engine.reese_set(pram.id=="db" and "amp" or pram.id,pram.fn and pram.fn(v) or v)
-     end)
+     if not pram.noaction then 
+      params:set_action("bass_"..pram.id,function(v)
+        engine.reese_set(pram.id=="db" and "amp" or pram.id,pram.fn and pram.fn(v) or v)
+       end)  
+     end
    end
 end
 

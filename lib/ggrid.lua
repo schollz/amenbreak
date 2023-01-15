@@ -28,6 +28,9 @@ function GGrid:new(args)
     end
   end
 
+  -- keep track of mode
+  m.main_mode=false
+
   -- keep track of pressed buttons
   m.pressed_buttons={}
 
@@ -161,111 +164,115 @@ function GGrid:key_press(row,col,on)
     self.pressed_buttons[row..","..col]=nil
   end
 
-  if on and row==8 and col==1 then 
-    -- main start
-    toggle_clock()
-  elseif row==6 and col>=15 then 
-    if on then 
-      params:delta("bass_basenote",col==15 and -12 or 12)
-    end
-  elseif row>=1 and row<=5 and col>=9 then 
-    -- loops
-    if on then
-	   loops[row][col-8]:toggle()
-    end
-  elseif row>=7 and col>=9 then 
-    -- bass keyboard
-    local fn = self.keyboard[row-6][col-8]
-    if on and fn.on then 
-		   fn.on()
-	   elseif (not on) and fn.off then 
-		   fn.off()
-     elseif on and self.bass_pattern_held~=nil then 
-        if self.bass_pattern_held.first then 
-          bass_pattern_store[self.bass_pattern_held.col]={}
-          self.bass_pattern_held.first=false
+  if self.main_mode then 
+    if on and row==8 and col==1 then 
+      -- main start
+      toggle_clock()
+    elseif row==6 and col>=15 then 
+      if on then 
+        params:delta("bass_basenote",col==15 and -12 or 12)
+      end
+    elseif row>=1 and row<=5 and col>=9 then 
+      -- loops
+      if on then
+      loops[row][col-8]:toggle()
+      end
+    elseif row>=7 and col>=9 then 
+      -- bass keyboard
+      local fn = self.keyboard[row-6][col-8]
+      if on and fn.on then 
+        fn.on()
+      elseif (not on) and fn.off then 
+        fn.off()
+      elseif on and self.bass_pattern_held~=nil then 
+          if self.bass_pattern_held.first then 
+            bass_pattern_store[self.bass_pattern_held.col]={}
+            self.bass_pattern_held.first=false
+          end
+          table.insert(bass_pattern_store[self.bass_pattern_held.col],-1)
+          print(string.format("[grid] updating to pattern %d with reset",self.bass_pattern_held.col))
+      end
+    elseif row>=3 and row<=8 and col>=6 and col<=8 then 
+      -- fx / retrig
+      local r=row-2
+      local c=col-5
+      local fns=self.button_fns[r][c]
+      if fns==nil then 
+        do return end 
+      end
+      if on and fns.on~=nil then 
+        fns.on()
+        do return end 
+      elseif (not on) and fns.off~=nil then 
+        fns.off()
+        do return end
+      else
+        for k,fn in pairs(fns) do 
+          if k=="off" or k=="on" or k=="light" then 
+          else
+            button_fns[k]=on and fn or nil
+          end
         end
-        table.insert(bass_pattern_store[self.bass_pattern_held.col],-1)
-        print(string.format("[grid] updating to pattern %d with reset",self.bass_pattern_held.col))
-    end
-  elseif row>=3 and row<=8 and col>=6 and col<=8 then 
-    -- fx / retrig
-    local r=row-2
-    local c=col-5
-    local fns=self.button_fns[r][c]
-    if fns==nil then 
-      do return end 
-    end
-    if on and fns.on~=nil then 
-      fns.on()
-      do return end 
-    elseif (not on) and fns.off~=nil then 
-      fns.off()
-      do return end
-    else
-      for k,fn in pairs(fns) do 
-        if k=="off" or k=="on" or k=="light" then 
-        else
-          button_fns[k]=on and fn or nil
+      end
+    elseif on and col==1 then 
+      -- sample select
+      local bin=binary.encode(params:get("track"))
+      bin[row]=1-bin[row]
+      params:set("track",binary.decode(bin))
+    elseif (not on) and col>=2 and col<=5 then 
+      -- step deselect
+      local i=(row-1)*4+col-1
+      button_fns.ci=nil
+    elseif on and col>=2 and col<=5 then 
+      -- step select
+      local i=(row-1)*4+col-1
+      button_fns.ci=function() return i end 
+      if clock_run==nil then 
+        ws[params:get("track")]:play{ci=i}
+      end  
+      if self.pattern_held~=nil then 
+        if self.pattern_held.first then 
+          pattern_store[self.pattern_held.row][self.pattern_held.col]={}
+          self.pattern_held.first=false
         end
+        table.insert(pattern_store[self.pattern_held.row][self.pattern_held.col],i)
+        print(string.format("[grid] updating %s to pattern %d",PTTRN_NAME[self.pattern_held.row],self.pattern_held.col))
+        tab.print(pattern_store[self.pattern_held.row][self.pattern_held.col])
+      end
+    elseif row==6 and col>=9 and col<=14 then 
+      print("[grid] bass pattern click",row,col,on)
+      col=col-8
+      if on then
+        self.bass_pattern_held={col=col,first=true}
+        if bass_pattern_current==col then 
+          print(string.format("[grid] disabling bass patterns"))
+          bass_pattern_current=0
+          bass_sequenced=-1
+          engine.reese_off()
+        elseif next(bass_pattern_store[col])~=nil then 
+          print(string.format("[grid] switching to bass pattern %d",col))
+          bass_pattern_current=col
+        end
+      else
+        self.bass_pattern_held=nil
+      end
+    elseif col>5 and row<=5 then 
+      col=col-5
+      if on then
+        self.pattern_held={row=row,col=col,first=true}
+        if pattern_current[row]==col then 
+          print(string.format("[grid] disabling %s patterns",PTTRN_NAME[row]))
+          pattern_current[row]=0
+        elseif next(pattern_store[row][col])~=nil then 
+          print(string.format("[grid] switching %s to pattern %d",PTTRN_NAME[row],col))
+          pattern_current[row]=col
+        end
+      else
+        self.pattern_held=nil
       end
     end
-  elseif on and col==1 then 
-    -- sample select
-    local bin=binary.encode(params:get("track"))
-    bin[row]=1-bin[row]
-    params:set("track",binary.decode(bin))
-  elseif (not on) and col>=2 and col<=5 then 
-    -- step deselect
-    local i=(row-1)*4+col-1
-    button_fns.ci=nil
-  elseif on and col>=2 and col<=5 then 
-    -- step select
-    local i=(row-1)*4+col-1
-    button_fns.ci=function() return i end 
-    if clock_run==nil then 
-      ws[params:get("track")]:play{ci=i}
-    end  
-    if self.pattern_held~=nil then 
-      if self.pattern_held.first then 
-        pattern_store[self.pattern_held.row][self.pattern_held.col]={}
-        self.pattern_held.first=false
-      end
-      table.insert(pattern_store[self.pattern_held.row][self.pattern_held.col],i)
-      print(string.format("[grid] updating %s to pattern %d",PTTRN_NAME[self.pattern_held.row],self.pattern_held.col))
-      tab.print(pattern_store[self.pattern_held.row][self.pattern_held.col])
-    end
-  elseif row==6 and col>=9 and col<=14 then 
-    print("[grid] bass pattern click",row,col,on)
-    col=col-8
-    if on then
-      self.bass_pattern_held={col=col,first=true}
-      if bass_pattern_current==col then 
-        print(string.format("[grid] disabling bass patterns"))
-        bass_pattern_current=0
-        bass_sequenced=-1
-        engine.reese_off()
-      elseif next(bass_pattern_store[col])~=nil then 
-        print(string.format("[grid] switching to bass pattern %d",col))
-        bass_pattern_current=col
-      end
-    else
-      self.bass_pattern_held=nil
-    end
-  elseif col>5 and row<=5 then 
-    col=col-5
-    if on then
-      self.pattern_held={row=row,col=col,first=true}
-      if pattern_current[row]==col then 
-        print(string.format("[grid] disabling %s patterns",PTTRN_NAME[row]))
-        pattern_current[row]=0
-      elseif next(pattern_store[row][col])~=nil then 
-        print(string.format("[grid] switching %s to pattern %d",PTTRN_NAME[row],col))
-        pattern_current[row]=col
-      end
-    else
-      self.pattern_held=nil
-    end
+  else
+    -- gross beat mode
   end
 end
 
@@ -279,90 +286,95 @@ function GGrid:get_visual()
     end
   end
 
-  -- illuminate the current position
-  for i=1,params:get(params:get("track").."beats")*2 do 
-    local row=math.floor((i-1)/4)+1
-    local col=(i-1)%4+2
-    if ws[params:get("track")]~=nil then 
-      if pos_last==i then 
-        self.visual[row][col] = 15
-      elseif ws[params:get("track")].kick~=nil then 
-        self.visual[row][col]=ws[params:get("track")].kick[i]>-48 and 9 or 4
-      end
-    end
-  end
-
-  -- illuminate the current track
-  local bin=binary.encode(params:get("track"))
-  for i,v in ipairs(bin) do 
-    if i<8 then 
-      self.visual[i][1]=v==1 and 15 or 2
-    end
-  end
-
-  -- illuminate which patterns are availble
-  for row,_ in ipairs(pattern_store) do 
-    for coll,v in ipairs(pattern_store[row]) do 
-      local col=coll+5
-      self.visual[row][col]=next(v)~=nil and 2 or 0
-    end
-  end
-  for row,col in ipairs(pattern_current) do 
-    if col>0 then
-      self.visual[row][col+5]=7
-    end
-  end
-
-  -- illuminate which bass patterns are availble
-  for col,v in ipairs(bass_pattern_store) do 
-    self.visual[6][col+8]=next(v)~=nil and 2 or 0
-  end
-  if bass_pattern_current>0 then
-    self.visual[6][bass_pattern_current+8]=7
-  end
-
-  -- illuminate retrig / fx buttons
-  for row=3,8 do 
-    for col=6,8 do
-      if global_played~=nil then 
-        if self.button_fns[row-2][col-5].light~=nil then
-          self.visual[row][col]=self.button_fns[row-2][col-5].light()
+  if self.main_mode then 
+    -- illuminate the current position
+    for i=1,params:get(params:get("track").."beats")*2 do 
+      local row=math.floor((i-1)/4)+1
+      local col=(i-1)%4+2
+      if ws[params:get("track")]~=nil then 
+        if pos_last==i then 
+          self.visual[row][col] = 15
+        elseif ws[params:get("track")].kick~=nil then 
+          self.visual[row][col]=ws[params:get("track")].kick[i]>-48 and 9 or 4
         end
       end
     end
-  end
 
-  -- illuminate loops
-  for row=1,5 do 
-	  for col=1,8 do 
-      if loops[row][col].playing then 
-        self.visual[row][col+8]=9
-      elseif loops[row][col].loaded then 
-        self.visual[row][col+8]=2
+    -- illuminate the current track
+    local bin=binary.encode(params:get("track"))
+    for i,v in ipairs(bin) do 
+      if i<8 then 
+        self.visual[i][1]=v==1 and 15 or 2
       end
     end
-  end
 
-  -- illuminate keyboard
-  for row=7,8 do 
-    for col=9,16 do 
-      self.visual[row][col]=self.keyboard[row-6][col-8].light and self.keyboard[row-6][col-8].light() or 0
+    -- illuminate which patterns are availble
+    for row,_ in ipairs(pattern_store) do 
+      for coll,v in ipairs(pattern_store[row]) do 
+        local col=coll+5
+        self.visual[row][col]=next(v)~=nil and 2 or 0
+      end
     end
-  end
-  self.visual[6][15]=util.round(params:get_raw("bass_basenote")*15)
-  self.visual[6][16]=self.visual[6][15]
+    for row,col in ipairs(pattern_current) do 
+      if col>0 then
+        self.visual[row][col+5]=7
+      end
+    end
 
-  -- illuminate playing screen
-  self.visual[8][1]=clock_run==nil and 2 or 15
-  
-  -- illuminate currently pressed button
-  for k,_ in pairs(self.pressed_buttons) do
-    local row,col=k:match("(%d+),(%d+)")
-    row=tonumber(row)
-    col=tonumber(col)
-    if col>=9 then 
-      self.visual[row][col]=15
+    -- illuminate which bass patterns are availble
+    for col,v in ipairs(bass_pattern_store) do 
+      self.visual[6][col+8]=next(v)~=nil and 2 or 0
     end
+    if bass_pattern_current>0 then
+      self.visual[6][bass_pattern_current+8]=7
+    end
+
+    -- illuminate retrig / fx buttons
+    for row=3,8 do 
+      for col=6,8 do
+        if global_played~=nil then 
+          if self.button_fns[row-2][col-5].light~=nil then
+            self.visual[row][col]=self.button_fns[row-2][col-5].light()
+          end
+        end
+      end
+    end
+
+    -- illuminate loops
+    for row=1,5 do 
+      for col=1,8 do 
+        if loops[row][col].playing then 
+          self.visual[row][col+8]=9
+        elseif loops[row][col].loaded then 
+          self.visual[row][col+8]=2
+        end
+      end
+    end
+
+    -- illuminate keyboard
+    for row=7,8 do 
+      for col=9,16 do 
+        self.visual[row][col]=self.keyboard[row-6][col-8].light and self.keyboard[row-6][col-8].light() or 0
+      end
+    end
+    self.visual[6][15]=util.round(params:get_raw("bass_basenote")*15)
+    self.visual[6][16]=self.visual[6][15]
+
+    -- illuminate playing screen
+    self.visual[8][1]=clock_run==nil and 2 or 15
+    
+    -- illuminate currently pressed button
+    for k,_ in pairs(self.pressed_buttons) do
+      local row,col=k:match("(%d+),(%d+)")
+      row=tonumber(row)
+      col=tonumber(col)
+      if col>=9 then 
+        self.visual[row][col]=15
+      end
+    end
+
+  else
+    -- not main mode
   end
 
   return self.visual

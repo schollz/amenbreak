@@ -1,4 +1,4 @@
--- amenbreak v1.2.0
+-- amenbreak v1.3.0
 --
 --
 -- amen+break
@@ -31,6 +31,7 @@ include("lib/utils")
 musicutil=require("musicutil")
 sample_=include("lib/sample")
 ggrid_=include("lib/ggrid")
+loop_=include("lib/loop")
 
 pos_last=0
 param_switch=true
@@ -44,6 +45,7 @@ posit={
   inc={1},
 dur={1}}
 initital_monitor_level=0
+loops={}
 
 -- global constants (for grid)
 PTTRN_STEP=1
@@ -51,22 +53,21 @@ PTTRN_AMEN=2
 PTTRN_BREK=3
 PTTRN_DRUM=4
 PTTRN_PNCH=5
-PTTRN_NAME={"STEP","AMEN","BREK","DRUM","PNCH","NAME"}
+PTTRN_NAME={"STEP","BREK","AMEN","DRUM","PNCH","NAME"}
 PTTRN_FUNS={
   function(v) end,
-  function(v) params:set_raw("amen",v) end,
   function(v) params:set_raw("break",v) end,
+  function(v) params:set_raw("amen",v) end,
   function(v) params:set_raw("track",v) end,
   function(v) params:set_raw("punch",v) end,
 }
 pattern_store={}
 pattern_current={0,0,0,0,0,0,0}
-step_held=0
-retrig_held=0
-pitchup_held=0
-volup_held=0
-moresteps_held=0
-reverse_held=0
+button_fns={}
+global_played={}
+bass_pattern_store={}
+bass_pattern_current=0
+bass_sequenced=-1
 
 UI=require 'ui'
 loaded_files=0
@@ -76,6 +77,7 @@ engine.name=Engine_Exists and 'AmenBreak1' or nil
 
 -- other stuff
 function init()
+  os.execute("mkdir -p ".._path.data.."amenbreak/resampled/")
   Needs_Restart=false
   Data_Exists=util.file_exists(_path.data.."amenbreak/dats/")
   if (not Data_Exists) or (not Engine_Exists) then
@@ -118,6 +120,9 @@ function init()
       table.insert(pattern_store[row],{})
     end
   end
+  for col=1,6 do 
+    table.insert(bass_pattern_store,{})
+  end
   -- pattern_store[PTTRN_STEP][1]={1,2,3,4}
   -- pattern_current[PTTRN_STEP]=1
 
@@ -148,7 +153,26 @@ function init()
     audiowaveform="/home/we/dust/code/amenbreak/lib/audiowaveform"
   end
 
+
+  -- load audio file loops
+  loops = {}
+  for row=1,5 do 
+    loops[row]={}
+    local folder=_path.audio.."amenbreak/row"..row
+    os.execute("mkdir -p "..folder)
+    for col=1,8 do 
+      table.insert(loops[row],loop_:new{row=row})
+    end
+    for i,fname in ipairs(find_files(folder)) do 
+      if i<=8 then 
+        loops[row][i]:load_sample(fname)
+      end
+    end
+  end
+
+
   -- add major parameters
+  params_grid()
   params_kick()
   params_audioin()
   params_audioout()
@@ -156,7 +180,7 @@ function init()
   -- params:default()
 
   local params_menu={
-    {id="db",name="volume",min=-48,max=12,exp=false,div=0.1,default=0,unit="db"},
+    {id="db",name="volume",min=-96,max=12,exp=false,div=0.1,default=-6,unit="db"},
     {id="punch",name="punch",min=0,max=1,exp=false,div=0.01,default=0,unit="punches"},
     {id="amen",name="amen",min=0,max=1,exp=false,div=0.01,default=0,unit="amens"},
     {id="break",name="break",min=0,max=1,exp=false,div=0.01,default=0,unit="break"},
@@ -173,6 +197,7 @@ function init()
     {id="drive",name="drive",min=0,max=0.75,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%d%%",util.round(100*param:get())) end},
     {id="compression",name="compression",min=0,max=0.4,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%d%%",util.round(100*param:get())) end},
     {id="pitch",name="note",min=-24,max=24,exp=false,div=0.1,default=0.0,response=1,formatter=function(param) return string.format("%s%2.1f",param:get()>-0.01 and "+" or "",param:get()) end},
+    {id="gate",name="gate",min=0.1,max=1,exp=false,div=0.01,default=1.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="rate",name="rate",min=-2,max=2,exp=false,div=0.01,default=1.0,response=1,formatter=function(param) return string.format("%s%2.1f",param:get()>-0.01 and "+" or "",param:get()*100) end},
     {id="rotate",name="rotate",hide=true,min=-127,max=127,exp=false,div=1,default=0.0,response=1,formatter=function(param) return string.format("%s%2.0f",param:get()>-0.01 and "+" or "",param:get()) end},
     {id="stretch",name="stretch",min=0,max=5,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
@@ -191,6 +216,11 @@ function init()
     }
     if pram.hide then
       params:hide(pram.id)
+    end
+    if pram.id=="lpf" then 
+      params:set_action(pram.id,function(x)
+        engine.filter_set(musicutil.note_num_to_freq(x),clock.get_beat_sec()*math.random(1,4))
+      end)
     end
   end
   params:add_separator("current sample")
@@ -224,6 +254,20 @@ function init()
   }
   -- setup osc
   osc_fun={
+    loopdone=function(args)
+      print("loopdone")
+      tab.print(args)
+      for row=1,5 do 
+        for col=1,8 do 
+          if loops[row][col].loaded then 
+            if loops[row][col].path==args[1] then 
+              loops[row][col].playing=false
+              loops[row][col].primed=false
+            end
+          end
+        end
+      end
+    end,
     progressbar=function(args)
       show_message(args[1])
       show_progress(tonumber(args[2]))
@@ -287,7 +331,10 @@ function init()
   end
 
 
-
+  -- setup
+  params:set("loop1_db",0)
+  params:set("loop1_slew",0.05)
+  params:set("loop1_oneshot",1)
   -- debug
   clock.run(function()
     -- startup
@@ -305,6 +352,7 @@ function init()
       g_=ggrid_:new()
       clock.sleep(1)
     params:set("punch",0.3)
+    tab.print(loops[1][1])
     -- toggle_clock(true)
   end)
 end
@@ -368,6 +416,9 @@ function toggle_clock(on)
       clock_run=nil
     end
   else
+    if bass_pattern_current>0 then 
+      engine.reese_off()
+    end
     if params:get("tape_start_stop")==1 then 
       params:set("tape_gate",1)
     end
@@ -397,6 +448,8 @@ function toggle_clock(on)
   clock_beat=-1
   local d={steps=0,ci=1}
   local switched_direction=false
+  local switched_gate=false
+  local gate_on=nil
   params:set("clock_reset",1)
   -- clock.internal.start(-0.1) 
   clock_run=clock.run(function()
@@ -405,6 +458,26 @@ function toggle_clock(on)
       clock.sync(1/2) -- needs to go first
       local track_beats=params:get(params:get("track").."beats")
       clock_beat=clock_beat+1
+
+      -- iterate the loops
+      for row=1,5 do 
+        for col=1,8 do 
+          loops[row][col]:emit(clock_beat)
+        end
+      end
+
+      -- iterate the bass
+      if bass_pattern_current>0 then 
+        local ptn=bass_pattern_store[bass_pattern_current]
+        local x=ptn[(clock_beat%#ptn)+1]
+        bass_sequenced=x
+        if x==-1 then 
+          engine.reese_off()
+        else
+          bass_note_on(x+params:get("bass_basenote"))
+        end
+      end
+      
       local first_beat=true
       if d.steps==0 then
 
@@ -424,9 +497,9 @@ function toggle_clock(on)
         d.db=0
         d.delay=0
         d.stretch=0
-        d.gate=1
         d.rate=1
         d.pitch=0
+        d.gate=gate_on
         -- retriggering
         local refractory=math.random(15*1,15*10)
         if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.3)*1.5 and debounce_fn["retrig"]==nil then
@@ -456,6 +529,11 @@ function toggle_clock(on)
           d.gate=math.random(25,75)/100
           d.steps=d.steps>1 and d.steps or d.steps*math.random(2,8)
           debounce_fn["delay"]={refractory*2,function()end}
+        end
+        if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.7)*0.4 and debounce_fn["gate"]==nil then
+          gate_on=0.5
+          debounce_fn["gate_off"]={math.random(16,64),function() gate_on=nil end}
+          debounce_fn["gate"]={refractory,function() end}
         end
         if math.random()<easing_function2(params:get("amen"),-3.1,-1.3,0.177,0.5) then
           d.rate=-1
@@ -491,13 +569,16 @@ function toggle_clock(on)
         if d.retrig==0 and math.random()<p and params:get("amen")>0 then
           d.retrig=math.random(1,2)*2-1
         end
-        d.ci=step_held~=0 and step_held or d.ci
-        d.retrig=retrig_held~=0 and retrig_held or d.retrig_held
-        d.db=volup_held~=0 and volup_held or d.db 
-        d.pitch=pitchup_held~=0 and pitchup_held or d.pitch
-        d.steps=moresteps_held~=0 and moresteps_held or d.steps
-        d.rate=reverse_held~=0 and -1 or d.rate
+        -- overwrite current data with button data from grid
+        for k, fn in pairs(button_fns) do
+          d[k]=fn()
+          print("button",k,d[k])
+        end
         d.duration=d.steps*clock.get_beat_sec()/2
+        global_played={}
+        for k,v in pairs(d) do
+          global_played[k]=v
+        end
         ws[params:get("track")]:play(d)
         if params:get("efit")==1 and math.random()<lfos[5]/4 then
           params:set_raw("track",math.random())
@@ -721,12 +802,82 @@ function redraw()
     screen.text_center("BREAK")
     screen.move(64,57)
     screen.font_face(63)
-    screen.text_center("v1.2.0")
+    screen.text_center("v1.3.0")
     screen.font_size(8)
     screen.font_face(1)
   end
   draw_message()
   screen.update()
+end
+
+function params_grid()
+ local params_menu={}
+ for row=1,5 do 
+  local ps={
+    {id="db",name="volume",min=-96,max=16,div=0.5,default=-12,unit="dB",kind="loop",row=row,fn=function(x) return util.dbamp(x) end},
+    {id="pan",name="pan",min=-1,max=1,div=0.05,default=0,kind="loop",row=row},
+    {id="slew",name="fade time",min=0.1,max=20,div=0.1,default=4,unit="sec",kind="loop",row=row},
+    {id="oneshot",name="oneshot",min=0,max=1,div=1,default=0,row=row,formatter=function(param) return param:get()==1 and "yes" or "no" end},
+  }
+  for _, p in ipairs(ps) do 
+    table.insert(params_menu,p)
+  end
+ end
+ local params_menu2={
+    {id="basenote",name="root note",min=0,max=128,exp=false,div=1,default=36,noaction=true,formatter=function(param) return musicutil.note_num_to_name(param:get(),true)end},
+    {id="db",name="volume",min=-96,max=16,div=0.5,default=-6,unit="dB",fn=function(x) return util.dbamp(x) end},
+    {id="mod1",name="mod1",min=-1,max=1,exp=false,div=0.1,default=0.0},
+    {id="mod2",name="mod2",min=-1,max=1,exp=false,div=0.1,default=0.0},
+    {id="mod3",name="mod3",min=-1,max=1,exp=false,div=0.1,default=0.0},
+    {id="mod4",name="mod4",min=-1,max=1,exp=false,div=0.1,default=0.0},
+    {id="attack",name="attack",min=0.01,max=20,exp=false,div=0.1,default=0.1,unit="sec"},
+    {id="decay",name="decay",min=0.01,max=20,exp=false,div=0.1,default=0.2,unit="sec"},
+    {id="sustain",name="sustain",min=0.0,max=1,exp=false,div=0.1,default=0.9,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="release",name="release",min=0.01,max=20,exp=false,div=0.1,default=2,unit="sec"},
+    {id="pan",name="pan",min=-1,max=1,div=0.05,default=0,kind="loop",row=row},
+    {id="portamento",name="portamento",min=0.0,max=20,exp=false,div=0.1,default=0.1,unit="sec"},
+  }
+
+ params:add_group("GRID > BASS",#params_menu2)
+ for _,pram in ipairs(params_menu2) do
+  params:add{
+    type="control",
+    id="bass_"..pram.id,
+    name=pram.name,
+    controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
+    formatter=pram.formatter,
+  }
+  if not pram.noaction then 
+   params:set_action("bass_"..pram.id,function(v)
+     engine.reese_set(pram.id=="db" and "amp" or pram.id,pram.fn and pram.fn(v) or v)
+    end)  
+  end
+end
+params:add_group("GRID > LOOPS",#params_menu+5)
+ local current_row=0
+ for _,pram in ipairs(params_menu) do
+    if pram.row~=current_row then 
+      params:add_separator("ROW "..pram.row)
+      current_row=pram.row
+    end
+    params:add{
+      type="control",
+      id="loop"..pram.row.."_"..pram.id,
+      name=pram.name,
+      controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
+      formatter=pram.formatter,
+    }
+    params:set_action("loop"..pram.row.."_"..pram.id,function(v)
+      if pram.kind=="loop" then 
+        -- set all loops simultaneously
+        for col=1,8 do 
+          if loops[pram.row][col].playing then 
+            engine.loop_set(loops[pram.row][col].path,pram.id=="db" and "amp" or pram.id,pram.fn and pram.fn(v) or v)
+          end
+        end
+      end
+    end)
+  end
 end
 
 function params_audioin()
@@ -788,7 +939,7 @@ function params_audioout()
     {id="compress_attack",name="sidechain attack",min=0,max=1,exp=false,div=0.001,default=0.01,formatter=function(param) return (param:get()*1000).." ms" end},
     {id="compress_release",name="sidechain release",min=0,max=2,exp=false,div=0.01,default=0.2,formatter=function(param) return (param:get()*1000).." ms" end},
     {id="lpshelf",name="lp boost freq",min=12,max=127,exp=false,div=1,default=23,formatter=function(param) return musicutil.note_num_to_name(math.floor(param:get()),true)end,fn=function(x) return musicutil.note_num_to_freq(x) end},
-    {id="lpgain",name="lp boost db",min=-48,max=36,exp=false,div=1,default=0,unit="dB"},
+    {id="lpgain",name="lp boost db",min=-96,max=36,exp=false,div=1,default=0,unit="dB"},
     {id="noise_gate_db",name="noise gate threshold",min=-60,max=0,exp=false,div=0.5,default=-60,unit="dB"},
     {id="noise_gate_attack",name="noise gate attack",min=0,max=1,exp=false,div=0.001,default=0.01,unit="s"},
     {id="noise_gate_release",name="noise gate release",min=0,max=1,exp=false,div=0.001,default=0.01,unit="s"},
@@ -832,7 +983,7 @@ end
 function params_action()
   params.action_write=function(filename,name)
     print("[params.action_write]",filename,name)
-    local data={pattern_current=pattern_current,pattern_store=pattern_store}
+    local data={pattern_current=pattern_current,pattern_store=pattern_store,bass_pattern_current=bass_pattern_current,bass_pattern_store=bass_pattern_store}
     filename=filename..".json"
     local file=io.open(filename,"w+")
     io.output(file)
@@ -859,5 +1010,29 @@ function params_action()
     end
     pattern_current=data.pattern_current
     pattern_store=data.pattern_store
+    bass_pattern_current=data.bass_pattern_current
+    bass_pattern_store=data.bass_pattern_store
   end
+end
+
+function bass_note_on(note)
+  engine.reese_on(note,params:get("bass_db"),
+    params:get("bass_mod1"),
+    params:get("bass_mod2"),
+    params:get("bass_mod3"),
+    params:get("bass_mod4"),
+    params:get("bass_attack"),
+    params:get("bass_decay"),
+    params:get("bass_sustain"),
+    params:get("bass_release"),
+    params:get("bass_pan"),
+    params:get("bass_portamento")
+  )
+  while note>36 do 
+    note = note - 12
+  end
+  while note<24 do 
+    note = note + 12
+  end
+  params:set("kick_basenote",note)
 end

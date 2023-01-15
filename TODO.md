@@ -1,0 +1,6 @@
+- change the kick frequency based on reese bass
+- allow programmed release for samples (slow for start/stop, fast for switching positions)
+- reese bass needs current tempo as argument
+- move the retrig to correct position
+- make the musical grid keyboard lightup
+- make the root note of the musical grid keyboard a parameter

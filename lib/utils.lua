@@ -24,3 +24,22 @@ function binary.decode(t)
   end
   return math.floor(num)
 end
+
+
+function lines_from(file)
+  if not util.file_exists(file) then return {} end
+  local lines={}
+  for line in io.lines(file) do
+    lines[#lines+1]=line
+  end
+  table.sort(lines)
+  return lines
+end
+
+
+function find_files(folder)
+  os.execute("find "..folder.."* -print -type f -name '*.flac' | grep 'wav\\|flac' > /tmp/foo")
+  os.execute("find "..folder.."* -print -type f -name '*.wav' | grep 'wav\\|flac' >> /tmp/foo")
+  os.execute("cat /tmp/foo | sort | uniq > /tmp/files")
+  return lines_from("/tmp/files")
+end

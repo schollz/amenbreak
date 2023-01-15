@@ -51,13 +51,13 @@ Engine_AmenBreak1 : CroneEngine {
         var mips=0.0;
         var piped = Pipe.new("lscpu | grep BogoMIPS | awk '{print $2}'", "r"); 
         var oversample=1;
-        var oversampleDist=1;
+        var oversampleDist=0;
         mips = piped.getLine.asFloat;
         piped.close;
         ["BogoMIPS: ",mips].postln;
         if (mips>200,{
-            oversample=3;
-            oversampleDist=2;
+            oversample=2;
+            oversampleDist=1;
         });
 
 
@@ -93,8 +93,8 @@ Engine_AmenBreak1 : CroneEngine {
         SynthDef("rise",{|out,duration=1,min=0.1,max=1|
             Out.kr(out,EnvGen.kr(Env.new([min,max],[duration],\exponential),doneAction:2));
         }).send(context.server);        
-        SynthDef("set",{|out,val,slew=0.5|
-            Out.kr(out,Lag.kr(val,slew));
+        SynthDef("set",{|out,val,slew=2|
+            Out.kr(out,VarLag.kr(val,slew,warp:\exponential));
         }).send(context.server);        
         SynthDef("tremolo",{|out,min=0.1,max=1,rate=0.5,duration=1|
             FreeSelf.kr(TDelay.kr(Impulse.kr(0), duration));
@@ -112,6 +112,69 @@ Engine_AmenBreak1 : CroneEngine {
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
             Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);
             Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);
+        }).send(context.server);
+
+        SynthDef("loop1",{ 
+            arg buf,amp=1,startPos=0,gate=1,loop=1,slew=1;
+            var env = EnvGen.ar(Env.asr(slew,1,slew),gate,doneAction:2);
+            var snd = PlayBuf.ar(numChannels:1, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop, doneAction: 2);
+            snd = snd * env * Lag.kr(amp);
+            snd = Pan2.ar(snd,\pan.kr(0));
+            Out.ar(\out.kr(0),\compressible.kr(0)*snd);
+            Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
+            Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);
+            Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);            
+        }).send(context.server);
+
+        SynthDef("loop2",{ 
+            arg buf,amp=1,startPos=0,gate=1,loop=1,slew=1;
+            var env = EnvGen.ar(Env.asr(slew,1,slew),gate,doneAction:2);
+            var snd = PlayBuf.ar(numChannels:2, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop, doneAction: 2);
+            snd = snd * env * Lag.kr(amp);
+            snd = Balance2.ar(snd[0],snd[1],\pan.kr(0));
+            Out.ar(\out.kr(0),\compressible.kr(0)*snd);
+            Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
+            Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);
+            Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);            
+        }).send(context.server);
+
+        SynthDef("reese", { 
+            arg note=32,amp=1.0,gate=1,sub=0,portamento=1,bend=0,
+            attack=0.01,decay=0.2,sustain=0.9,release=5,
+            mod1=0,mod2=0,mod3=0,mod4=0,pan=0,duration=600;
+            var snd,freq,oscfreq,env,envFilter,detune,distortion,lowcut,chorus,res;
+            mod1=Lag.kr(mod1);mod2=Lag.kr(mod2);mod3=Lag.kr(mod3);mod4=Lag.kr(mod4);
+            note=Lag.kr(note,portamento);
+            env=EnvGen.ar(Env.adsr(attack+0.01,decay+0.01,sustain,release+0.01),(gate-EnvGen.kr(Env.new([0,0,1],[duration,0]))),doneAction:2);
+            distortion=LinLin.kr(mod1,-1,1,1,20);
+            lowcut=LinLin.kr(mod2,-1,1,1,16);
+            res=LinLin.kr(mod3,-1,1,-4,8);
+            detune=LinLin.kr(mod4,-1,1,-0.6,0.62);
+            freq=note.midicps/2;
+
+            oscfreq = {freq * LFNoise2.kr(0.5).range(1-detune, 1+detune)}!3;
+            snd = Splay.ar(SawDPW.ar(oscfreq));
+            snd = (snd*distortion).tanh;
+            snd=BLowShelf.ar(snd,freq,1,res);
+            snd = LPF.ar(snd, (1*freq*lowcut) + (2*freq));
+            snd = (snd*1).tanh;
+            // snd = snd+Mix.new(SinOsc.ar((note).midicps+(200/60*[1,-1])));
+
+            snd = Balance2.ar(snd[0],snd[1],Lag.kr(pan,0.1));
+            snd = snd * env * amp / 2;
+            snd = snd * LinLin.kr(note,20,120,6,12.neg).dbamp;
+
+            // var snd;
+            // var env = EnvGen.ar(Env.asr(0.01,1,0.5),gate:gate,doneAction:2);
+        	// var detune=200/60;//VarLag.kr(LFNoise0.kr(1/2),2,warp:\sine).range(0,2);
+            // var distLFO=3;//VarLag.kr(LFNoise0.kr(1/2),2,warp:\sine).range(1,4);
+        	// snd = Splay.ar(snd);
+	        // snd = RHPF.ar(snd,(note+12).midicps,0.7)*0.25;
+	        // snd = snd + SinOsc.ar((note-12).midicps!2);
+	        // snd = (snd*distLFO).softclip*amp*env;
+            Out.ar(\out.kr(0),\compressible.kr(0)*snd);
+            Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
+            Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);
         }).send(context.server);
         
         SynthDef("lfos", {
@@ -237,7 +300,7 @@ Engine_AmenBreak1 : CroneEngine {
 
             snd = SelectX.ar(drive,[snd,sndD]);
 
-            snd = Compander.ar(snd,snd,compression,0.5,clampTime:0.01,relaxTime:0.01);
+            // snd = Compander.ar(snd,snd,compression,0.5,clampTime:0.01,relaxTime:0.01);
 
             snd = RLPF.ar(snd,In.kr(lpfIn,1),res);
 
@@ -290,14 +353,12 @@ Engine_AmenBreak1 : CroneEngine {
             this.synthChange(id,k,v);
         });
 
-        this.addCommand("tremolo","ffff",{ arg msg;
-            var min=msg[1];
-            var max=msg[2];
-            var duration=msg[3];
-            var rate=msg[4];
-            syns.at("filter").free;
-            syns.put("filter",Synth.new("tremolo",[\out,buses.at("filter"),\duration,duration,\min,min,\max,max,\rate,rate],s,\addToHead));
-            NodeWatcher.register(syns.at("filter"));
+        this.addCommand("filter_set","ff", { arg msg;
+            var val=msg[1];
+            var slew=msg[2];
+            if (syns.at("filter").isRunning,{
+                syns.at("filter").set(\val,val,\slew,slew);
+            });
         });
 
         this.addCommand("slice_on","ssffffffffffffffffffffffff",{ arg msg;
@@ -329,13 +390,6 @@ Engine_AmenBreak1 : CroneEngine {
             var res=msg[26];
             var db_first=db+db_add;
             var db_orig=db_first;
-            // TODO: set filter bus
-            if (syns.at("filter").isRunning,{
-                syns.at("filter").set(\val,lpf);
-            },{
-                syns.put("filter",Synth.new("set",[\out,buses.at("filter"),\val,18000],s,\addToHead));
-                NodeWatcher.register(syns.at("filter"));                
-            });
             if (retrig>0,{
                 db_first=db;
                 if (db_add>0,{
@@ -348,9 +402,12 @@ Engine_AmenBreak1 : CroneEngine {
                 if (retrig>3,{
                     if (100.rand<25,{
                         // create filter sweep
-                        syns.at("filter").free;
-                        syns.put("filter",Synth.new("rise",[\out,buses.at("filter"),\duration,duration_total,\min,200,\max,lpf],s,\addToHead));
-                        NodeWatcher.register(syns.at("filter"));
+                        Routine {
+                            syns.at("filter").set(\slew,0.1);
+                            syns.at("filter").set(\val,200);
+                            0.1.wait;
+                            syns.at("filter").set(\slew,duration_total,\val,lpf);
+                        }.play;
                     });
                 });
             });
@@ -446,6 +503,7 @@ Engine_AmenBreak1 : CroneEngine {
                 });
             });
         });
+
         this.addCommand("load_slow","s",{ arg msg;
             var id=msg[1];
             // ["loading"+id].postln;
@@ -494,6 +552,69 @@ Engine_AmenBreak1 : CroneEngine {
             ],syns.at("main"),\addBefore).onFree({"freed!"});
         });
 
+        this.addCommand("reese_set","sf",{ arg msg;
+            msg.postln;
+            if (syns.at("reese").notNil,{
+                [syns.at("reese"),syns.at("reese").isRunning].postln;
+                if (syns.at("reese").isRunning,{
+                    syns.at("reese").set(msg[1],msg[2]);
+                });
+            });
+        });
+
+        this.addCommand("reese_on","ffffffffffff",{ arg msg;
+            var note=msg[1];
+            var amp=msg[2].dbamp;
+            var mod1=msg[3];
+            var mod2=msg[4];
+            var mod3=msg[5];
+            var mod4=msg[6];
+            var attack=msg[7];
+            var decay=msg[8];
+            var sustain=msg[9];
+            var release=msg[10];
+            var pan=msg[11];
+            var portamento=msg[12];
+            var synExists=false;
+            msg.postln;
+            if (syns.at("reese").notNil,{
+                if (syns.at("reese").isRunning,{
+                    synExists=true;
+                });
+            });
+            if (synExists,{
+                syns.at("reese").set(\note,note,\gate,1);
+            },{
+                syns.put("reese",Synth.new("reese", [
+                    out: buses.at("busCompressible"),
+                    outsc: buses.at("busCompressing"),
+                    outnsc: buses.at("busNotCompressible"),
+                    note: note,
+                    compressible: 1,
+                    compressing: 0,
+                    amp: amp,
+                    mod1: mod1,
+                    mod2: mod2,
+                    mod3: mod3,
+                    mod4: mod4,
+                    attack: attack,
+                    decay: decay,
+                    sustain: sustain,
+                    release: release,
+                    pan: pan,
+                    portamento: portamento
+                ], syns.at("main"), \addBefore));
+                NodeWatcher.register(syns.at("reese"));
+            });
+        });
+
+        this.addCommand("reese_off","",{ arg msg;
+            if (syns.at("reese").notNil,{
+                if (syns.at("reese").isRunning,{
+                    syns.at("reese").set(\gate,0);
+                });
+            });
+        });
 
         this.addCommand("main_set","sf",{ arg msg;
             var k=msg[1];
@@ -506,6 +627,61 @@ Engine_AmenBreak1 : CroneEngine {
             });
         });
 
+        this.addCommand("loop","sfffff",{ arg msg;
+            var filename=msg[1];
+            var amp=msg[2].dbamp;
+            var startPos=msg[3];
+	        var loop=msg[4];
+            var slew=msg[5];
+            var pan=msg[6];
+            ["loop",loop].postln;
+            if (syns.at(filename).notNil,{
+                if (syns.at(filename).isRunning,{
+                    syns.at(filename).set(\gate,0);
+                });
+            });
+            if (bufs.at(filename).notNil,{
+                syns.put(filename,Synth.new("loop"++bufs.at(filename).numChannels, [
+                    out: buses.at("busCompressible"),
+                    outsc: buses.at("busCompressing"),
+                    outnsc: buses.at("busNotCompressible"),
+                    compressible: 1,
+                    compressing: 0,
+                    amp: amp,
+                    slew: slew,
+                    loop: loop,
+                    pan: pan,
+                    startPos: startPos,
+                    buf: bufs.at(filename)
+                ], syns.at("main"), \addBefore).onFree({
+                    if (loop<1,{
+                        ["[loop]",filename,"freed"].postln;
+                        NetAddr("127.0.0.1", 10111).sendMsg("loopdone",filename,filename);
+                    });
+                }));
+                NodeWatcher.register(syns.at(filename));
+            });
+        });
+
+        this.addCommand("loop_set","ssf",{ arg msg;
+    	    var filename=msg[1];
+            if (syns.at(filename).notNil,{
+                if (syns.at(filename).isRunning,{
+                    syns.at(filename).set(msg[2],msg[3]);
+                });
+            });
+        });
+
+        this.addCommand("loop_stop","sf",{ arg msg;
+    	    var filename=msg[1];
+            var slew=msg[2];
+            if (syns.at(filename).notNil,{
+                if (syns.at(filename).isRunning,{
+                    ["[loop_stop]",filename,slew].postln;
+                    syns.at(filename).set(\gate,0,\slew,slew);
+                });
+            });
+        });
 
     }
 

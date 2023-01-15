@@ -41,6 +41,107 @@ function GGrid:new(args)
   end
   m.grid_refresh:start()
 
+  -- musical keyboard
+  m.reese_keys_on={}
+  m.keyboard={}
+  m.note_on=function(x,sequenced)
+    note=x+params:get("bass_basenote")
+    if sequenced==nil then 
+      table.insert(m.reese_keys_on,x)
+      if m.bass_pattern_held~=nil then 
+        if m.bass_pattern_held.first then 
+          bass_pattern_store[m.bass_pattern_held.col]={}
+          m.bass_pattern_held.first=false
+        end
+        table.insert(bass_pattern_store[m.bass_pattern_held.col],x)
+        print(string.format("[grid] updating to pattern %d",m.bass_pattern_held.col))
+        tab.print(bass_pattern_store[m.bass_pattern_held.col])
+      end
+    end
+    bass_note_on(note)
+  end
+  m.reese_off=function(x)
+    local new_keys={}
+    for _, v in ipairs(m.reese_keys_on) do 
+      if v~=x then 
+        table.insert(new_keys,v)
+      end
+    end
+    m.reese_keys_on=new_keys
+    if next(m.reese_keys_on)==nil then 
+      engine.reese_off()
+    else
+      m.note_on(m.reese_keys_on[#m.reese_keys_on])
+    end
+  end
+  m.keyboard[1]={
+    {},
+    {on=function() m.note_on(1) end,off=function() m.reese_off(1) end,light=function() return bass_sequenced==1 and 14 or 8 end},
+    {on=function() m.note_on(3) end,off=function() m.reese_off(3) end,light=function() return bass_sequenced==3 and 14 or 8 end},
+    {},
+    {on=function() m.note_on(6) end,off=function() m.reese_off(6) end,light=function() return bass_sequenced==6 and 14 or 8 end},
+    {on=function() m.note_on(8) end,off=function() m.reese_off(8) end,light=function() return bass_sequenced==8 and 14 or 8 end},
+    {on=function() m.note_on(10) end,off=function() m.reese_off(10) end,light=function() return bass_sequenced==10 and 14 or 8 end},
+    {},
+  }
+  m.keyboard[2]={
+    {on=function() m.note_on(0) end,off=function() m.reese_off(0) end,light=function() return bass_sequenced==0 and 14 or 4 end},
+    {on=function() m.note_on(2) end,off=function() m.reese_off(2) end,light=function() return bass_sequenced==2 and 14 or 4 end},
+    {on=function() m.note_on(4) end,off=function() m.reese_off(4) end,light=function() return bass_sequenced==4 and 14 or 4 end},
+    {on=function() m.note_on(5) end,off=function() m.reese_off(5) end,light=function() return bass_sequenced==5 and 14 or 4 end},
+    {on=function() m.note_on(7) end,off=function() m.reese_off(7) end,light=function() return bass_sequenced==7 and 14 or 4 end},
+    {on=function() m.note_on(9) end,off=function() m.reese_off(9) end,light=function() return bass_sequenced==9 and 14 or 4 end},
+    {on=function() m.note_on(11) end,off=function() m.reese_off(11) end,light=function() return bass_sequenced==11 and 14 or 4 end},
+    {on=function() m.note_on(12) end,off=function() m.reese_off(12) end,light=function() return bass_sequenced==12 and 14 or 4 end},
+  }
+
+  -- in the grid loop, set the button fns
+  m.button_fns={}
+  local choices_steps={{1,4},{5,12},{13,32}}
+  local choices_retrigs={{1,5},{6,13},{14,32}}
+  for row=1,3 do 
+    m.button_fns[row]={}
+    for col=1,3 do 
+      m.button_fns[row][col]={
+        retrig=function() return math.random(choices_retrigs[col][1],choices_retrigs[col][2]) end,
+        steps=function() return math.random(choices_steps[row][1],choices_steps[row][2]) end,
+        light=function() 
+          return (global_played.retrig~=nil and 
+          global_played.retrig>=choices_retrigs[col][1] and 
+          global_played.retrig<=choices_retrigs[col][2] and
+          global_played.steps>=choices_steps[row][1] and 
+          global_played.steps<=choices_steps[row][2]) and 14 or (row*1+col*1) 
+        end}
+    end
+  end
+  m.toggle_mute=function()
+    print("TOGGLE")
+    if params:get("db")>-32 then 
+      m.db_store=params:get("db")
+      m.kick_db_store=params:get("kick_db")
+      params:set("db",-96)
+      params:set("kick_db",-96)
+    elseif m.db_store~=nil then 
+      params:set("db",m.db_store)
+      params:set("kick_db",m.kick_db_store)
+    end
+  end
+  m.filter_on=false
+  table.insert(m.button_fns,{
+    {uselast=function() return 1 end,light=function() return  (global_played.uselast~=nil and global_played.uselast>0) and 14 or 2 end},
+    {db=function() return math.random(1,2) end,light=function() return (global_played.db~=nil and global_played.db>0) and 14 or 2 end},
+    {pitch=function() return math.random(1,2) end,light=function() return (global_played.pitch~=nil and global_played.pitch~=0) and 14 or 2 end},
+  })
+  table.insert(m.button_fns,{
+    {delay=function() return 1 end,light=function() return  (global_played.delay~=nil and global_played.delay>0) and 14 or 2 end},
+    {rate=function() return -1 end,light=function() return (global_played.rate~=nil and global_played.rate<0) and 14 or 2 end},
+    {on=function() params:set("gate",0.5) end,off=function() params:set("gate",1) end,light=function() return (global_played.stretch~=nil and global_played.stretch>0) and 14 or 2 end},
+  })
+  table.insert(m.button_fns,{
+    {on=function() params:set("tape_gate",1) end,off=function() params:set("tape_gate",0) end,light=function() return params:get("tape_gate")>0 and 14 or 2 end},
+    {on=function() m.filter_on=true;engine.filter_set(200,clock.get_beat_sec()*math.random(1,4)) end,off=function() m.filter_on=false;engine.filter_set(musicutil.note_num_to_freq(params:get("lpf")),clock.get_beat_sec()*math.random(1,4)*2) end,light=function() return m.filter_on and 14 or 2 end},
+    {on=m.toggle_mute,light=function() return params:get("db")<-32 and 14 or 2 end},
+  })
 
   return m
 end
@@ -61,31 +162,67 @@ function GGrid:key_press(row,col,on)
   end
 
   if on and row==8 and col==1 then 
+    -- main start
     toggle_clock()
-  elseif row==8 and col>=6 then 
-    if col==6 then 
-      params:set("tape_gate",on and 1 or 0)
-    elseif col==7 then 
-      retrig_held=on and math.random(2,6) or 0
-    elseif col==8 then 
-      volup_held=on and math.random(1,2) or 0
-    elseif col==9 then 
-      pitchup_held=on and math.random(-2,2) or 0
-    elseif col==10 then 
-      moresteps_held=on and (math.random(2,5)) or 0
-    elseif col==11 then 
-      reverse_held=on and 1 or 0
+  elseif row==6 and col>=15 then 
+    if on then 
+      params:delta("bass_basenote",col==15 and -12 or 12)
+    end
+  elseif row>=1 and row<=5 and col>=9 then 
+    -- loops
+    if on then
+	   loops[row][col-8]:toggle()
+    end
+  elseif row>=7 and col>=9 then 
+    -- bass keyboard
+    local fn = self.keyboard[row-6][col-8]
+    if on and fn.on then 
+		   fn.on()
+	   elseif (not on) and fn.off then 
+		   fn.off()
+     elseif on and self.bass_pattern_held~=nil then 
+        if self.bass_pattern_held.first then 
+          bass_pattern_store[self.bass_pattern_held.col]={}
+          self.bass_pattern_held.first=false
+        end
+        table.insert(bass_pattern_store[self.bass_pattern_held.col],-1)
+        print(string.format("[grid] updating to pattern %d with reset",self.bass_pattern_held.col))
+    end
+  elseif row>=3 and row<=8 and col>=6 and col<=8 then 
+    -- fx / retrig
+    local r=row-2
+    local c=col-5
+    local fns=self.button_fns[r][c]
+    if fns==nil then 
+      do return end 
+    end
+    if on and fns.on~=nil then 
+      fns.on()
+      do return end 
+    elseif (not on) and fns.off~=nil then 
+      fns.off()
+      do return end
+    else
+      for k,fn in pairs(fns) do 
+        if k=="off" or k=="on" or k=="light" then 
+        else
+          button_fns[k]=on and fn or nil
+        end
+      end
     end
   elseif on and col==1 then 
+    -- sample select
     local bin=binary.encode(params:get("track"))
     bin[row]=1-bin[row]
     params:set("track",binary.decode(bin))
   elseif (not on) and col>=2 and col<=5 then 
+    -- step deselect
     local i=(row-1)*4+col-1
-    step_held=0
+    button_fns.ci=nil
   elseif on and col>=2 and col<=5 then 
+    -- step select
     local i=(row-1)*4+col-1
-    step_held=i
+    button_fns.ci=function() return i end 
     if clock_run==nil then 
       ws[params:get("track")]:play{ci=i}
     end  
@@ -97,6 +234,23 @@ function GGrid:key_press(row,col,on)
       table.insert(pattern_store[self.pattern_held.row][self.pattern_held.col],i)
       print(string.format("[grid] updating %s to pattern %d",PTTRN_NAME[self.pattern_held.row],self.pattern_held.col))
       tab.print(pattern_store[self.pattern_held.row][self.pattern_held.col])
+    end
+  elseif row==6 and col>=9 and col<=14 then 
+    print("[grid] bass pattern click",row,col,on)
+    col=col-8
+    if on then
+      self.bass_pattern_held={col=col,first=true}
+      if bass_pattern_current==col then 
+        print(string.format("[grid] disabling bass patterns"))
+        bass_pattern_current=0
+        bass_sequenced=-1
+        engine.reese_off()
+      elseif next(bass_pattern_store[col])~=nil then 
+        print(string.format("[grid] switching to bass pattern %d",col))
+        bass_pattern_current=col
+      end
+    else
+      self.bass_pattern_held=nil
     end
   elseif col>5 and row<=5 then 
     col=col-5
@@ -130,18 +284,12 @@ function GGrid:get_visual()
     local row=math.floor((i-1)/4)+1
     local col=(i-1)%4+2
     if ws[params:get("track")]~=nil then 
-      if ws[params:get("track")].kick~=nil then 
-        self.visual[row][col]=pos_last==i and 15 or (ws[params:get("track")].kick[i]>-48 and 9 or 4)
+      if pos_last==i then 
+        self.visual[row][col] = 15
+      elseif ws[params:get("track")].kick~=nil then 
+        self.visual[row][col]=ws[params:get("track")].kick[i]>-48 and 9 or 4
       end
     end
-  end
-
-  -- illuminate currently pressed button
-  for k,_ in pairs(self.pressed_buttons) do
-    local row,col=k:match("(%d+),(%d+)")
-    row=tonumber(row)
-    col=tonumber(col)
-    self.visual[row][col]=14
   end
 
   -- illuminate the current track
@@ -165,21 +313,58 @@ function GGrid:get_visual()
     end
   end
 
-  -- illuminate tape stop
-  self.visual[8][6]=params:get("tape_gate")==1 and 15 or 0
+  -- illuminate which bass patterns are availble
+  for col,v in ipairs(bass_pattern_store) do 
+    self.visual[6][col+8]=next(v)~=nil and 2 or 0
+  end
+  if bass_pattern_current>0 then
+    self.visual[6][bass_pattern_current+8]=7
+  end
+
+  -- illuminate retrig / fx buttons
+  for row=3,8 do 
+    for col=6,8 do
+      if global_played~=nil then 
+        if self.button_fns[row-2][col-5].light~=nil then
+          self.visual[row][col]=self.button_fns[row-2][col-5].light()
+        end
+      end
+    end
+  end
+
+  -- illuminate loops
+  for row=1,5 do 
+	  for col=1,8 do 
+      if loops[row][col].playing then 
+        self.visual[row][col+8]=9
+      elseif loops[row][col].loaded then 
+        self.visual[row][col+8]=2
+      end
+    end
+  end
+
+  -- illuminate keyboard
+  for row=7,8 do 
+    for col=9,16 do 
+      self.visual[row][col]=self.keyboard[row-6][col-8].light and self.keyboard[row-6][col-8].light() or 0
+    end
+  end
+  self.visual[6][15]=util.round(params:get_raw("bass_basenote")*15)
+  self.visual[6][16]=self.visual[6][15]
 
   -- illuminate playing screen
   self.visual[8][1]=clock_run==nil and 2 or 15
-
+  
   -- illuminate currently pressed button
   for k,_ in pairs(self.pressed_buttons) do
     local row,col=k:match("(%d+),(%d+)")
     row=tonumber(row)
     col=tonumber(col)
-    if row==8 and col>=6 then 
+    if col>=9 then 
       self.visual[row][col]=15
     end
   end
+
   return self.visual
 end
 

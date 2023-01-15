@@ -53,11 +53,11 @@ PTTRN_AMEN=2
 PTTRN_BREK=3
 PTTRN_DRUM=4
 PTTRN_PNCH=5
-PTTRN_NAME={"STEP","AMEN","BREK","DRUM","PNCH","NAME"}
+PTTRN_NAME={"STEP","BREK","AMEN","DRUM","PNCH","NAME"}
 PTTRN_FUNS={
   function(v) end,
-  function(v) params:set_raw("amen",v) end,
   function(v) params:set_raw("break",v) end,
+  function(v) params:set_raw("amen",v) end,
   function(v) params:set_raw("track",v) end,
   function(v) params:set_raw("punch",v) end,
 }
@@ -137,9 +137,9 @@ function init()
     if not string.find(fname,"slow") then
       if util.file_exists(_path.audio.."amenbreak/"..fname..".json") then
         table.insert(amen_files,fname)
-        if #amen_files==10 then
-          break
-        end
+        -- if #amen_files==10 then
+        --   break
+        -- end
       end
     end
   end

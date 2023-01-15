@@ -28,6 +28,7 @@ E2 amens, E3 breaks.
 - kick drum added to bolster kicks of pre-analyzed samples
 - edit mode allows manipulating individual slices/kick volume
 - all effects are determined by probabilities with sweet spots controlled by many different [easing functions](https://www.desmos.com/calculator/3mmmijzncm) (thanks to @dewb for pointing this out)
+- (with grid) bass engine w/ keyboard+sequencer, looped/one-shot sample player
 
 ### controls
 
@@ -58,6 +59,11 @@ f*** it:
 ## Grid
 
 ![image](https://user-images.githubusercontent.com/6550035/212520442-25b36eb9-f93e-42eb-9423-d02524ac45aa.png)
+
+
+the **fx region** of the grid has the following effects in order, left-to-right and top to bottom: retrig, change volume, change pitch, delay, reverse, gate, tape stop, filter, mute
+
+if you are using the sample player you can only sync them if they have `bpm` in the title. for example, `my_sound_bpm120.wav` will process it as a 120-bpm sample. upon loading, *amenbreak* stretches the sample to keep the same pitch but match the current tempo. *note*: this only works when loading, so be careful when using samples and changing tempo.
 
 ## Install
 

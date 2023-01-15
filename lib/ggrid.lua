@@ -31,6 +31,14 @@ function GGrid:new(args)
   -- keep track of mode
   m.main_mode=false
 
+  -- gross beat mode
+  m.fingers_on_grid=nil
+  m.gross_places={}
+  for i=1,16 do 
+    table.insert(m.gross_places,{1,1})
+  end
+  gross_beat_update(m.gross_places)
+
   -- keep track of pressed buttons
   m.pressed_buttons={}
 
@@ -273,6 +281,71 @@ function GGrid:key_press(row,col,on)
     end
   else
     -- gross beat mode
+    if row<8 then 
+      if not on then 
+        if self.fingers_on_grid~=nil and self.fingers_on_grid[1]==row and self.fingers_on_grid[2]==col then
+          self.fingers_on_grid=nil
+        end
+        do return end
+      end
+      if self.fingers_on_grid~=nil then
+        self:toggle_note_from_to(self.fingers_on_grid[1],self.fingers_on_grid[2],row,col)
+      else
+        self.fingers_on_grid={row,col}
+        self:toggle_note(row,col)
+      end
+    end
+  end
+end
+
+function GGrid:toggle_note(row,col)
+  print("[toggle_note]",row,col)
+  if self.gross_places[col][1]==row then 
+    if self.gross_places[col][2]<14 then
+      self.gross_places[col][2]=self.gross_places[col][2]+1
+    end
+  else
+    self.gross_places[col]={row,1}
+  end
+  gross_beat_update(self.gross_places)
+end
+
+
+
+function GGrid:toggle_note_from_to(row1,col1,row2,col2,toggle_note_from)
+  if col2==col1 then
+    do return end
+  end
+  if col2<col1 then
+    local foo=row1 
+    local foo2=col1
+    row1=row2 
+    col1=col2
+    row2=foo
+    col2=foo2
+    self:toggle_note(row1,col1)
+    if row1==row2 then
+      self:toggle_note(row2,col2)
+    end
+  end
+  local m=(row2-row1)/(col2-col1)
+  local b=row2-(m*col2)
+  local startcol=col1+1
+  if toggle_note_from~=nil and toggle_note_from==true then
+    startcol=col1
+  end
+  -- if row1==7 and row2==7 then
+  --   -- special case: two fingers on sequence will clear everything
+  --   -- sequences must be entered one at a time to change divisions
+  --   for col=col1,col2 do
+  --     self.toggles[7][col]=0
+  --   end
+  --   self:update_sequence()
+  --   do return end
+  -- end
+  for col=startcol,col2 do
+    row=util.round(m*col+b)
+    self:toggle_note(row,col)
   end
 end
 
@@ -374,7 +447,13 @@ function GGrid:get_visual()
     end
 
   else
-    -- not main mode
+    -- illuminate gross beat
+    -- TODO
+    for col,v in ipairs(self.gross_places) do 
+      for row=v[1],7 do 
+        self.visual[row][col]=row==v[1] and (v[2]+1) or (gross_beat_i==col and 2 or 1)
+      end
+    end
   end
 
   return self.visual

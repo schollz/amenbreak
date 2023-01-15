@@ -46,6 +46,8 @@ posit={
 dur={1}}
 initital_monitor_level=0
 loops={}
+gross_beat_pattern={{sync=1,slew=0},{sync=1,slew=0},{sync=1,slew=0},{sync=1,slew=0}}
+gross_beat_i=1
 
 -- global constants (for grid)
 PTTRN_STEP=1
@@ -354,6 +356,17 @@ function init()
     params:set("punch",0.3)
     tab.print(loops[1][1])
     -- toggle_clock(true)
+
+    local gross_clock_i=0
+    local gross_next_sync=1
+    while true do 
+      -- gross beat update
+      clock.sync(1*gross_next_sync)
+      -- TODO
+      gross_clock_i = gross_clock_i + 1
+      gross_beat_i = (gross_clock_i-1)%#gross_beat_pattern+1
+      gross_next_sync = gross_beat_pattern[gross_beat_i].sync
+    end
   end)
 end
 
@@ -1035,4 +1048,14 @@ function bass_note_on(note)
     note = note + 12
   end
   params:set("kick_basenote",note)
+end
+
+local gross_beat_row_to_time={0,-0.5,-1,-1.5,-2,-2.5,-3,-3.5}
+local gross_beat_level_to_sync={1,1,1,1,2,2,0.5,0.5,4,4,3,3,8,8}
+local gross_beat_level_to_slew={0,1,2,3,0,1,0,1,0,2,0,2,0,2}
+function gross_beat_update(grid_numbers)
+  gross_beat_pattern={}
+  for _,v in ipairs(grid_numbers) do 
+    table.insert(gross_beat_pattern,{time=gross_beat_row_to_time[v[1]],sync=gross_beat_level_to_sync[v[2]],slew=gross_beat_level_to_slew[v[2]]})
+  end
 end

@@ -172,6 +172,10 @@ function GGrid:key_press(row,col,on)
     self.pressed_buttons[row..","..col]=nil
   end
 
+  if on and row==6 and col==14 then 
+    self.main_mode=not self.main_mode
+    do return end 
+  end
   if self.main_mode then 
     if on and row==8 and col==1 then 
       -- main start

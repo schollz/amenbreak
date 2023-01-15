@@ -205,8 +205,12 @@ Engine_AmenBreak1 : CroneEngine {
             compress_curve_wet=0,compress_curve_drive=1,bufCompress,
             expand_curve_wet=0,expand_curve_drive=1,bufExpand,
 			dist_wet=0.05,dist_on=0,drivegain=0.5,dist_bias=0,lowgain=0.1,highgain=0.1,
+            timeCurve=0,timeSlew=0,bpm=200,grossMix=1,
 			shelvingfreq=600,dist_oversample=2;
             var snd,sndSC,sndNSC,sndDelay,tapePosRec,tapePosStretch,local,tape_slow2,snd_db,snd_db_max;
+            var sndgross,posGross1,posGross2,timeSwitch,timeCurveAR;
+            var secondsPerBeat=60/bpm;
+		    var samplesPerBeat=s.sampleRate*secondsPerBeat;
             snd=In.ar(inBus,2);
             sndNSC=In.ar(inBusNSC,2);
             sndSC=In.ar(inSC,2);
@@ -243,6 +247,18 @@ Engine_AmenBreak1 : CroneEngine {
             tape_slow2=EnvGen.kr(Env.new([1,0.047,1],[LFNoise0.kr(1).range(0.75,1.5),LFNoise0.kr(1).range(0.25,0.75)],\exponential,releaseNode:1),tape_gate);
             snd = SelectX.ar(VarLag.kr((tape_slow>0)+(tape_slow2<1),0.05,warp:\sine),[snd,PlayBuf.ar(2,tape_buf,tape_slow2*Lag.kr(1/(tape_slow+1),1),startPos:tapePosRec-10,loop:1,trigger:Trig.kr((tape_slow+tape_gate)>0))]);
             snd = snd*Lag.kr(tape_slow2>0.04701);
+
+            // gross beat
+            // TODO
+            timeSwitch=ToggleFF.kr(Changed.kr(timeCurve,0.00000001)).poll;
+            timeCurveAR=Lag.ar(K2A.ar(timeCurve),K2A.ar(timeSlew)).poll;
+            posGross1=(tapePosRec+Gate.ar(((timeCurveAR*samplesPerBeat)-40).mod(BufFrames.ir(tape_buf)),timeSwitch));
+            posGross2=(tapePosRec+Gate.ar(((timeCurveAR*samplesPerBeat)-40).mod(BufFrames.ir(tape_buf)),1-timeSwitch));
+            sndgross=SelectX.ar(Lag.kr(timeSwitch,0.2),[
+                BufRd.ar(2,tape_buf,posGross2,interpolation:4),
+                BufRd.ar(2,tape_buf,posGross1,interpolation:4)
+            ]);
+            snd=SelectX.ar(Lag.kr(grossMix),[snd,sndgross]);
 
             // sinoid drive
             snd=SelectX.ar(Lag.kr(sine_drive),[snd,Shaper.ar(sine_buf,snd)]);

@@ -46,7 +46,7 @@ posit={
 dur={1}}
 initital_monitor_level=0
 loops={}
-gross_beat_pattern={{sync=1,slew=0},{sync=1,slew=0},{sync=1,slew=0},{sync=1,slew=0}}
+gross_beat_pattern={{time=0,sync=1,slew=0}}
 gross_beat_i=1
 
 -- global constants (for grid)
@@ -361,11 +361,14 @@ function init()
     local gross_next_sync=1
     while true do 
       -- gross beat update
-      clock.sync(1*gross_next_sync)
+      clock.sync(1/4*gross_next_sync)
       -- TODO
       gross_clock_i = gross_clock_i + 1
       gross_beat_i = (gross_clock_i-1)%#gross_beat_pattern+1
       gross_next_sync = gross_beat_pattern[gross_beat_i].sync
+      -- TODO: bundle these two
+      engine.main_set("timeSlew",gross_beat_pattern[gross_beat_i].slew)
+      engine.main_set("timeCurve",gross_beat_pattern[gross_beat_i].time)
     end
   end)
 end

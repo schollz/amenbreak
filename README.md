@@ -57,7 +57,7 @@ f*** it:
 
 ## Grid
 
-![grid](https://user-images.githubusercontent.com/6550035/211224265-1f959d9d-79e2-4be4-951f-239a97366140.png)
+![image](https://user-images.githubusercontent.com/6550035/212520442-25b36eb9-f93e-42eb-9423-d02524ac45aa.png)
 
 ## Install
 

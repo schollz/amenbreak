@@ -301,7 +301,7 @@ Engine_AmenBreak1 : CroneEngine {
             snd = Compander.ar(snd,snd,compression,0.5,clampTime:0.01,relaxTime:0.01);
 
             snd = RLPF.ar(snd,In.kr(lpfIn,1),res);
-            snd = HPF.ar(snd,In.kr(hpfIn).poll);
+            snd = HPF.ar(snd,In.kr(hpfIn));
 
             Out.ar(\out.kr(0),\compressible.kr(0)*snd*amp);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
@@ -417,13 +417,38 @@ Engine_AmenBreak1 : CroneEngine {
                         // create filter sweep
                         Routine {
                             syns.at("filter").set(\slew,0.1);
-                            syns.at("filter").set(\val,250);
+                            syns.at("filter").set(\val,150);
                             0.1.wait;
                             res=0.606;
-                            syns.at("filter").set(\slew,duration_total,\val,lpf);
+                            syns.at("filter").set(\slew,duration_total*2,\val,lpf);
                         }.play;
                     });
                 });
+            },{
+                // if (stretch>0,{
+                //     if (100.rand<40,{
+                //         // create filter sweep
+                //         Routine {
+                //             syns.at("filter").set(\slew,0.1);
+                //             syns.at("filter").set(\val,150);
+                //             0.1.wait;
+                //             syns.at("filter").set(\slew,duration_total/2,\val,lpf);
+                //             (duration_total*0.7).wait;
+                //             syns.at("filter").set(\slew,(duration_total*0.125));
+                //             syns.at("filter").set(\val,50);
+                //             (duration_total*0.4).wait;
+                //             syns.at("filter").set(\val,lpf);
+                //         }.play;
+                //     },{
+                //         Routine {
+                //             (duration_total*0.75).wait;
+                //             syns.at("filter").set(\slew,(duration_total*0.125));
+                //             syns.at("filter").set(\val,50);
+                //             (duration_total*0.3).wait;
+                //             syns.at("filter").set(\val,lpf);
+                //         }.play;
+                //     });
+                // });
             });
             // ["duration_slice",duration_slice,"duration_total",duration_total,"retrig",retrig].postln;
             if (bufs.at(filename).notNil,{

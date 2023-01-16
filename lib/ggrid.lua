@@ -128,7 +128,7 @@ function GGrid:new(args)
   end
   m.filter_on=false
   table.insert(m.button_fns,{
-    {uselast=function() return 1 end,light=function() return  (global_played.uselast~=nil and global_played.uselast>0) and 14 or 2 end},
+    {stretch=function() return 1 end,steps=function() return math.random(1,3)*4 end,light=function() return  (global_played.stretch~=nil and global_played.stretch>0) and 14 or 2 end},
     {db=function() return math.random(1,2) end,light=function() return (global_played.db~=nil and global_played.db>0) and 14 or 2 end},
     {pitch=function() return math.random(1,2) end,light=function() return (global_played.pitch~=nil and global_played.pitch~=0) and 14 or 2 end},
   })

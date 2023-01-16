@@ -420,7 +420,7 @@ Engine_AmenBreak1 : CroneEngine {
                             syns.at("filter").set(\val,150);
                             0.1.wait;
                             res=0.606;
-                            syns.at("filter").set(\slew,duration_total*2,\val,lpf);
+                            syns.at("filter").set(\slew,duration_total,\val,lpf);
                         }.play;
                     });
                 });

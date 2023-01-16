@@ -227,13 +227,19 @@ function GGrid:key_press(row,col,on)
       ws[params:get("track")]:play{ci=i}
     end  
     if self.pattern_held~=nil then 
+      local r=self.pattern_held.row
+      local c=self.pattern_held.col
+      if r==2 then 
+        r=self.pattern_held.col+1
+        c=1
+      end
       if self.pattern_held.first then 
-        pattern_store[self.pattern_held.row][self.pattern_held.col]={}
+        pattern_store[r][c]={}
         self.pattern_held.first=false
       end
-      table.insert(pattern_store[self.pattern_held.row][self.pattern_held.col],i)
-      print(string.format("[grid] updating %s to pattern %d",PTTRN_NAME[self.pattern_held.row],self.pattern_held.col))
-      tab.print(pattern_store[self.pattern_held.row][self.pattern_held.col])
+      table.insert(pattern_store[r][c],i)
+      print(string.format("[grid] updating %s to pattern %d",PTTRN_NAME[r],c))
+      tab.print(pattern_store[r][c])
     end
   elseif row==6 and col>=9 and col<=14 then 
     print("[grid] bass pattern click",row,col,on)
@@ -256,12 +262,20 @@ function GGrid:key_press(row,col,on)
     col=col-5
     if on then
       self.pattern_held={row=row,col=col,first=true}
-      if pattern_current[row]==col then 
-        print(string.format("[grid] disabling %s patterns",PTTRN_NAME[row]))
-        pattern_current[row]=0
-      elseif next(pattern_store[row][col])~=nil then 
-        print(string.format("[grid] switching %s to pattern %d",PTTRN_NAME[row],col))
-        pattern_current[row]=col
+      local r=self.pattern_held.row
+      local c=self.pattern_held.col
+      print(r,c)
+      if r==2 then 
+        r=col+1
+        c=1
+      end
+      print(r,c)
+      if pattern_current[r]==c then 
+        print(string.format("[grid] disabling %s patterns",PTTRN_NAME[r]))
+        pattern_current[r]=0
+      elseif next(pattern_store[r][c])~=nil then 
+        print(string.format("[grid] switching %s to pattern %d",PTTRN_NAME[r],c))
+        pattern_current[r]=c
       end
     else
       self.pattern_held=nil
@@ -301,18 +315,17 @@ function GGrid:get_visual()
   end
 
   -- illuminate which patterns are availble
-  for row,_ in ipairs(pattern_store) do 
-    for coll,v in ipairs(pattern_store[row]) do 
-      local col=coll+5
-      self.visual[row][col]=next(v)~=nil and 2 or 0
-    end
+  for i=1,3 do 
+    local row=1
+    local col=i+5
+    self.visual[row][col]=next(pattern_store[1][i])~=nil and (pattern_current[1]==i and 7 or 2) or 0
   end
-  for row,col in ipairs(pattern_current) do 
-    if col>0 then
-      self.visual[row][col+5]=7
-    end
+  for j=1,3 do 
+    local row=2
+    local col=j+5
+    self.visual[row][col]=next(pattern_store[j+1][1])~=nil and (pattern_current[j+1]==1 and 7 or 2) or 0
   end
-
+  
   -- illuminate which bass patterns are availble
   for col,v in ipairs(bass_pattern_store) do 
     self.visual[6][col+8]=next(v)~=nil and 2 or 0

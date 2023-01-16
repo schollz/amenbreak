@@ -53,14 +53,22 @@ PTTRN_AMEN=2
 PTTRN_BREK=3
 PTTRN_DRUM=4
 PTTRN_PNCH=5
-PTTRN_NAME={"STEP","BREK","AMEN","DRUM","PNCH","NAME"}
+PTTRN_NAME={"STEP","AMEN","BREK","DRUM","PNCH","NAME"}
 PTTRN_FUNS={
   function(v) end,
-  function(v) params:set_raw("break",v) end,
   function(v) params:set_raw("amen",v) end,
-  function(v) params:set_raw("track",v) end,
+  function(v) params:set_raw("break",v) end,
+  function(v) 
+    v=v*31+1
+    v=v<=16 and (v-1) or (v*-1+16)
+    track_store_default=false
+    params:set("track",track_default+v)
+    track_store_default=true 
+  end,
   function(v) params:set_raw("punch",v) end,
 }
+track_default=1;
+track_store_default=true;
 pattern_store={}
 pattern_current={0,0,0,0,0,0,0}
 button_fns={}
@@ -230,6 +238,9 @@ function init()
   end
   params:add_separator("current sample")
   params:set_action("track",function(x)
+    if track_store_default then 
+      track_default=x
+    end
     for i=1,#amen_files do
       ws[i]:select(x==i)
     end

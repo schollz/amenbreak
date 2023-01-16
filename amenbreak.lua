@@ -151,6 +151,12 @@ function init()
       end
     end
   end
+  if #amen_files==0 then 
+    Needs_Restart=true
+    Restart_Message=UI.Message.new{"no audio files! something went wrong."}
+    redraw()
+    do return end 
+  end
   table.sort(amen_files)
   print(string.format("[amenbreak] found %s files",#amen_files))
 

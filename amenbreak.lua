@@ -193,14 +193,14 @@ function init()
     {id="attack",name="attack",min=0,max=100,exp=false,div=1,default=5,unit="ms"},
     {id="release",name="release",min=0,max=200,exp=false,div=1,default=15,unit="ms"},
     {id="hold",name="hold",min=0,max=128,exp=false,div=1,default=0,unit="pulses"},
-    {id="decimate",name="decimate",min=0,max=0.4,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%d%%",util.round(100*param:get())) end},
+    {id="decimate",name="decimate",min=0,max=0.8,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%d%%",util.round(100*param:get())) end},
     {id="drive",name="drive",min=0,max=0.75,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%d%%",util.round(100*param:get())) end},
     {id="compression",name="compression",min=0,max=0.4,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%d%%",util.round(100*param:get())) end},
     {id="pitch",name="note",min=-24,max=24,exp=false,div=0.1,default=0.0,response=1,formatter=function(param) return string.format("%s%2.1f",param:get()>-0.01 and "+" or "",param:get()) end},
     {id="gate",name="gate",min=0.1,max=1,exp=false,div=0.01,default=1.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="rate",name="rate",min=-2,max=2,exp=false,div=0.01,default=1.0,response=1,formatter=function(param) return string.format("%s%2.1f",param:get()>-0.01 and "+" or "",param:get()*100) end},
     {id="rotate",name="rotate",hide=true,min=-127,max=127,exp=false,div=1,default=0.0,response=1,formatter=function(param) return string.format("%s%2.0f",param:get()>-0.01 and "+" or "",param:get()) end},
-    {id="stretch",name="stretch",min=0,max=5,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="stretch",name="stretch",min=0,max=1,exp=false,div=1,default=0.0,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
     {id="compressing",name="compressing",min=0,max=1,exp=false,div=1,default=0.0,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
     {id="compressible",name="compressible",min=0,max=1,exp=false,div=1,default=1,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
     {id="send_reverb",name="reverb send",min=0,max=1,hide=true,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
@@ -228,6 +228,11 @@ function init()
     for i=1,#amen_files do
       ws[i]:select(x==i)
     end
+    debounce_fn["stretcher"]={15*5,function()
+      local cmd=string.format("%samenbreak/lib/soxgo/run.sh %s %samenbreak/slow.flac 0.125 &",_path.code,ws[x].path,_path.audio)
+      print("[stretcher] "..cmd)
+      os.execute(cmd)
+    end}
   end)
   params:set_action("punch",function(x)
     params:set_raw("drive",easing_function(x,0.1,2))
@@ -267,6 +272,10 @@ function init()
           end
         end
       end
+    end,
+    soxgo=function(args)
+      -- reload slow.flac
+      engine.load_slow(_path.audio.."amenbreak/slow.flac")
     end,
     progressbar=function(args)
       show_message(args[1])
@@ -500,6 +509,10 @@ function toggle_clock(on)
         d.rate=1
         d.pitch=0
         d.gate=gate_on
+        if params:get("stretch")>0 then 
+          d.stretch=1
+          d.steps=math.random(1,4)*4
+        end
         -- retriggering
         local refractory=math.random(15*1,15*10)
         if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.3)*1.5 and debounce_fn["retrig"]==nil then
@@ -521,8 +534,9 @@ function toggle_clock(on)
         end
         if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.5) and debounce_fn["stretch"]==nil then
           d.stretch=1
-          d.steps=d.steps>1 and d.steps or d.steps*math.random(8,12)
+          d.steps=d.steps>1 and d.steps or d.steps*math.random(1,8)*4
           debounce_fn["stretch"]={refractory*4,function()end}
+          print("STRETCH")
         end
         if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.7)*0.2 and debounce_fn["delay"]==nil then
           d.delay=1
@@ -533,7 +547,7 @@ function toggle_clock(on)
         if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.7)*0.4 and debounce_fn["gate"]==nil then
           gate_on=0.5
           debounce_fn["gate_off"]={math.random(16,64),function() gate_on=nil end}
-          debounce_fn["gate"]={refractory,function() end}
+          debounce_fn["gate"]={refractory*2,function() end}
         end
         if math.random()<easing_function2(params:get("amen"),-3.1,-1.3,0.177,0.5) then
           d.rate=-1

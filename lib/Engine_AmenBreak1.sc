@@ -270,18 +270,16 @@ Engine_AmenBreak1 : CroneEngine {
 
         (1..2).do({arg ch;
         SynthDef("slice"++ch,{
-            arg amp=0, buf1,buf2,buf3,buf4,buf5, rate=1, pos=0, drive=1,stretch=0, compression=0, gate=1, duration=100000, pan=0, send_pos=0, lpfIn,res=0.707, attack=0.01,release=0.01; 
+            arg amp=0,buf1,rate=1, pos=0, drive=1,stretch=0, compression=0, gate=1, duration=100000, pan=0, send_pos=0, lpfIn,res=0.707, attack=0.01,release=0.01; 
             var snd,sndD,snd1,snd2,snd3,snd4,snd5;
-            var startFrame = pos / BufDur.ir(buf1) * BufFrames.ir(buf1);
             var snd_pos = Phasor.ar(
-                trig: Impulse.kr(0),
+                trig: Impulse.ar(0),
                 rate: rate * BufRateScale.ir(buf1),
                 end: BufFrames.ir(buf1),
+                resetPos: pos / BufDur.ir(buf1) * BufFrames.ir(buf1),
             );
-            SendReply.kr(Impulse.kr(15)*send_pos,'/position',[(startFrame+snd_pos) / BufFrames.ir(buf1) * BufDur.ir(buf1)]);
-            snd1 = BufRd.ar(ch,buf1,(startFrame+snd_pos).mod(BufFrames.ir(buf1)),interpolation:4);
-            snd2 = BufRd.ar(ch,buf2,(startFrame*2+snd_pos).mod(BufFrames.ir(buf2)),interpolation:1);
-            snd=SelectX.ar(Lag.kr(Select.kr(stretch*1.999,[0,1]),0.2),[snd1,snd2],0);
+            SendReply.kr(Impulse.kr(15)*send_pos,'/position',[snd_pos / BufFrames.ir(buf1) * BufDur.ir(buf1) / (stretch*7+1)]);
+            snd = BufRd.ar(ch,buf1,snd_pos,interpolation:4);
             
             snd = snd * Env.asr(attack, 1, release).ar(Done.freeSelf, gate * ToggleFF.kr(1-TDelay.kr(DC.kr(1),duration)) );
             snd=Pan2.ar(snd,0.0);
@@ -300,7 +298,7 @@ Engine_AmenBreak1 : CroneEngine {
 
             snd = SelectX.ar(drive,[snd,sndD]);
 
-            // snd = Compander.ar(snd,snd,compression,0.5,clampTime:0.01,relaxTime:0.01);
+            snd = Compander.ar(snd,snd,compression,0.5,clampTime:0.01,relaxTime:0.01);
 
             snd = RLPF.ar(snd,In.kr(lpfIn,1),res);
 
@@ -390,6 +388,10 @@ Engine_AmenBreak1 : CroneEngine {
             var res=msg[26];
             var db_first=db+db_add;
             var db_orig=db_first;
+            if (stretch>0,{
+                filename="slow";
+                pos=pos*8;
+            });
             if (retrig>0,{
                 db_first=db;
                 if (db_add>0,{
@@ -427,7 +429,6 @@ Engine_AmenBreak1 : CroneEngine {
                     compressing: compressing,
                     sendreverb: send_reverb,
                     buf1: bufs.at(filename),
-                    buf2: bufs.at("slow"),
                     attack: attack,
                     release: release,
                     amp: db_first.dbamp,
@@ -463,7 +464,6 @@ Engine_AmenBreak1 : CroneEngine {
                                 compressible: compressible,
                                 compressing: compressing,
                                 buf1: bufs.at(filename),
-                                buf2: bufs.at("slow"),
                                 pan: pan,
                                 attack: attack,
                                 release: release,
@@ -507,11 +507,12 @@ Engine_AmenBreak1 : CroneEngine {
         this.addCommand("load_slow","s",{ arg msg;
             var id=msg[1];
             // ["loading"+id].postln;
-            if (bufs.at("slow").isNil,{
-                Buffer.read(context.server, id, action: {arg buf;
-                    // ["[amenbreak] loaded slow"+id].postln;
-                    bufs.put("slow",buf);
-                });
+            if (bufs.at("slow").notNil,{
+                bufs.at("slow").free;
+            });
+            Buffer.read(context.server, id, action: {arg buf;
+                ["[amenbreak] loaded slow",id,buf].postln;
+                bufs.put("slow",buf);
             });
         });
 

@@ -270,18 +270,16 @@ Engine_AmenBreak1 : CroneEngine {
 
         (1..2).do({arg ch;
         SynthDef("slice"++ch,{
-            arg amp=0, buf1,buf2,buf3,buf4,buf5, rate=1, pos=0, drive=1,stretch=0, compression=0, gate=1, duration=100000, pan=0, send_pos=0, lpfIn,res=0.707, attack=0.01,release=0.01; 
+            arg amp=0,buf1,rate=1, pos=0, drive=1,stretch=0, compression=0, gate=1, duration=100000, pan=0, send_pos=0, lpfIn,hpfIn,res=0.707, attack=0.01,release=0.01; 
             var snd,sndD,snd1,snd2,snd3,snd4,snd5;
-            var startFrame = pos / BufDur.ir(buf1) * BufFrames.ir(buf1);
             var snd_pos = Phasor.ar(
-                trig: Impulse.kr(0),
+                trig: Impulse.ar(0),
                 rate: rate * BufRateScale.ir(buf1),
                 end: BufFrames.ir(buf1),
+                resetPos: pos / BufDur.ir(buf1) * BufFrames.ir(buf1),
             );
-            SendReply.kr(Impulse.kr(15)*send_pos,'/position',[(startFrame+snd_pos) / BufFrames.ir(buf1) * BufDur.ir(buf1)]);
-            snd1 = BufRd.ar(ch,buf1,(startFrame+snd_pos).mod(BufFrames.ir(buf1)),interpolation:4);
-            snd2 = BufRd.ar(ch,buf2,(startFrame*2+snd_pos).mod(BufFrames.ir(buf2)),interpolation:1);
-            snd=SelectX.ar(Lag.kr(Select.kr(stretch*1.999,[0,1]),0.2),[snd1,snd2],0);
+            SendReply.kr(Impulse.kr(15)*send_pos,'/position',[snd_pos / BufFrames.ir(buf1) * BufDur.ir(buf1) / (stretch*7+1)]);
+            snd = BufRd.ar(ch,buf1,snd_pos,interpolation:4);
             
             snd = snd * Env.asr(attack, 1, release).ar(Done.freeSelf, gate * ToggleFF.kr(1-TDelay.kr(DC.kr(1),duration)) );
             snd=Pan2.ar(snd,0.0);
@@ -300,9 +298,10 @@ Engine_AmenBreak1 : CroneEngine {
 
             snd = SelectX.ar(drive,[snd,sndD]);
 
-            // snd = Compander.ar(snd,snd,compression,0.5,clampTime:0.01,relaxTime:0.01);
+            snd = Compander.ar(snd,snd,compression,0.5,clampTime:0.01,relaxTime:0.01);
 
             snd = RLPF.ar(snd,In.kr(lpfIn,1),res);
+            snd = HPF.ar(snd,In.kr(hpfIn));
 
             Out.ar(\out.kr(0),\compressible.kr(0)*snd*amp);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
@@ -313,6 +312,7 @@ Engine_AmenBreak1 : CroneEngine {
 
         context.server.sync;
         buses.put("filter",Bus.control(s,1));
+        buses.put("filterhpf",Bus.control(s,1));
         buses.put("busCompressible",Bus.audio(s,2));
         buses.put("busNotCompressible",Bus.audio(s,2));
         buses.put("busCompressing",Bus.audio(s,2));
@@ -337,6 +337,8 @@ Engine_AmenBreak1 : CroneEngine {
         NodeWatcher.register(syns.at("main"));
         syns.put("filter",Synth.new("set",[\out,buses.at("filter"),\val,18000],s,\addToHead));
         NodeWatcher.register(syns.at("filter"));
+        syns.put("filterhpf",Synth.new("set",[\out,buses.at("filterhpf"),\val,18000],s,\addToHead));
+        NodeWatcher.register(syns.at("filterhpf"));
         context.server.sync;
 
         this.addCommand("audionin_set","sf",{ arg msg;
@@ -358,6 +360,13 @@ Engine_AmenBreak1 : CroneEngine {
             var slew=msg[2];
             if (syns.at("filter").isRunning,{
                 syns.at("filter").set(\val,val,\slew,slew);
+            });
+        });
+        this.addCommand("filterhpf_set","ff", { arg msg;
+            var val=msg[1];
+            var slew=msg[2];
+            if (syns.at("filterhpf").isRunning,{
+                syns.at("filterhpf").set(\val,val,\slew,slew);
             });
         });
 
@@ -390,6 +399,10 @@ Engine_AmenBreak1 : CroneEngine {
             var res=msg[26];
             var db_first=db+db_add;
             var db_orig=db_first;
+            if (stretch>0,{
+                filename="slow";
+                pos=pos*8;
+            });
             if (retrig>0,{
                 db_first=db;
                 if (db_add>0,{
@@ -400,16 +413,42 @@ Engine_AmenBreak1 : CroneEngine {
                     db=36.neg;
                 });
                 if (retrig>3,{
-                    if (100.rand<25,{
+                    if (100.rand<40,{
                         // create filter sweep
                         Routine {
                             syns.at("filter").set(\slew,0.1);
-                            syns.at("filter").set(\val,200);
+                            syns.at("filter").set(\val,150);
                             0.1.wait;
-                            syns.at("filter").set(\slew,duration_total,\val,lpf);
+                            res=0.606;
+                            syns.at("filter").set(\slew,duration_total*2,\val,lpf);
                         }.play;
                     });
                 });
+            },{
+                // if (stretch>0,{
+                //     if (100.rand<40,{
+                //         // create filter sweep
+                //         Routine {
+                //             syns.at("filter").set(\slew,0.1);
+                //             syns.at("filter").set(\val,150);
+                //             0.1.wait;
+                //             syns.at("filter").set(\slew,duration_total/2,\val,lpf);
+                //             (duration_total*0.7).wait;
+                //             syns.at("filter").set(\slew,(duration_total*0.125));
+                //             syns.at("filter").set(\val,50);
+                //             (duration_total*0.4).wait;
+                //             syns.at("filter").set(\val,lpf);
+                //         }.play;
+                //     },{
+                //         Routine {
+                //             (duration_total*0.75).wait;
+                //             syns.at("filter").set(\slew,(duration_total*0.125));
+                //             syns.at("filter").set(\val,50);
+                //             (duration_total*0.3).wait;
+                //             syns.at("filter").set(\val,lpf);
+                //         }.play;
+                //     });
+                // });
             });
             // ["duration_slice",duration_slice,"duration_total",duration_total,"retrig",retrig].postln;
             if (bufs.at(filename).notNil,{
@@ -427,12 +466,12 @@ Engine_AmenBreak1 : CroneEngine {
                     compressing: compressing,
                     sendreverb: send_reverb,
                     buf1: bufs.at(filename),
-                    buf2: bufs.at("slow"),
                     attack: attack,
                     release: release,
                     amp: db_first.dbamp,
                     pan: pan,
                     lpfIn: buses.at("filter"),
+                    hpfIn: buses.at("filterhpf"),
                     res: res,
                     rate: rate*pitch.midiratio,
                     pos: pos,
@@ -463,7 +502,6 @@ Engine_AmenBreak1 : CroneEngine {
                                 compressible: compressible,
                                 compressing: compressing,
                                 buf1: bufs.at(filename),
-                                buf2: bufs.at("slow"),
                                 pan: pan,
                                 attack: attack,
                                 release: release,
@@ -472,6 +510,7 @@ Engine_AmenBreak1 : CroneEngine {
                                 rate: rate*((pitch.sign)*(i+1)+pitch).midiratio,
                                 duration: duration_slice * gate / (retrig + 1),
                                 lpfIn: buses.at("filter"),
+                                hpfIn: buses.at("filterhpf"),
                                 res: res,
                                 pos: pos,
                                 decimate: decimate,
@@ -507,11 +546,12 @@ Engine_AmenBreak1 : CroneEngine {
         this.addCommand("load_slow","s",{ arg msg;
             var id=msg[1];
             // ["loading"+id].postln;
-            if (bufs.at("slow").isNil,{
-                Buffer.read(context.server, id, action: {arg buf;
-                    // ["[amenbreak] loaded slow"+id].postln;
-                    bufs.put("slow",buf);
-                });
+            if (bufs.at("slow").notNil,{
+                bufs.at("slow").free;
+            });
+            Buffer.read(context.server, id, action: {arg buf;
+                ["[amenbreak] loaded slow",id,buf].postln;
+                bufs.put("slow",buf);
             });
         });
 

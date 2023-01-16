@@ -1,4 +1,4 @@
--- amenbreak v1.3.0
+-- amenbreak v1.3.1
 --
 --
 -- amen+break
@@ -188,8 +188,9 @@ function init()
     {id="track",name="sample",min=1,max=#amen_files,exp=false,div=1,default=1,formatter=function(param) return math.floor(param:get()) end},
     {id="probability",name="probability",hide=true,min=0,max=100,exp=false,div=1,default=100,unit="%"},
     {id="pan",name="pan",min=-1,max=1,exp=false,div=0.01,default=0},
-    {id="lpf",name="lpf",min=24,max=135,exp=false,div=0.5,default=135,formatter=function(param) return musicutil.note_num_to_name(math.floor(param:get()),true)end},
+    {id="lpf",name="lpf",min=20,max=135,exp=false,div=0.5,default=135,formatter=function(param) return musicutil.note_num_to_name(math.floor(param:get()),true)end},
     {id="res",name="res",min=0.01,max=1,exp=false,div=0.01,default=0.71},
+    {id="hpf",name="hpf",min=12,max=120,exp=false,div=0.5,default=6,formatter=function(param) return musicutil.note_num_to_name(math.floor(param:get()),true)end},
     {id="attack",name="attack",min=0,max=100,exp=false,div=1,default=5,unit="ms"},
     {id="release",name="release",min=0,max=200,exp=false,div=1,default=15,unit="ms"},
     {id="hold",name="hold",min=0,max=128,exp=false,div=1,default=0,unit="pulses"},
@@ -220,6 +221,10 @@ function init()
     if pram.id=="lpf" then 
       params:set_action(pram.id,function(x)
         engine.filter_set(musicutil.note_num_to_freq(x),clock.get_beat_sec()*math.random(1,4))
+      end)
+    elseif pram.id=="hpf" then 
+      params:set_action(pram.id,function(x)
+        engine.filterhpf_set(musicutil.note_num_to_freq(x),clock.get_beat_sec()*math.random(1,4))
       end)
     end
   end
@@ -341,6 +346,7 @@ function init()
 
 
   -- setup
+  params:set_raw("hpf",0)
   params:set("loop1_db",0)
   params:set("loop1_slew",0.05)
   params:set("loop1_oneshot",1)
@@ -816,7 +822,7 @@ function redraw()
     screen.text_center("BREAK")
     screen.move(64,57)
     screen.font_face(63)
-    screen.text_center("v1.3.0")
+    screen.text_center("v1.3.1")
     screen.font_size(8)
     screen.font_face(1)
   end

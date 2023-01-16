@@ -58,7 +58,7 @@ f*** it:
 
 ## Grid
 
-![image](https://user-images.githubusercontent.com/6550035/212520442-25b36eb9-f93e-42eb-9423-d02524ac45aa.png)
+![image](https://user-images.githubusercontent.com/6550035/212775131-2435bfc7-4a5c-4d07-9afe-a95a236b5d61.png)
 
 
 the **fx region** of the grid has the following effects in order, left-to-right and top to bottom: stretch, change volume, change pitch, delay, reverse, gate, tape stop, filter, mute

@@ -72,7 +72,7 @@ bass_sequenced=-1
 UI=require 'ui'
 loaded_files=0
 Needs_Restart=false
-Engine_Exists=(util.file_exists('/home/we/.local/share/SuperCollider/Extensions/supercollider-plugins/AnalogTape_scsynth.so') or util.file_exists("/home/we/.local/share/SuperCollider/Extensions/PortedPlugins/AnalogTape_scsynth.so"))
+Engine_Exists=os.execute('test -n "$(find /home/we/.local/share/SuperCollider/Extensions/ -name AnalogTape_scsynth.so)"')
 engine.name=Engine_Exists and 'AmenBreak1' or nil
 
 -- other stuff

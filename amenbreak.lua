@@ -364,9 +364,9 @@ function init()
 
   -- setup
   params:set_raw("hpf",0)
-  params:set("loop1_db",0)
-  params:set("loop1_slew",0.05)
-  params:set("loop1_oneshot",1)
+  -- params:set("loop1_db",0)
+  -- params:set("loop1_slew",0.05)
+  -- params:set("loop1_oneshot",1)
   -- debug
   clock.run(function()
     -- startup

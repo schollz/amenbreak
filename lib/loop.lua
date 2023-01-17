@@ -35,9 +35,9 @@ function Loop:load_sample(path)
     if self.bpm~=nil then 
         -- stretch the current smaple to the closest bpm
         self.scale_ratio=100
-        for i,v in ipairs({0.5,1,2}) do 
+        for i,v in ipairs({0.25,0.5,1,2,4}) do 
             local scale_ratio = clock.get_tempo()*v/self.bpm
-            if scale_ratio<self.scale_ratio then 
+            if math.abs(1-1/scale_ratio)<math.abs(1-1/self.scale_ratio) then 
                 self.scale_ratio=scale_ratio
             end
         end

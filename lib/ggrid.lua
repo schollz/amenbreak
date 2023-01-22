@@ -137,7 +137,7 @@ function GGrid:new(args)
   table.insert(m.button_fns,{
     {delay=function() return 1 end,light=function() return  (global_played.delay~=nil and global_played.delay>0) and 14 or 2 end},
     {rate=function() return -1 end,light=function() return (global_played.rate~=nil and global_played.rate<0) and 14 or 2 end},
-    {on=function() m.rel_last=params:get("release"); m.gate_last=params:get("gate"); params:set("gate",m.gate_last*0.5); params:set("release",m.rel_last*0.25) end,off=function() params:set("gate",m.gate_last); params:set("release",m.rel_last) end,light=function() return (global_played.stretch~=nil and global_played.stretch>0) and 14 or 2 end},
+    {on=function() params:set("tighter",1-params:get("tighter")) end,light=function() return params:get("tighter")>0 and 14 or 2 end},
   })
   table.insert(m.button_fns,{
     {on=function() params:set("tape_gate",1) end,off=function() params:set("tape_gate",0) end,light=function() return params:get("tape_gate")>0 and 14 or 2 end},

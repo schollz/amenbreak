@@ -145,9 +145,9 @@ function init()
     if not string.find(fname,"slow") then
       if util.file_exists(_path.audio.."amenbreak/"..fname..".json") then
         table.insert(amen_files,fname)
-        if #amen_files==10 then
-          break
-        end
+        -- if #amen_files==10 then
+        --   break
+        -- end
       end
     end
   end
@@ -249,7 +249,7 @@ function init()
           tighter_release=params:get("release")
           tighter_gate=params:get("gate")
           params:set("gate",0.15)
-          params:set("release",clock.get_beat_sec()/10*7*1000)
+          params:set("release",clock.get_beat_sec()/10*6*1000)
         else
           params:set("release",tighter_release)
           params:set("gate",tighter_gate)

@@ -98,7 +98,7 @@ function GGrid:new(args)
   -- in the grid loop, set the button fns
   m.button_fns={}
   local choices_steps={{1,4},{5,12},{13,32}}
-  local choices_retrigs={{1,5},{6,13},{14,32}}
+  local choices_retrigs={{1,5},{6,13},{14,24}}
   for row=1,3 do 
     m.button_fns[row]={}
     for col=1,3 do 
@@ -127,6 +127,8 @@ function GGrid:new(args)
     end
   end
   m.filter_on=false
+  m.gate_last=params:get("gate")
+  m.rel_last=params:get("release")
   table.insert(m.button_fns,{
     {stretch=function() return 1 end,steps=function() return math.random(1,3)*4 end,light=function() return  (global_played.stretch~=nil and global_played.stretch>0) and 14 or 2 end},
     {db=function() return math.random(1,2) end,light=function() return (global_played.db~=nil and global_played.db>0) and 14 or 2 end},
@@ -135,7 +137,7 @@ function GGrid:new(args)
   table.insert(m.button_fns,{
     {delay=function() return 1 end,light=function() return  (global_played.delay~=nil and global_played.delay>0) and 14 or 2 end},
     {rate=function() return -1 end,light=function() return (global_played.rate~=nil and global_played.rate<0) and 14 or 2 end},
-    {on=function() params:set("gate",0.5) end,off=function() params:set("gate",1) end,light=function() return (global_played.stretch~=nil and global_played.stretch>0) and 14 or 2 end},
+    {on=function() m.rel_last=params:get("release"); m.gate_last=params:get("gate"); params:set("gate",m.gate_last*0.5); params:set("release",m.rel_last*0.25) end,off=function() params:set("gate",m.gate_last); params:set("release",m.rel_last) end,light=function() return (global_played.stretch~=nil and global_played.stretch>0) and 14 or 2 end},
   })
   table.insert(m.button_fns,{
     {on=function() params:set("tape_gate",1) end,off=function() params:set("tape_gate",0) end,light=function() return params:get("tape_gate")>0 and 14 or 2 end},

@@ -221,6 +221,7 @@ function init()
     {id="compressible",name="compressible",min=0,max=1,exp=false,div=1,default=1,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
     {id="send_reverb",name="reverb send",min=0,max=1,hide=true,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="send_delay",name="delay send",min=0,max=1,exp=false,hide=true,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
+    {id="allowstretch",name="allow stretch",min=0,max=1,exp=false,div=1,default=1,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
   }
   tighter_gate=1
   tighter_release=15
@@ -570,7 +571,7 @@ function toggle_clock(on)
           end
           debounce_fn["retrig"]={math.floor(refractory/2),function()end}
         end
-        if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.5) and debounce_fn["stretch"]==nil then
+        if params:get("allowstretch")>0 and math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.5) and debounce_fn["stretch"]==nil then
           d.stretch=1
           d.steps=d.steps>1 and d.steps or d.steps*math.random(1,8)*4
           debounce_fn["stretch"]={refractory*4,function()end}

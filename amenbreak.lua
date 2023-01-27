@@ -186,6 +186,7 @@ function init()
   -- add major parameters
   params_grid()
   params_kick()
+  params_layers()
   params_audioin()
   params_audioout()
   params_action()
@@ -975,6 +976,32 @@ function params_kick()
       controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
       formatter=pram.formatter,
     }
+  end
+end
+
+function params_layers()
+  local params_menu={
+    {id="sample",name="sample",min=1,max=48,exp=false,div=1,default=1},
+    {id="db",name="volume",min=-96,max=16,exp=false,div=0.5,default=-6,unit="db"},
+    {id="demo",name="demo",min=0,max=1,div=1},    
+  }
+  params:add_group("LAYERS",#params_menu*2)
+  for _, layer in ipairs({"kick","snare""}) do 
+    for _,pram in ipairs(params_menu) do
+      params:add{
+        type="control",
+        id="layer_"..layer..pram.id,
+        name=layer.." "..pram.name,
+        controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
+        formatter=pram.formatter,
+      }
+      if pram.id=="demo" then 
+        params:set_action("layer_"..layer..pram.id,function(x)
+          if x==1 then 
+            engine.demo(layer..(params:get("sample")-1))
+          end
+        end)
+    end  
   end
 end
 

@@ -282,13 +282,13 @@ function Sample:play(d)
   if d.duration_slice<0.01 then
     do return end
   end
-  d.snare=-48
-  d.snare_file=0 -- TODO make this a setting
-  d.kick=self.kick[d.ci]
-  d.kick_file=0 -- TODO make this a setting
+  d.snare=-96
+  d.snare_file=params:get("layer_snaresample")-1
+  d.kick=self.kick[d.ci]>-48 and params:get("layer_kickdb") or -96
+  d.kick_file=params:get("layer_kicksample")-1
   if self.kick[d.ci]<=-48 then
     if math.random(1,3)==1 then -- TODO make this a setting
-      d.snare=math.random(1,12)
+      d.snare=params:get("layer_snaredb")
     end
   end
   engine.slice_on(

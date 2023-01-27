@@ -185,7 +185,6 @@ function init()
 
   -- add major parameters
   params_grid()
-  params_kick()
   params_layers()
   params_audioin()
   params_audioout()
@@ -952,9 +951,10 @@ function params_audioin()
   end
 end
 
-function params_kick()
+
+function params_layers()
   -- kick
-  local params_menu={
+  local params_menu_kick={
     {id="db",name="db adj",min=-96,max=16,exp=false,div=1,default=-6,unit="db"},
     {id="preamp",name="preamp",min=0,max=4,exp=false,div=0.01,default=1,unit="amp"},
     {id="basenote",name="base note",min=10,max=90,exp=false,div=1,default=24,formatter=function(param) return musicutil.note_num_to_name(param:get(),true)end},
@@ -967,25 +967,12 @@ function params_kick()
     {id="compressing",name="compressing",min=0,max=1,exp=false,div=1,default=1.0,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
     {id="compressible",name="compressible",min=0,max=1,exp=false,div=1,default=0.0,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
   }
-  params:add_group("KICK",#params_menu)
-  for _,pram in ipairs(params_menu) do
-    params:add{
-      type="control",
-      id="kick_"..pram.id,
-      name=pram.name,
-      controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
-      formatter=pram.formatter,
-    }
-  end
-end
-
-function params_layers()
   local params_menu={
     {id="sample",name="sample",min=1,max=48,exp=false,div=1,default=1},
     {id="db",name="volume",min=-96,max=16,exp=false,div=0.5,default=-6,unit="db"},
     {id="demo",name="demo",min=0,max=1,div=1},    
   }
-  params:add_group("LAYERS",#params_menu*2)
+  params:add_group("LAYERS",#params_menu*2+#params_menu_kick)
   for _, layer in ipairs({"kick","snare""}) do 
     for _,pram in ipairs(params_menu) do
       params:add{
@@ -1002,6 +989,15 @@ function params_layers()
           end
         end)
     end  
+  end
+  for _,pram in ipairs(params_menu_kick) do
+    params:add{
+      type="control",
+      id="kick_"..pram.id,
+      name=pram.name,
+      controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
+      formatter=pram.formatter,
+    }
   end
 end
 

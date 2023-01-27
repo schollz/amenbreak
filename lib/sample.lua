@@ -88,10 +88,10 @@ function Sample:load_sample(path)
   self.path=path
   self.pathname,self.filename,self.ext=string.match(self.path,"(.-)([^\\/]-%.?([^%.\\/]*))$")
   engine.load_buffer(self.path)
-  if self.id==1 then 
+  if self.id==1 then
     engine.load_slow(self.pathname.."/slow.flac")
   end
- 
+
   self.ch,self.samples,self.sample_rate=audio.file_info(self.path)
   if self.samples<10 or self.samples==nil then
     print("ERROR PROCESSING FILE: "..path)
@@ -236,7 +236,7 @@ function Sample:play(d)
   d.watch=d.watch or 1
   d.rate=d.rate or 1
   d.rate=d.rate*clock.get_tempo()/params:get(self.id.."bpm")*params:get("rate")
-  if d.uselast==1 and self.last_ci~=nil then 
+  if d.uselast==1 and self.last_ci~=nil then
     d.ci=self.last_ci
   else
     d.ci=d.ci or self.ci
@@ -282,6 +282,12 @@ function Sample:play(d)
   if d.duration_slice<0.01 then
     do return end
   end
+  d.snare=-48
+  if self.kick[d.ci]<=-48 then
+    if math.random(1,3)==1 then
+      d.snare=math.random(1,12)
+    end
+  end
   engine.slice_on(
     d.id,
     filename,
@@ -300,7 +306,7 @@ function Sample:play(d)
     d.compressible,
     d.compressing,
     d.reverb,d.drive,d.compression,
-  d.watch,d.attack,d.release,d.stretch,d.send_tape,d.delay,d.res)
+  d.watch,d.attack,d.release,d.stretch,d.send_tape,d.delay,d.res,d.snare)
   if self.kick[d.ci]>-48 then
     engine.kick(
       musicutil.note_num_to_freq(params:get("kick_basenote")),

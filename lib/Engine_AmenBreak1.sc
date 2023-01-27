@@ -101,6 +101,12 @@ Engine_AmenBreak1 : CroneEngine {
             Out.kr(out,Pulse.kr(rate).range(min,max));
         }).send(context.server);
 
+        // load snares 
+        PathName("/home/we/dust/code/amenbreak/snares/").files.collect({|file,i|
+            ("[snare] loaded "++file).postln;
+            bufs.put("snare"++i,Buffer.readChannel(s,file.fullPath,channels:0))
+        });
+
         SynthDef("kick", { |basefreq = 40, ratio = 6, sweeptime = 0.05, preamp = 1, amp = 1,
             decay1 = 0.3, decay1L = 0.8, decay2 = 0.15, clicky=0.0, out|
             var snd;
@@ -370,7 +376,7 @@ Engine_AmenBreak1 : CroneEngine {
             });
         });
 
-        this.addCommand("slice_on","ssffffffffffffffffffffffff",{ arg msg;
+        this.addCommand("slice_on","ssfffffffffffffffffffffffff",{ arg msg;
             var id=msg[1];
             var filename=msg[2];
             var db=msg[3];
@@ -397,11 +403,17 @@ Engine_AmenBreak1 : CroneEngine {
             var sendTape=msg[24];
             var sendDelay=msg[25];
             var res=msg[26];
+            var snare=msg[27];
             var db_first=db+db_add;
             var db_orig=db_first;
+            var do_snare=false;
+            if (snare>48.neg,{
+                do_snare=true;
+            });
             if (stretch>0,{
                 filename="slow";
                 pos=pos*8;
+                do_snare=false;
             });
             if (retrig>0,{
                 db_first=db;
@@ -424,38 +436,42 @@ Engine_AmenBreak1 : CroneEngine {
                         }.play;
                     });
                 });
-            },{
-                // if (stretch>0,{
-                //     if (100.rand<40,{
-                //         // create filter sweep
-                //         Routine {
-                //             syns.at("filter").set(\slew,0.1);
-                //             syns.at("filter").set(\val,150);
-                //             0.1.wait;
-                //             syns.at("filter").set(\slew,duration_total/2,\val,lpf);
-                //             (duration_total*0.7).wait;
-                //             syns.at("filter").set(\slew,(duration_total*0.125));
-                //             syns.at("filter").set(\val,50);
-                //             (duration_total*0.4).wait;
-                //             syns.at("filter").set(\val,lpf);
-                //         }.play;
-                //     },{
-                //         Routine {
-                //             (duration_total*0.75).wait;
-                //             syns.at("filter").set(\slew,(duration_total*0.125));
-                //             syns.at("filter").set(\val,50);
-                //             (duration_total*0.3).wait;
-                //             syns.at("filter").set(\val,lpf);
-                //         }.play;
-                //     });
-                // });
             });
-            // ["duration_slice",duration_slice,"duration_total",duration_total,"retrig",retrig].postln;
             if (bufs.at(filename).notNil,{
                 if (syns.at(id).notNil,{
                     if (syns.at(id).isRunning,{
                         syns.at(id).set(\gate,0);
                     });
+                });
+                if (do_snare,{
+                    syns.put(id,Synth.new("slice1", [
+                        out: buses.at("busCompressible"),
+                        outsc: buses.at("busCompressing"),
+                        outnsc: buses.at("busNotCompressible"),
+                        outdelay: buses.at("busDelay"),
+                        compressible: compressible,
+                        compressing: compressing,
+                        sendreverb: send_reverb,
+                        buf1: bufs.at("snare0").postln,
+                        attack: 0.005,
+                        release: release,
+                        amp: (db_first+snare).dbamp,
+                        pan: pan,
+                        lpfIn: buses.at("filter"),
+                        hpfIn: buses.at("filterhpf"),
+                        res: res,
+                        rate: rate*pitch.midiratio,
+                        pos: 0,
+                        duration: (duration_slice * gate / (retrig + 1)),
+                        decimate: decimate,
+                        drive: drive,
+                        compression: compression,
+                        stretch: stretch,
+                        send_pos: send_pos,
+                        sendtape: sendTape,
+                        senddelay: sendDelay,
+                        outtrack: buses.at("bus"++id.asString.split($_)[0].asString),
+                    ], syns.at("main"), \addBefore));
                 });
                 syns.put(id,Synth.new("slice"++bufs.at(filename).numChannels, [
                     out: buses.at("busCompressible"),
@@ -493,6 +509,36 @@ Engine_AmenBreak1 : CroneEngine {
                                 db_next=db_orig;
                             });
                             (duration_total/ (retrig+1) ).wait;
+                            if (do_snare,{
+                                syns.put(id,Synth.new("slice1", [
+                                    out: buses.at("busCompressible"),
+                                    outsc: buses.at("busCompressing"),
+                                    outnsc: buses.at("busNotCompressible"),
+                                    outdelay: buses.at("busDelay"),
+                                    sendreverb: send_reverb,
+                                    compressible: compressible,
+                                    compressing: compressing,
+                                    buf1: bufs.at("snare0").postln,
+                                    pan: pan,
+                                    attack: 0.002,
+                                    release: release,
+                                    amp: (db_next+snare).dbamp,
+                                    stretch: 0,
+                                    rate: rate*((pitch.sign)*(i+1)+pitch).midiratio,
+                                    duration: duration_slice * gate / (retrig + 1),
+                                    lpfIn: buses.at("filter"),
+                                    hpfIn: buses.at("filterhpf"),
+                                    res: res,
+                                    pos: 0,
+                                    decimate: decimate,
+                                    drive: drive,
+                                    compression: compression,
+                                    send_pos: send_pos,
+                                    sendtape: sendTape,
+                                    senddelay: sendDelay,
+                                    outtrack: buses.at("bus"++id.asString.split($_)[0].asString),
+                                ], syns.at("main"), \addBefore));
+                            });
                             syns.put(id,Synth.new("slice"++bufs.at(filename).numChannels, [
                                 out: buses.at("busCompressible"),
                                 outsc: buses.at("busCompressing"),

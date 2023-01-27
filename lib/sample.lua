@@ -283,8 +283,11 @@ function Sample:play(d)
     do return end
   end
   d.snare=-48
+  d.snare_file=0 -- TODO make this a setting
+  d.kick=self.kick[d.ci]
+  d.kick_file=0 -- TODO make this a setting
   if self.kick[d.ci]<=-48 then
-    if math.random(1,3)==1 then
+    if math.random(1,3)==1 then -- TODO make this a setting
       d.snare=math.random(1,12)
     end
   end
@@ -306,8 +309,9 @@ function Sample:play(d)
     d.compressible,
     d.compressing,
     d.reverb,d.drive,d.compression,
-  d.watch,d.attack,d.release,d.stretch,d.send_tape,d.delay,d.res,d.snare)
-  if self.kick[d.ci]>-48 then
+  d.watch,d.attack,d.release,d.stretch,d.send_tape,d.delay,d.res,
+  d.snare,d.snare_file,d.kick,d.kick_file)
+  if params:get("kick_db")+self.kick[d.ci]>-36 then
     engine.kick(
       musicutil.note_num_to_freq(params:get("kick_basenote")),
       params:get("kick_ratio"),

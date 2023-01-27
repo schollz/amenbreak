@@ -102,9 +102,14 @@ Engine_AmenBreak1 : CroneEngine {
         }).send(context.server);
 
         // load snares 
-        PathName("/home/we/dust/code/amenbreak/snares/").files.collect({|file,i|
+        PathName("/home/we/dust/code/amenbreak/samples/snares/").files.collect({|file,i|
             ("[snare] loaded "++file).postln;
             bufs.put("snare"++i,Buffer.readChannel(s,file.fullPath,channels:0))
+        });
+        // load kicks
+        PathName("/home/we/dust/code/amenbreak/samples/kicks/").files.collect({|file,i|
+            ("[kick] loaded "++file).postln;
+            bufs.put("kick"++i,Buffer.readChannel(s,file.fullPath,channels:0))
         });
 
         SynthDef("kick", { |basefreq = 40, ratio = 6, sweeptime = 0.05, preamp = 1, amp = 1,
@@ -376,7 +381,7 @@ Engine_AmenBreak1 : CroneEngine {
             });
         });
 
-        this.addCommand("slice_on","ssfffffffffffffffffffffffff",{ arg msg;
+        this.addCommand("slice_on","ssfffffffffffffffffffffffffifi",{ arg msg;
             var id=msg[1];
             var filename=msg[2];
             var db=msg[3];
@@ -404,16 +409,24 @@ Engine_AmenBreak1 : CroneEngine {
             var sendDelay=msg[25];
             var res=msg[26];
             var snare=msg[27];
+            var snare_file=msg[28];
+            var kick=msg[29];
+            var kick_file=msg[30];
             var db_first=db+db_add;
             var db_orig=db_first;
             var do_snare=false;
+            var do_kick=false;
             if (snare>48.neg,{
                 do_snare=true;
+            });
+            if (kick>48.neg,{
+                do_kick=true;
             });
             if (stretch>0,{
                 filename="slow";
                 pos=pos*8;
                 do_snare=false;
+                do_kick=false;
             });
             if (retrig>0,{
                 db_first=db;
@@ -452,10 +465,40 @@ Engine_AmenBreak1 : CroneEngine {
                         compressible: compressible,
                         compressing: compressing,
                         sendreverb: send_reverb,
-                        buf1: bufs.at("snare0").postln,
+                        buf1: bufs.at("snare"++snare_file).postln,
                         attack: 0.005,
                         release: release,
                         amp: (db_first+snare).dbamp,
+                        pan: pan,
+                        lpfIn: buses.at("filter"),
+                        hpfIn: buses.at("filterhpf"),
+                        res: res,
+                        rate: rate*pitch.midiratio,
+                        pos: 0,
+                        duration: (duration_slice * gate / (retrig + 1)),
+                        decimate: decimate,
+                        drive: drive,
+                        compression: compression,
+                        stretch: stretch,
+                        send_pos: send_pos,
+                        sendtape: sendTape,
+                        senddelay: sendDelay,
+                        outtrack: buses.at("bus"++id.asString.split($_)[0].asString),
+                    ], syns.at("main"), \addBefore));
+                });
+                if (do_kick,{
+                    syns.put(id,Synth.new("slice1", [
+                        out: buses.at("busCompressible"),
+                        outsc: buses.at("busCompressing"),
+                        outnsc: buses.at("busNotCompressible"),
+                        outdelay: buses.at("busDelay"),
+                        compressible: compressible,
+                        compressing: compressing,
+                        sendreverb: send_reverb,
+                        buf1: bufs.at("kick"++kick_file).postln,
+                        attack: 0.005,
+                        release: release,
+                        amp: (db_first+kick).dbamp,
                         pan: pan,
                         lpfIn: buses.at("filter"),
                         hpfIn: buses.at("filterhpf"),
@@ -518,11 +561,41 @@ Engine_AmenBreak1 : CroneEngine {
                                     sendreverb: send_reverb,
                                     compressible: compressible,
                                     compressing: compressing,
-                                    buf1: bufs.at("snare0").postln,
+                                    buf1: bufs.at("snare"++snare_file).postln,
                                     pan: pan,
                                     attack: 0.002,
                                     release: release,
                                     amp: (db_next+snare).dbamp,
+                                    stretch: 0,
+                                    rate: rate*((pitch.sign)*(i+1)+pitch).midiratio,
+                                    duration: duration_slice * gate / (retrig + 1),
+                                    lpfIn: buses.at("filter"),
+                                    hpfIn: buses.at("filterhpf"),
+                                    res: res,
+                                    pos: 0,
+                                    decimate: decimate,
+                                    drive: drive,
+                                    compression: compression,
+                                    send_pos: send_pos,
+                                    sendtape: sendTape,
+                                    senddelay: sendDelay,
+                                    outtrack: buses.at("bus"++id.asString.split($_)[0].asString),
+                                ], syns.at("main"), \addBefore));
+                            });
+                            if (do_kick,{
+                                syns.put(id,Synth.new("slice1", [
+                                    out: buses.at("busCompressible"),
+                                    outsc: buses.at("busCompressing"),
+                                    outnsc: buses.at("busNotCompressible"),
+                                    outdelay: buses.at("busDelay"),
+                                    sendreverb: send_reverb,
+                                    compressible: compressible,
+                                    compressing: compressing,
+                                    buf1: bufs.at("kick"++kick_file).postln,
+                                    pan: pan,
+                                    attack: 0.002,
+                                    release: release,
+                                    amp: (db_next+kick).dbamp,
                                     stretch: 0,
                                     rate: rate*((pitch.sign)*(i+1)+pitch).midiratio,
                                     duration: duration_slice * gate / (retrig + 1),

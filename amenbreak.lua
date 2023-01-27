@@ -1,4 +1,4 @@
--- amenbreak v1.4.1
+-- amenbreak v1.5.0
 --
 --
 -- amen+break
@@ -853,7 +853,7 @@ function redraw()
     screen.text_center("BREAK")
     screen.move(64,57)
     screen.font_face(63)
-    screen.text_center("v1.4.1")
+    screen.text_center("v1.5.0")
     screen.font_size(8)
     screen.font_face(1)
   end

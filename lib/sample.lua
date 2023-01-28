@@ -284,10 +284,10 @@ function Sample:play(d)
   end
   d.snare=-96
   d.snare_file=params:get("layer_snaresample")-1
-  d.kick=self.kick[d.ci]>-48 and params:get("layer_kickdb") or -96
+  d.kick=self.kick[d.ci]>-48 and params:get("layer_kickdb") or-96
   d.kick_file=params:get("layer_kicksample")-1
   if self.kick[d.ci]<=-48 then
-    if math.random(1,3)==1 then -- TODO make this a setting
+    if math.random(1,100)<=params:get("kick_snare_prob") then -- TODO make this a setting
       d.snare=params:get("layer_snaredb")
     end
   end
@@ -309,8 +309,31 @@ function Sample:play(d)
     d.compressible,
     d.compressing,
     d.reverb,d.drive,d.compression,
-  d.watch,d.attack,d.release,d.stretch,d.send_tape,d.delay,d.res,
+    d.watch,d.attack,d.release,d.stretch,d.send_tape,d.delay,d.res,
   d.snare,d.snare_file,d.kick,d.kick_file)
+  if params:get("track2")>0 then
+    engine.slice_on(
+      params:get("track2"),
+      ws[params:get("track2")].path,
+      params:get("db"),
+      d.db,
+      d.pan*-1,
+      clock.get_tempo()/params:get(params:get("track2").."bpm")*params:get("rate"),
+      d.pitch,
+      pos/self.duration*ws[params:get("track2")].duration,
+      d.duration_slice,
+      d.duration_total,
+      d.retrig,
+      d.gate,
+      d.lpf,
+      d.decimate,
+      d.compressible,
+      d.compressing,
+      d.reverb,d.drive,d.compression,
+      0,d.attack,d.release,d.stretch,d.send_tape,d.delay,d.res,
+    d.snare,d.snare_file,d.kick,d.kick_file)
+  end
+
   if params:get("kick_db")+self.kick[d.ci]>-36 then
     engine.kick(
       musicutil.note_num_to_freq(params:get("kick_basenote")),

@@ -847,7 +847,7 @@ Engine_AmenBreak1 : CroneEngine {
             [buffer_name,bufs.at(buffer_name)].postln;
             if (bufs.at(buffer_name).notNil,{
                 {
-                    Out.ar(0,PlayBuf.ar(1,bufs.at(buffer_name),doneAction:2));
+                    Out.ar(0,Pan2.ar(PlayBuf.ar(1,bufs.at(buffer_name),doneAction:2)));
                 }.play;
             });
         });

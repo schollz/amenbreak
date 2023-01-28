@@ -199,6 +199,7 @@ function init()
     {id="efit",name="efit",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
     {id="tighter",name="tighter",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
     {id="track",name="sample",min=1,max=#amen_files,exp=false,div=1,default=1,formatter=function(param) return math.floor(param:get()) end},
+    {id="track2",name="sample2",min=0,max=#amen_files,exp=false,div=1,default=0,formatter=function(param) return param:get()==0 and "none" or math.floor(param:get()) end},
     {id="probability",name="probability",hide=true,min=0,max=100,exp=false,div=1,default=100,unit="%"},
     {id="pan",name="pan",min=-1,max=1,exp=false,div=0.01,default=0},
     {id="lpf",name="lpf",min=20,max=135,exp=false,div=0.5,default=135,formatter=function(param) return musicutil.note_num_to_name(math.floor(param:get()),true)end},
@@ -954,7 +955,8 @@ end
 function params_layers()
   -- kick
   local params_menu_kick={
-    {id="db",name="db adj",min=-96,max=16,exp=false,div=1,default=-6,unit="db"},
+    {id="snare_prob",name="snare probability",min=0,max=100,exp=false,div=1,default=25,unit="%"},
+    {id="db",name="synth kick db",min=-96,max=16,exp=false,div=0.25,default=-6,unit="db"},
     {id="preamp",name="preamp",min=0,max=4,exp=false,div=0.01,default=1,unit="amp"},
     {id="basenote",name="base note",min=10,max=90,exp=false,div=1,default=24,formatter=function(param) return musicutil.note_num_to_name(param:get(),true)end},
     {id="ratio",name="ratio",min=1,max=20,exp=false,div=1,default=6},
@@ -968,10 +970,11 @@ function params_layers()
   }
   local params_menu={
     {id="sample",name="sample",min=1,max=48,exp=false,div=1,default=1},
-    {id="db",name="volume",min=-96,max=16,exp=false,div=0.5,default=-6,unit="db"},
+    {id="db",name="volume",min=-96,max=16,exp=false,div=0.25,default=-6,unit="db"},
   }
   params:add_group("LAYERS",#params_menu*2+#params_menu_kick)
   for _,layer in ipairs({"kick","snare"}) do
+    local first=true
     for _,pram in ipairs(params_menu) do
       params:add{
         type="control",
@@ -982,11 +985,16 @@ function params_layers()
       }
       if pram.id=="sample" then
         params:set_action("layer_"..layer..pram.id,function(x)
+          if first then
+            first=false
+            do return end
+          end
           engine.demo(layer..(x-1))
         end)
       end
     end
   end
+  params:set("layer_snaredb",0)
   for _,pram in ipairs(params_menu_kick) do
     params:add{
       type="control",
@@ -1003,7 +1011,7 @@ function params_audioout()
     {id="tape_gate",name="tape stop",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
     {id="tape_start_stop",name="tape auto start/stop",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
     {id="tape_slow",name="tape slow",min=0,max=2,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
-    {id="sidechain_mult",name="sidechain amount",min=0,max=8,exp=false,div=0.1,default=2.0},
+    {id="sidechain_mult",name="sidechain amount",min=0,max=8,exp=false,div=0.1,default=1.0},
     {id="compress_thresh",name="sidechain threshold",min=0,max=1,exp=false,div=0.01,default=0.1},
     {id="compress_level",name="sidechain level",min=0,max=1,exp=false,div=0.01,default=0.1},
     {id="compress_attack",name="sidechain attack",min=0,max=1,exp=false,div=0.001,default=0.01,formatter=function(param) return (param:get()*1000).." ms" end},

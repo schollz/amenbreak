@@ -843,7 +843,8 @@ Engine_AmenBreak1 : CroneEngine {
         });
 
         this.addCommand("demo","s",{ arg msg;
-    	    var buffer_name=msg[1];
+    	    var buffer_name=msg[1].asString;
+            [buffer_name,bufs.at(buffer_name)].postln;
             if (bufs.at(buffer_name).notNil,{
                 {
                     Out.ar(0,PlayBuf.ar(1,bufs.at(buffer_name),doneAction:2));

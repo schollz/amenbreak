@@ -145,9 +145,9 @@ function init()
     if not string.find(fname,"slow") then
       if util.file_exists(_path.audio.."amenbreak/"..fname..".json") then
         table.insert(amen_files,fname)
-        if #amen_files==18 then
-          break
-        end
+        -- if #amen_files==18 then
+        --   break
+        -- end
       end
     end
   end
@@ -951,7 +951,6 @@ function params_audioin()
   end
 end
 
-
 function params_layers()
   -- kick
   local params_menu_kick={
@@ -970,10 +969,9 @@ function params_layers()
   local params_menu={
     {id="sample",name="sample",min=1,max=48,exp=false,div=1,default=1},
     {id="db",name="volume",min=-96,max=16,exp=false,div=0.5,default=-6,unit="db"},
-    {id="demo",name="demo",min=0,max=1,div=1},    
   }
   params:add_group("LAYERS",#params_menu*2+#params_menu_kick)
-  for _, layer in ipairs({"kick","snare""}) do 
+  for _,layer in ipairs({"kick","snare"}) do
     for _,pram in ipairs(params_menu) do
       params:add{
         type="control",
@@ -982,13 +980,12 @@ function params_layers()
         controlspec=controlspec.new(pram.min,pram.max,pram.exp and "exp" or "lin",pram.div,pram.default,pram.unit or "",pram.div/(pram.max-pram.min)),
         formatter=pram.formatter,
       }
-      if pram.id=="demo" then 
+      if pram.id=="sample" then
         params:set_action("layer_"..layer..pram.id,function(x)
-          if x==1 then 
-            engine.demo(layer..(params:get("sample")-1))
-          end
+          engine.demo(layer..(x-1))
         end)
-    end  
+      end
+    end
   end
   for _,pram in ipairs(params_menu_kick) do
     params:add{

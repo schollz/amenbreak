@@ -265,7 +265,7 @@ function init()
     for i=1,#amen_files do
       ws[i]:select(x==i)
     end
-    debounce_fn["stretcher"]={15*5,function()
+    debounce_fn["stretcher"]={15*5*5,function()
       local cmd=string.format("%samenbreak/lib/soxgo/run.sh %s %samenbreak/slow.flac 0.125 &",_path.code,ws[x].path,_path.audio)
       print("[stretcher] "..cmd)
       os.execute(cmd)

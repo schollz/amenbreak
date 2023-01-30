@@ -330,7 +330,10 @@ function init()
       local v=tonumber(args[2])
       lfos[i]=v
       if params:get("efit")==1 and i<4 then
-        params:set_raw(efit_lfos[i],v)
+        if efit_lfos[i]=="punch" then 
+        else
+          params:set_raw(efit_lfos[i],v)
+        end
       end
     end,
     aubiodone=function(args)
@@ -554,12 +557,15 @@ function toggle_clock(on)
         local refractory=math.random(15*1,15*10)
         if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.3)*1.5 and debounce_fn["retrig"]==nil then
           -- local retrig_beats=util.clamp(track_beats-(d.beat%track_beats),1,6)
-          local retrig_beats=math.random(1,4)
+          local retrig_beats=2*math.random(1,3)
           d.steps=retrig_beats*math.random(1,3)
           if math.random()<0.25 then
-            d.steps=d.steps*2
+            d.steps=d.steps/2
+            if d.steps<1 then 
+              d.steps=1
+            end
           end
-          d.retrig=2*math.random(1,4)*retrig_beats-1
+          d.retrig=math.random(1,3)*retrig_beats-1
           d.db=math.random(1,2)
           if math.random()<0.25 then
             d.pitch=-2
@@ -633,6 +639,7 @@ function toggle_clock(on)
         ws[params:get("track")]:play(d)
         if params:get("efit")==1 and math.random()<lfos[5]/4 then
           params:set_raw("track",math.random())
+          params:set_raw("track2",math.random())
         end
       end
 

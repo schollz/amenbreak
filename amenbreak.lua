@@ -265,11 +265,13 @@ function init()
     for i=1,#amen_files do
       ws[i]:select(x==i)
     end
-    debounce_fn["stretcher"]={15*5*5,function()
-      local cmd=string.format("%samenbreak/lib/soxgo/run.sh %s %samenbreak/slow.flac 0.125 &",_path.code,ws[x].path,_path.audio)
-      print("[stretcher] "..cmd)
-      os.execute(cmd)
-    end}
+    if params:get("allowstretch")>0 then
+      debounce_fn["stretcher"]={15*5,function()
+        local cmd=string.format("%samenbreak/lib/soxgo/run.sh %s %samenbreak/slow.flac 0.125 &",_path.code,ws[x].path,_path.audio)
+        print("[stretcher] "..cmd)
+        os.execute(cmd)
+      end}
+    end
   end)
   params:set_action("punch",function(x)
     params:set_raw("drive",easing_function(x,0.1,2))
@@ -330,7 +332,7 @@ function init()
       local v=tonumber(args[2])
       lfos[i]=v
       if params:get("efit")==1 and i<4 then
-        if efit_lfos[i]=="punch" then 
+        if efit_lfos[i]=="punch" then
         else
           params:set_raw(efit_lfos[i],v)
         end
@@ -561,7 +563,7 @@ function toggle_clock(on)
           d.steps=retrig_beats*math.random(1,3)
           if math.random()<0.25 then
             d.steps=d.steps/2
-            if d.steps<1 then 
+            if d.steps<1 then
               d.steps=1
             end
           end

@@ -88,10 +88,10 @@ function Sample:load_sample(path)
   self.path=path
   self.pathname,self.filename,self.ext=string.match(self.path,"(.-)([^\\/]-%.?([^%.\\/]*))$")
   engine.load_buffer(self.path)
-  if self.id==1 then 
+  if self.id==1 then
     engine.load_slow(self.pathname.."/slow.flac")
   end
- 
+
   self.ch,self.samples,self.sample_rate=audio.file_info(self.path)
   if self.samples<10 or self.samples==nil then
     print("ERROR PROCESSING FILE: "..path)
@@ -236,7 +236,7 @@ function Sample:play(d)
   d.watch=d.watch or 1
   d.rate=d.rate or 1
   d.rate=d.rate*clock.get_tempo()/params:get(self.id.."bpm")*params:get("rate")
-  if d.uselast==1 and self.last_ci~=nil then 
+  if d.uselast==1 and self.last_ci~=nil then
     d.ci=self.last_ci
   else
     d.ci=d.ci or self.ci
@@ -282,6 +282,15 @@ function Sample:play(d)
   if d.duration_slice<0.01 then
     do return end
   end
+  d.snare=-96
+  d.snare_file=params:get("layer_snaresample")-1
+  d.kick=self.kick[d.ci]>-48 and params:get("layer_kickdb") or-96
+  d.kick_file=params:get("layer_kicksample")-1
+  if self.kick[d.ci]<=-48 then
+    if math.random(1,100)<=params:get("kick_snare_prob") then -- TODO make this a setting
+      d.snare=params:get("layer_snaredb")
+    end
+  end
   engine.slice_on(
     d.id,
     filename,
@@ -300,8 +309,32 @@ function Sample:play(d)
     d.compressible,
     d.compressing,
     d.reverb,d.drive,d.compression,
-  d.watch,d.attack,d.release,d.stretch,d.send_tape,d.delay,d.res)
-  if self.kick[d.ci]>-48 then
+    d.watch,d.attack,d.release,d.stretch,d.send_tape,d.delay,d.res,
+  d.snare,d.snare_file,d.kick,d.kick_file)
+  if params:get("track2")>0 then
+    engine.slice_on(
+      params:get("track2"),
+      ws[params:get("track2")].path,
+      params:get("db"),
+      d.db,
+      d.pan*-1,
+      clock.get_tempo()/params:get(params:get("track2").."bpm")*params:get("rate"),
+      d.pitch,
+      pos/self.duration*ws[params:get("track2")].duration,
+      d.duration_slice,
+      d.duration_total,
+      d.retrig,
+      d.gate,
+      d.lpf,
+      d.decimate,
+      d.compressible,
+      d.compressing,
+      d.reverb,d.drive,d.compression,
+      0,d.attack,d.release,d.stretch,d.send_tape,d.delay,d.res,
+    d.snare,d.snare_file,d.kick,d.kick_file)
+  end
+
+  if params:get("kick_db")+self.kick[d.ci]>-36 then
     engine.kick(
       musicutil.note_num_to_freq(params:get("kick_basenote")),
       params:get("kick_ratio"),

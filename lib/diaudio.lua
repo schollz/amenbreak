@@ -102,7 +102,7 @@ function Diaudio:init()
   -- default chords
   for i,v in ipairs({6,4,3,5}) do
     params:set("chord"..i,v)
-    params:set("stay_on_chord"..i,math.random(90,97)/100)
+    params:set("stay_on_chord"..i,math.random(96,99)/100)
     params:set("movement_left"..i,math.random(4,6))
     params:set("movement_right"..i,math.random(4,7))
   end
@@ -113,6 +113,7 @@ function Diaudio:init()
   local beat_chord_index=total_chords
   local beat_melody=0
   local beat_last_note=0
+  local phrases=-1
   clock.run(function()
     clock.sleep(1)
     while true do
@@ -123,6 +124,13 @@ function Diaudio:init()
       if beat_chord==1 then
         beat_chord_index=beat_chord_index%total_chords+1
         if beat_chord_index==1 then
+          phrases=phrases+1
+          if phrases%4==0 then
+            dprint("seed","changing")
+            start_time=os.time()
+            params:set_raw("track",math.random())
+            params:set_raw("track2",math.random())
+          end
           -- next phrase (new melody)
           local movement_left={}
           local movement_right={}
@@ -154,8 +162,9 @@ function Diaudio:init()
           end
           -- more space
           -- TODO make spacing optional
+          local freq_drop=math.random(50,80)/100
           for ii,vv in ipairs(song_melody_notes) do
-            if math.random()<0.6 and ii>1 then
+            if math.random()<freq_drop and ii>1 then
               song_melody_notes[ii]=song_melody_notes[ii-1]
             end
           end
@@ -169,8 +178,20 @@ function Diaudio:init()
         -- new chord
         for i=1,3 do
           local next_note=song_chord_notes[beat_chord_index][i]
-          bass_note_on(next_note-12)
-          break
+          if i==1 then
+            bass_note_on(next_note)
+          else
+            engine.supersaw_on(next_note+12,params:get("bass_db"),
+              params:get("bass_mod1"),
+              params:get("bass_mod2"),
+              params:get("bass_mod3"),
+              params:get("bass_mod4"),clock.get_beat_sec()*2,
+              clock.get_beat_sec(),
+              0.5,
+              clock.get_beat_sec()*4,
+            params:get("bass_pan"),0,clock.get_beat_sec()*4,1,1)
+
+          end
         end
       end
       marquee_chord:push(params:string("chord"..beat_chord_index))
@@ -181,16 +202,19 @@ function Diaudio:init()
         beat_melody=beat_melody%#song_melody_notes+1
         local next_note=song_melody_notes[beat_melody]
         if beat_last_note~=next_note then
-          dprint("melody",string.format("next note: %d",next_note))
-          engine.reese_on(next_note+12,params:get("bass_db"),
+          -- if beat_last_note==next_note then
+          --   next_note=math.random()<0.7 and next_note+12 or next_note-12
+          -- end
+          dprint("melody",string.format("next note: %d",next_note-12))
+          engine.supersaw_on(next_note+12,params:get("bass_db")+6,
             params:get("bass_mod1"),
             params:get("bass_mod2"),
             params:get("bass_mod3"),
-            params:get("bass_mod4"),0,
-            1,
-            0,
-            params:get("bass_release"),
-          params:get("bass_pan"),0,1,1,1)
+            params:get("bass_mod4"),clock.get_beat_sec(),
+            clock.get_beat_sec(),
+            0.5,
+            clock.get_beat_sec()*4,
+          params:get("bass_pan"),0,clock.get_beat_sec()*4,1,1)
           note_next_name=musicutil.note_num_to_name(next_note,true)
         end
         beat_last_note=next_note

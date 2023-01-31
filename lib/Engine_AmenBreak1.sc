@@ -149,6 +149,62 @@ Engine_AmenBreak1 : CroneEngine {
             Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);            
         }).send(context.server);
 
+        SynthDef("supersaw",{
+            arg note=60,amp=1.0,gate=1,sub=0,portamento=1,bend=0,
+            attack=0.01,decay=0.2,sustain=0.9,release=5,
+            mod1=0,mod2=0,mod3=0,mod4=0,lpf=18000,pan=0,duration=600;
+            var detuneFactor,snd,mix,freq,env,detune,stereo,lowcut,chorus,res,detuneCurve,centerGain,sideGain,center,freqs,side;
+            var hz=note.midicps;                        
+            hz=Clip.kr(hz,10,18000);mod1=Lag.kr(mod1);mod2=Lag.kr(mod2);mod3=Lag.kr(mod3);mod4=Lag.kr(mod4);
+            env=EnvGen.ar(Env.adsr(attack,decay,sustain,release),(gate-EnvGen.kr(Env.new([0,0,1],[duration,0]))),doneAction:2);
+            env=env*EnvGen.ar(Env.new([1,0],[\gate_release.kr(1)]),Trig.kr(\gate_done.kr(0)),doneAction:2);
+            sub=Lag.kr(sub,1);
+            snd=Pan2.ar(Pulse.ar((note-12).midicps,LinLin.kr(LFTri.kr(0.5),-1,1,0.2,0.8))*sub);
+            mix=LinLin.kr(mod1,-1,1,0,1);
+            stereo=LinLin.kr(mod1,-1,1,0,1);
+            res=LinExp.kr(mod3,-1,1,0.65,1.0);
+            detune=LinLin.kr(mod4,-1,1,0,1);
+            freq=note.midicps;
+            detuneCurve = { |x|
+                (10028.7312891634*x.pow(11)) -
+                (50818.8652045924*x.pow(10)) +
+                (111363.4808729368*x.pow(9)) -
+                (138150.6761080548*x.pow(8)) +
+                (106649.6679158292*x.pow(7)) -
+                (53046.9642751875*x.pow(6)) +
+                (17019.9518580080*x.pow(5)) -
+                (3425.0836591318*x.pow(4)) +
+                (404.2703938388*x.pow(3)) -
+                (24.1878824391*x.pow(2)) +
+                (0.6717417634*x) +
+                0.0030115596
+            };
+            centerGain = { |x| (-0.55366 * x) + 0.99785 };
+            sideGain = { |x| (-0.73764 * x.pow(2)) + (1.2841 * x) + 0.044372 };
+
+            center = Pan2.ar(LFSaw.ar(freq, Rand()));
+            // https://scsynth.org/t/simple-fm-synthesis-question/5483/9
+            detuneFactor = freq * detuneCurve.(detune);
+            freqs = [
+                (freq - (detuneFactor * 0.11002313)),
+                (freq - (detuneFactor * 0.06288439)),
+                (freq - (detuneFactor * 0.01952356)),
+                (freq + (detuneFactor * 0.01991221)),
+                (freq + (detuneFactor * 0.06216538)),
+                (freq + (detuneFactor * 0.10745242))
+            ];
+            side=Pan2.ar(LFSaw.ar(freqs[0], Rand(0, 2))+LFSaw.ar(freqs[1], Rand(0, 2))+LFSaw.ar(freqs[2], Rand(0, 2)),stereo);
+            side=side+Pan2.ar(LFSaw.ar(freqs[3], Rand(0, 2))+LFSaw.ar(freqs[4], Rand(0, 2))+LFSaw.ar(freqs[5], Rand(0, 2)),stereo.neg);
+
+            snd = (center * centerGain.(mix)) + (side * sideGain.(mix));
+
+            snd = Balance2.ar(snd[0],snd[1],Lag.kr(pan,0.1));
+            snd = RLPF.ar(snd,lpf,res) * env * amp / 8;
+            Out.ar(\out.kr(0),\compressible.kr(0)*snd);
+            Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
+            Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);
+        }).add;
+
         SynthDef("reese", { 
             arg note=32,amp=1.0,gate=1,sub=0,portamento=1,bend=0,
             attack=0.01,decay=0.2,sustain=0.9,release=5,
@@ -777,6 +833,69 @@ Engine_AmenBreak1 : CroneEngine {
                     portamento: portamento
                 ], syns.at("main"), \addBefore));
                 NodeWatcher.register(syns.at("reese"++id));
+            });
+        });
+
+
+        this.addCommand("supersaw_on","fffffffffffffff",{ arg msg;
+            var note=msg[1];
+            var amp=msg[2].dbamp;
+            var mod1=msg[3];
+            var mod2=msg[4];
+            var mod3=msg[5];
+            var mod4=msg[6];
+            var attack=msg[7];
+            var decay=msg[8];
+            var sustain=msg[9];
+            var release=msg[10];
+            var pan=msg[11];
+            var portamento=msg[12];
+            var duration=msg[13];
+            var do_release=msg[14];
+            var idf=msg[15];
+            var synExists=false;
+            var id="";
+            if (idf>0,{
+                id="1";
+            });
+            msg.postln;
+            if (syns.at("supersaw"++id).notNil,{
+                if (syns.at("supersaw"++id).isRunning,{
+                    synExists=true;
+                });
+            });
+            if (do_release>0,{
+                if (synExists,{
+                    syns.at("supersaw"++id).set(\gate,0);
+                });
+                synExists=false;
+            },{
+                synExists=false;
+            });
+            if (synExists,{
+                syns.at("supersaw"++id).set(\note,note,\gate,1);
+            },{
+                syns.put("supersaw"++id,Synth.new("supersaw", [
+                    out: buses.at("busCompressible"),
+                    outsc: buses.at("busCompressing"),
+                    outnsc: buses.at("busNotCompressible"),
+                    note: note,
+                    compressible: 1,
+                    compressing: 0,
+                    amp: amp,
+                    mod1: mod1,
+                    mod2: mod2,
+                    mod3: mod3,
+                    mod4: mod4,
+                    attack: attack,
+                    decay: decay,
+                    sustain: sustain,
+                    release: release,
+                    pan: pan,
+                    portamento: portamento,
+                    duration: duration
+                ], syns.at("main"), \addBefore));
+                NodeWatcher.register(syns.at("supersaw"++id));
             });
         });
 

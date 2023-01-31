@@ -721,7 +721,7 @@ Engine_AmenBreak1 : CroneEngine {
             });
         });
 
-        this.addCommand("reese_on","ffffffffffff",{ arg msg;
+        this.addCommand("reese_on","fffffffffffffff",{ arg msg;
             var note=msg[1];
             var amp=msg[2].dbamp;
             var mod1=msg[3];
@@ -734,17 +734,30 @@ Engine_AmenBreak1 : CroneEngine {
             var release=msg[10];
             var pan=msg[11];
             var portamento=msg[12];
+            var duration=msg[13];
+            var do_release=msg[14];
+            var idf=msg[15];
             var synExists=false;
+            var id="";
+            if (idf>0,{
+                id="1";
+            });
             msg.postln;
-            if (syns.at("reese").notNil,{
-                if (syns.at("reese").isRunning,{
+            if (syns.at("reese"++id).notNil,{
+                if (syns.at("reese"++id).isRunning,{
                     synExists=true;
                 });
             });
+            if (do_release>0,{
+                if (synExists,{
+                    syns.at("reese"++id).set(\gate,0);
+                });
+                synExists=false;
+            });
             if (synExists,{
-                syns.at("reese").set(\note,note,\gate,1);
+                syns.at("reese"++id).set(\note,note,\gate,1);
             },{
-                syns.put("reese",Synth.new("reese", [
+                syns.put("reese"++id,Synth.new("reese", [
                     out: buses.at("busCompressible"),
                     outsc: buses.at("busCompressing"),
                     outnsc: buses.at("busNotCompressible"),
@@ -763,7 +776,7 @@ Engine_AmenBreak1 : CroneEngine {
                     pan: pan,
                     portamento: portamento
                 ], syns.at("main"), \addBefore));
-                NodeWatcher.register(syns.at("reese"));
+                NodeWatcher.register(syns.at("reese"++id));
             });
         });
 

@@ -32,6 +32,7 @@ musicutil=require("musicutil")
 sample_=include("lib/sample")
 ggrid_=include("lib/ggrid")
 loop_=include("lib/loop")
+diaudio_=include("lib/diaudio")
 
 pos_last=0
 param_switch=true
@@ -145,9 +146,9 @@ function init()
     if not string.find(fname,"slow") then
       if util.file_exists(_path.audio.."amenbreak/"..fname..".json") then
         table.insert(amen_files,fname)
-        -- if #amen_files==18 then
-        --   break
-        -- end
+        if #amen_files==18 then
+          break
+        end
       end
     end
   end
@@ -380,6 +381,8 @@ function init()
       end
     end
   end
+
+  diaudio=diaudio_:new()
 
   -- setup
   params:set_raw("hpf",0)
@@ -983,8 +986,8 @@ function params_layers()
   }
   params:add_group("LAYERS",#params_menu*2+#params_menu_kick)
   for _,layer in ipairs({"kick","snare"}) do
-    local first=true
     for _,pram in ipairs(params_menu) do
+      local first=true
       params:add{
         type="control",
         id="layer_"..layer..pram.id,
@@ -1112,7 +1115,7 @@ function bass_note_on(note)
     params:get("bass_sustain"),
     params:get("bass_release"),
     params:get("bass_pan"),
-  params:get("bass_portamento"))
+  params:get("bass_portamento"),60,0,0)
   while note>36 do
     note=note-12
   end

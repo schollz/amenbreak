@@ -280,7 +280,7 @@ Engine_AmenBreak1 : CroneEngine {
 
 
         (1..2).do({arg ch;
-        SynthDef("slice"++ch,{
+        SynthDef("slice0"++ch,{
             arg amp=0,buf1,rate=1, pos=0, drive=1,stretch=0, compression=0, gate=1, duration=100000, pan=0, send_pos=0, lpfIn,hpfIn,res=0.707, attack=0.01,release=0.01; 
             var snd,sndD,snd1,snd2,snd3,snd4,snd5;
             var snd_pos = Phasor.ar(
@@ -291,6 +291,80 @@ Engine_AmenBreak1 : CroneEngine {
             );
             SendReply.kr(Impulse.kr(15)*send_pos,'/position',[snd_pos / BufFrames.ir(buf1) * BufDur.ir(buf1) / (stretch*7+1)]);
             snd = BufRd.ar(ch,buf1,snd_pos,interpolation:4);
+            
+            snd = snd * Env.asr(attack, 1, release).ar(Done.freeSelf, gate * ToggleFF.kr(1-TDelay.kr(DC.kr(1),duration)) );
+            snd=Pan2.ar(snd,0.0);
+            snd=Pan2.ar(snd[0],1.neg+(2*pan))+Pan2.ar(snd[1],1+(2*pan));
+            snd=Balance2.ar(snd[0],snd[1],pan);
+
+            // fx
+            snd = SelectX.ar(\decimate.kr(0).lag(0.01), [snd, Latch.ar(snd, Impulse.ar(LFNoise2.kr(0.3).exprange(1000,16e3)))]);
+
+            // drive
+            sndD = (snd * 30.dbamp).tanh * -10.dbamp;
+            sndD = BHiShelf.ar(BLowShelf.ar(sndD, 500, 1, -10), 3000, 1, -10);
+            sndD = (sndD * 10.dbamp).tanh * -10.dbamp;
+            sndD = BHiShelf.ar(BLowShelf.ar(sndD, 500, 1, 10), 3000, 1, 10);
+            sndD = sndD * -10.dbamp;
+
+            snd = SelectX.ar(drive,[snd,sndD]);
+
+            snd = Compander.ar(snd,snd,compression,0.5,clampTime:0.01,relaxTime:0.01);
+
+            snd = RLPF.ar(snd,In.kr(lpfIn,1),res);
+            snd = HPF.ar(snd,In.kr(hpfIn));
+
+            Out.ar(\out.kr(0),\compressible.kr(0)*snd*amp);
+            Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
+            Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd*amp);
+            Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);
+        }).send(context.server);
+        });
+
+
+        // stretch version
+        (1..2).do({arg ch;
+        SynthDef("slice1"++ch,{
+            arg amp=0,buf1,rate=1, pos=0, drive=1,stretch=0, compression=0, gate=1, duration=100000, pan=0, send_pos=0, lpfIn,hpfIn,res=0.707, attack=0.01,release=0.01; 
+            var windowSelect,window,window1,window2,windowStart,windowTrig;
+            var snd,snd1,snd2,sndD;
+            var windowSeconds=0.1;
+            var xfade=0.01;
+            var frames=BufFrames.ir(buf1);
+            var windowFrames=(s.sampleRate*windowSeconds).round;
+            var playRate=(rate * BufRateScale.ir(buf1)).abs;
+            var phase = Phasor.ar(
+                rate: playRate/EnvGen.kr(Env.new([Rand(1,2),Rand(8,12)],[Rand(2,8)]),timeScale:Rand(0.5,1.5)),
+                start: pos / BufDur.ir(buf1) * BufFrames.ir(buf1),
+                end:48000000,
+            );
+            windowFrames=EnvGen.kr(Env.new([Rand(0.05,0.8),Rand(0.5,2),Rand(0.05,0.1),Rand(2,5),Rand(0.02,0.05)],[Rand(0.05,0.3),Rand(1,3),Rand(0.5,2),Rand(1,3)]),timeScale:Rand(0.5,1.5))*windowFrames;
+            windowTrig=LocalIn.ar(1);
+            windowStart=Gate.ar(phase,windowTrig);
+            windowSelect=ToggleFF.ar(windowTrig);
+            window1=Phasor.ar(
+                trig: 1-windowSelect,
+                rate: playRate,
+                start: 0,
+                end: 48000000,
+                resetPos: phase,
+            );
+            window2=Phasor.ar(
+                trig: windowSelect,
+                rate: playRate,
+                start: 0,
+                end: 48000000,
+                resetPos: phase,
+            );
+            window=Select.ar(windowSelect,[window1,window2]);
+            LocalOut.ar(
+                ((playRate>0)*(window>(windowStart+windowFrames)))+
+                ((playRate<0)*(window<(windowStart-windowFrames)))
+            );
+            snd1=BufRd.ar(2,buf1,window1.mod(frames),1,4);
+            snd2=BufRd.ar(2,buf1,window2.mod(frames),1,4);
+            snd=SelectX.ar(Lag.ar(windowSelect,xfade),[snd1,snd2]);
+            SendReply.kr(Impulse.kr(15)*send_pos,'/position',[window.mod(frames) / BufFrames.ir(buf1) * BufDur.ir(buf1)]);
             
             snd = snd * Env.asr(attack, 1, release).ar(Done.freeSelf, gate * ToggleFF.kr(1-TDelay.kr(DC.kr(1),duration)) );
             snd=Pan2.ar(snd,0.0);
@@ -404,7 +478,7 @@ Engine_AmenBreak1 : CroneEngine {
             var send_pos=msg[20];
             var attack=msg[21];
             var release=msg[22];
-            var stretch=msg[23];
+            var stretch=msg[23].asInteger;
             var sendTape=msg[24];
             var sendDelay=msg[25];
             var res=msg[26];
@@ -423,8 +497,8 @@ Engine_AmenBreak1 : CroneEngine {
                 do_kick=true;
             });
             if (stretch>0,{
-                filename="slow";
-                pos=pos*8;
+                // filename="slow";
+                // pos=pos*8;
                 do_snare=false;
                 do_kick=false;
             });
@@ -457,7 +531,7 @@ Engine_AmenBreak1 : CroneEngine {
                     });
                 });
                 if (do_snare,{
-                    syns.put(id,Synth.new("slice1", [
+                    syns.put(id,Synth.new("slice01", [
                         out: buses.at("busCompressible"),
                         outsc: buses.at("busCompressing"),
                         outnsc: buses.at("busNotCompressible"),
@@ -465,7 +539,7 @@ Engine_AmenBreak1 : CroneEngine {
                         compressible: compressible,
                         compressing: compressing,
                         sendreverb: send_reverb,
-                        buf1: bufs.at("snare"++snare_file).postln,
+                        buf1: bufs.at("snare"++snare_file),
                         attack: 0.005,
                         release: release,
                         amp: (db_first+snare).dbamp,
@@ -487,7 +561,7 @@ Engine_AmenBreak1 : CroneEngine {
                     ], syns.at("main"), \addBefore));
                 });
                 if (do_kick,{
-                    syns.put(id,Synth.new("slice1", [
+                    syns.put(id,Synth.new("slice01", [
                         out: buses.at("busCompressible"),
                         outsc: buses.at("busCompressing"),
                         outnsc: buses.at("busNotCompressible"),
@@ -495,7 +569,7 @@ Engine_AmenBreak1 : CroneEngine {
                         compressible: compressible,
                         compressing: compressing,
                         sendreverb: send_reverb,
-                        buf1: bufs.at("kick"++kick_file).postln,
+                        buf1: bufs.at("kick"++kick_file),
                         attack: 0.005,
                         release: release,
                         amp: (db_first+kick).dbamp,
@@ -516,7 +590,7 @@ Engine_AmenBreak1 : CroneEngine {
                         outtrack: buses.at("bus"++id.asString.split($_)[0].asString),
                     ], syns.at("main"), \addBefore));
                 });
-                syns.put(id,Synth.new("slice"++bufs.at(filename).numChannels, [
+                syns.put(id,Synth.new("slice"++stretch++bufs.at(filename).numChannels, [
                     out: buses.at("busCompressible"),
                     outsc: buses.at("busCompressing"),
                     outnsc: buses.at("busNotCompressible"),
@@ -553,7 +627,7 @@ Engine_AmenBreak1 : CroneEngine {
                             });
                             (duration_total/ (retrig+1) ).wait;
                             if (do_snare,{
-                                syns.put(id,Synth.new("slice1", [
+                                syns.put(id,Synth.new("slice01", [
                                     out: buses.at("busCompressible"),
                                     outsc: buses.at("busCompressing"),
                                     outnsc: buses.at("busNotCompressible"),
@@ -561,7 +635,7 @@ Engine_AmenBreak1 : CroneEngine {
                                     sendreverb: send_reverb,
                                     compressible: compressible,
                                     compressing: compressing,
-                                    buf1: bufs.at("snare"++snare_file).postln,
+                                    buf1: bufs.at("snare"++snare_file),
                                     pan: pan,
                                     attack: 0.002,
                                     release: release,
@@ -583,7 +657,7 @@ Engine_AmenBreak1 : CroneEngine {
                                 ], syns.at("main"), \addBefore));
                             });
                             if (do_kick,{
-                                syns.put(id,Synth.new("slice1", [
+                                syns.put(id,Synth.new("slice01", [
                                     out: buses.at("busCompressible"),
                                     outsc: buses.at("busCompressing"),
                                     outnsc: buses.at("busNotCompressible"),
@@ -591,7 +665,7 @@ Engine_AmenBreak1 : CroneEngine {
                                     sendreverb: send_reverb,
                                     compressible: compressible,
                                     compressing: compressing,
-                                    buf1: bufs.at("kick"++kick_file).postln,
+                                    buf1: bufs.at("kick"++kick_file),
                                     pan: pan,
                                     attack: 0.002,
                                     release: release,
@@ -612,7 +686,7 @@ Engine_AmenBreak1 : CroneEngine {
                                     outtrack: buses.at("bus"++id.asString.split($_)[0].asString),
                                 ], syns.at("main"), \addBefore));
                             });
-                            syns.put(id,Synth.new("slice"++bufs.at(filename).numChannels, [
+                            syns.put(id,Synth.new("slice"++stretch++bufs.at(filename).numChannels, [
                                 out: buses.at("busCompressible"),
                                 outsc: buses.at("busCompressing"),
                                 outnsc: buses.at("busNotCompressible"),

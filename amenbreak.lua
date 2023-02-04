@@ -1,4 +1,4 @@
--- amenbreak v1.5.0
+-- amenbreak v1.6.0
 --
 --
 -- amen+break
@@ -220,7 +220,7 @@ function init()
     {id="compressible",name="compressible",min=0,max=1,exp=false,div=1,default=1,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
     {id="send_reverb",name="reverb send",min=0,max=1,hide=true,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="send_delay",name="delay send",min=0,max=1,exp=false,hide=true,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
-    {id="allowstretch",name="allow stretch",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
+    {id="allowstretch",name="allow stretch",min=0,max=1,exp=false,div=1,default=1,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
   }
   tighter_gate=1
   tighter_release=15
@@ -265,13 +265,13 @@ function init()
     for i=1,#amen_files do
       ws[i]:select(x==i)
     end
-    if params:get("allowstretch")>0 then
-      debounce_fn["stretcher"]={15*5,function()
-        local cmd=string.format("%samenbreak/lib/soxgo/run.sh %s %samenbreak/slow.flac 0.125 &",_path.code,ws[x].path,_path.audio)
-        print("[stretcher] "..cmd)
-        os.execute(cmd)
-      end}
-    end
+    -- if params:get("allowstretch")>0 then
+    --   debounce_fn["stretcher"]={15*5,function()
+    --     local cmd=string.format("%samenbreak/lib/soxgo/run.sh %s %samenbreak/slow.flac 0.125 &",_path.code,ws[x].path,_path.audio)
+    --     print("[stretcher] "..cmd)
+    --     os.execute(cmd)
+    --   end}
+    -- end
   end)
   params:set_action("punch",function(x)
     params:set_raw("drive",easing_function(x,0.1,2))
@@ -577,10 +577,11 @@ function toggle_clock(on)
           end
           debounce_fn["retrig"]={math.floor(refractory/2),function()end}
         end
-        if params:get("allowstretch")>0 and math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.5) and debounce_fn["stretch"]==nil then
+        if params:get("allowstretch")>0 and math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.5)/4 and debounce_fn["stretch"]==nil then
           d.stretch=1
-          d.steps=d.steps>1 and d.steps or d.steps*math.random(1,8)*4
-          debounce_fn["stretch"]={refractory*4,function()end}
+          d.retrig=0
+          d.steps=d.steps>1 and d.steps or d.steps*math.random(2,8)*4*math.random(1,3)
+          debounce_fn["stretch"]={refractory*2,function()end}
           print("STRETCH")
         end
         if math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.7)*0.2 and debounce_fn["delay"]==nil then
@@ -862,7 +863,7 @@ function redraw()
     screen.text_center("BREAK")
     screen.move(64,57)
     screen.font_face(63)
-    screen.text_center("v1.5.0")
+    screen.text_center("v1.6.0")
     screen.font_size(8)
     screen.font_face(1)
   end

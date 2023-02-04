@@ -580,7 +580,7 @@ function toggle_clock(on)
         if params:get("allowstretch")>0 and math.random()<easing_function2(params:get("break"),1.6,2,0.041,0.5)/4 and debounce_fn["stretch"]==nil then
           d.stretch=1
           d.retrig=0
-          d.steps=d.steps>1 and d.steps or d.steps*math.random(2,8)*4*math.random(1,3)
+          d.steps=d.steps>1 and d.steps or d.steps*math.random(2,8)*4*math.random(1,2)
           debounce_fn["stretch"]={refractory*2,function()end}
           print("STRETCH")
         end

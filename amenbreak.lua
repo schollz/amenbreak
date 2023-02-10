@@ -595,7 +595,7 @@ function toggle_clock(on)
           debounce_fn["gate_off"]={math.random(16,64),function() gate_on=nil end}
           debounce_fn["gate"]={refractory*2,function() end}
         end
-        if math.random()<easing_function2(params:get("amen"),-3.1,-1.3,0.177,0.5) then
+        if math.random()<easing_function2(params:get("amen"),-3.1,-1.3,0.155,0.5) then
           d.rate=-1
         end
 

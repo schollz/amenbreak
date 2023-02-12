@@ -221,6 +221,7 @@ function init()
     {id="send_reverb",name="reverb send",min=0,max=1,hide=true,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="send_delay",name="delay send",min=0,max=1,exp=false,hide=true,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="allowstretch",name="allow stretch",min=0,max=1,exp=false,div=1,default=1,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
+    {id="resetevery",name="reset every",min=0,max=64,exp=false,div=1,default=4,response=1,formatter=function(param) return param:get()==0 and "off" or string.format("%d beats",param:get()) end},
   }
   tighter_gate=1
   tighter_release=15
@@ -634,6 +635,15 @@ function toggle_clock(on)
           d[k]=fn()
           print("button",k,d[k])
         end
+
+        if params:get("resetevery")>0 then
+          local beats_left=params:get("resetevery")*4-clock_beat%(params:get("resetevery")*4)
+          if d.steps>beats_left then
+            print(string.format("truncating %d to %d",d.steps,beats_left))
+            d.steps=beats_left+1
+          end
+        end
+
         d.duration=d.steps*clock.get_beat_sec()/2
         global_played={}
         for k,v in pairs(d) do
@@ -654,8 +664,13 @@ function toggle_clock(on)
         end}
       end
 
+      print(d.ci)
       d.steps=d.steps-1
       -- print(pos_i,d.ci,clock.get_beats())
+      if params:get("resetevery")>0 and clock_beat%(params:get("resetevery")*4)==0 then
+        print("reset every",params:get("resetevery"))
+        pos_i=0
+      end
     end
   end)
 end

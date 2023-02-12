@@ -97,8 +97,8 @@ function GGrid:new(args)
 
   -- in the grid loop, set the button fns
   m.button_fns={}
-  local choices_steps={{1,4},{5,12},{13,32}}
-  local choices_retrigs={{1,5},{6,13},{14,24}}
+  local choices_steps={{2,4},{5,8},{9,12}}
+  local choices_retrigs={{1,3},{4,7},{8,12}}
   for row=1,3 do 
     m.button_fns[row]={}
     for col=1,3 do 
@@ -130,7 +130,7 @@ function GGrid:new(args)
   m.gate_last=params:get("gate")
   m.rel_last=params:get("release")
   table.insert(m.button_fns,{
-    {stretch=function() return 1 end,steps=function() return math.random(1,3)*4 end,light=function() return  (global_played.stretch~=nil and global_played.stretch>0) and 14 or 2 end},
+    {retrig=function() return 0 end, stretch=function() return 1 end,steps=function() return math.random(1,3)*4*math.random(1,2) end,light=function() return  (global_played.stretch~=nil and global_played.stretch>0) and 14 or 2 end},
     {db=function() return math.random(1,2) end,light=function() return (global_played.db~=nil and global_played.db>0) and 14 or 2 end},
     {pitch=function() return math.random(1,2) end,light=function() return (global_played.pitch~=nil and global_played.pitch~=0) and 14 or 2 end},
   })

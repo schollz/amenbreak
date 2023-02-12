@@ -221,7 +221,7 @@ function init()
     {id="send_reverb",name="reverb send",min=0,max=1,hide=true,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="send_delay",name="delay send",min=0,max=1,exp=false,hide=true,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="allowstretch",name="allow stretch",min=0,max=1,exp=false,div=1,default=1,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
-    {id="resetevery",name="reset every",min=0,max=64,exp=false,div=1,default=4,response=1,formatter=function(param) return param:get()==0 and "off" or string.format("%d beats",param:get()) end},
+    {id="resetevery",name="reset every",min=0,max=64,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()==0 and "off" or string.format("%d beats",param:get()) end},
   }
   tighter_gate=1
   tighter_release=15

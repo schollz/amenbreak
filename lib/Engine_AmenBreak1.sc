@@ -867,14 +867,17 @@ Engine_AmenBreak1 : CroneEngine {
 	        var loop=msg[4];
             var slew=msg[5];
             var pan=msg[6];
-            ["loop",loop].postln;
-            if (syns.at(filename).notNil,{
-                if (syns.at(filename).isRunning,{
-                    syns.at(filename).set(\gate,0);
+            if (syns.at(filename).isNil,{
+                syns.put(filename,List.new());
+            });
+            syns.at(filename).do({ arg syn;
+                if (syn.isRunning,{
+                    ["[loop] cut",syn].postln;
+                    syn.set(\gate,0,\slew,1);
                 });
             });
             if (bufs.at(filename).notNil,{
-                syns.put(filename,Synth.new("loop"++bufs.at(filename).numChannels, [
+                var syn=Synth.new("loop"++bufs.at(filename).numChannels, [
                     out: buses.at("busCompressible"),
                     outsc: buses.at("busCompressing"),
                     outnsc: buses.at("busNotCompressible"),
@@ -891,9 +894,13 @@ Engine_AmenBreak1 : CroneEngine {
                         ["[loop]",filename,"freed"].postln;
                         NetAddr("127.0.0.1", 10111).sendMsg("loopdone",filename,filename);
                     });
-                }));
-                NodeWatcher.register(syns.at(filename));
+                });
+                syns.at(filename).add(syn);
+                ["[loop] new",syn].postln;
+                NodeWatcher.register(syn);
             });
+
+
         });
 
         this.addCommand("loop_set","ssf",{ arg msg;
@@ -908,10 +915,13 @@ Engine_AmenBreak1 : CroneEngine {
         this.addCommand("loop_stop","sf",{ arg msg;
     	    var filename=msg[1];
             var slew=msg[2];
-            if (syns.at(filename).notNil,{
-                if (syns.at(filename).isRunning,{
-                    ["[loop_stop]",filename,slew].postln;
-                    syns.at(filename).set(\gate,0,\slew,slew);
+            if (syns.at(filename).isNil,{
+                syns.put(filename,List.new());
+            });
+            syns.at(filename).do({ arg syn;
+                if (syn.isRunning,{
+                    ["[loop] stop",syn].postln;
+                    syn.set(\gate,0,\slew,slew);
                 });
             });
         });
@@ -933,8 +943,12 @@ Engine_AmenBreak1 : CroneEngine {
         bufs.keysValuesDo({ arg buf, val;
             val.free;
         });
-        syns.keysValuesDo({ arg buf, val;
+        syns.keysValuesDo({ arg name, val;
+            if (val.class.asString=="List",{
+                val.do({arg v; v.free;});
+            },{
             val.free;
+            });
         });
         buses.keysValuesDo({ arg buf, val;
             val.free;

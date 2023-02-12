@@ -1,4 +1,4 @@
--- amenbreak v1.5.0
+-- amenbreak v1.5.1
 --
 --
 -- amen+break
@@ -863,7 +863,7 @@ function redraw()
     screen.text_center("BREAK")
     screen.move(64,57)
     screen.font_face(63)
-    screen.text_center("v1.5.0")
+    screen.text_center("v1.5.1")
     screen.font_size(8)
     screen.font_face(1)
   end
@@ -885,7 +885,7 @@ function params_grid()
     end
   end
   local params_menu2={
-    {id="basenote",name="root note",min=0,max=128,exp=false,div=1,default=36,noaction=true,formatter=function(param) return musicutil.note_num_to_name(param:get(),true)end},
+    {id="basenote",name="root note",min=0,max=128,exp=false,div=1,default=48,noaction=true,formatter=function(param) return musicutil.note_num_to_name(param:get(),true)end},
     {id="db",name="volume",min=-96,max=16,div=0.5,default=-6,unit="dB",fn=function(x) return util.dbamp(x) end},
     {id="mod1",name="mod1",min=-1,max=1,exp=false,div=0.1,default=0.0},
     {id="mod2",name="mod2",min=-1,max=1,exp=false,div=0.1,default=0.0},

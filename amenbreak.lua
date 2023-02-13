@@ -85,6 +85,7 @@ engine.name=Engine_Exists and 'AmenBreak1' or nil
 
 -- other stuff
 function init()
+  params:set("clock_tempo",200)
   os.execute("mkdir -p ".._path.data.."amenbreak/resampled/")
   Needs_Restart=false
   Data_Exists=util.file_exists(_path.data.."amenbreak/dats/")
@@ -387,6 +388,9 @@ function init()
   -- params:set("loop1_db",0)
   -- params:set("loop1_slew",0.05)
   -- params:set("loop1_oneshot",1)
+  params:set("loop1_db",-6)
+  params:set("loop1_slew",0.05)
+  params:set("loop1_oneshot",1)
   -- debug
   clock.run(function()
     -- startup
@@ -405,6 +409,11 @@ function init()
     clock.sleep(1)
     params:set("punch",0.3)
     tab.print(loops[1][1])
+    params:set("punch",0.7)
+    params:set("db",-12)
+    params:set("track",79)
+    params:set("track2",52)
+    params:set("pan",0.3)
     -- toggle_clock(true)
   end)
 end

@@ -1,4 +1,4 @@
--- amenbreak v1.5.1
+-- amenbreak v1.5.2
 --
 --
 -- amen+break
@@ -222,7 +222,7 @@ function init()
     {id="send_reverb",name="reverb send",min=0,max=1,hide=true,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="send_delay",name="delay send",min=0,max=1,exp=false,hide=true,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="allowstretch",name="allow stretch",min=0,max=1,exp=false,div=1,default=1,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
-    {id="resetevery",name="reset every",min=0,max=64,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()==0 and "off" or string.format("%d beats",param:get()) end},
+    {id="resetevery",name="reset every",min=0,max=64,exp=false,div=1,default=16,response=1,formatter=function(param) return param:get()==0 and "off" or string.format("%d beats",param:get()) end},
   }
   tighter_gate=1
   tighter_release=15
@@ -506,7 +506,7 @@ function toggle_clock(on)
   else
     pos_i=#pattern_store[PTTRN_STEP][pattern_current[PTTRN_STEP]]*1000
   end
-  clock_beat=-1
+  clock_beat=0
   local d={steps=0,ci=1}
   local switched_direction=false
   local switched_gate=false
@@ -645,7 +645,7 @@ function toggle_clock(on)
           print("button",k,d[k])
         end
 
-        if params:get("resetevery")>0 then
+        if params:get("resetevery")>0 and clock_beat>1 then
           local beats_left=params:get("resetevery")*4-clock_beat%(params:get("resetevery")*4)
           if d.steps>beats_left then
             print(string.format("truncating %d to %d",d.steps,beats_left))
@@ -673,9 +673,8 @@ function toggle_clock(on)
         end}
       end
 
-      print(d.ci)
       d.steps=d.steps-1
-      -- print(pos_i,d.ci,clock.get_beats())
+      -- print(clock_beat,pos_i,d.ci,clock.get_beats())
       if params:get("resetevery")>0 and clock_beat%(params:get("resetevery")*4)==0 then
         print("reset every",params:get("resetevery"))
         pos_i=0

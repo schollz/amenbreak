@@ -501,6 +501,7 @@ Engine_AmenBreak1 : CroneEngine {
                 // pos=pos*8;
                 do_snare=false;
                 do_kick=false;
+                retrig=0;
             });
             if (retrig>0,{
                 db_first=db;

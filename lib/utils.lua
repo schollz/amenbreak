@@ -8,7 +8,7 @@ function binary.encode(num)
     num=math.floor(num/2)
   end
   table.insert(r,1)
-  for i=0,6-#r do 
+  for i=0,6-#r do
     table.insert(r,0)
   end
   return r
@@ -25,7 +25,6 @@ function binary.decode(t)
   return math.floor(num)
 end
 
-
 function lines_from(file)
   if not util.file_exists(file) then return {} end
   local lines={}
@@ -36,10 +35,16 @@ function lines_from(file)
   return lines
 end
 
-
 function find_files(folder)
   os.execute("find "..folder.."* -print -type f -name '*.flac' | grep 'wav\\|flac' > /tmp/foo")
   os.execute("find "..folder.."* -print -type f -name '*.wav' | grep 'wav\\|flac' >> /tmp/foo")
   os.execute("cat /tmp/foo | sort | uniq > /tmp/files")
   return lines_from("/tmp/files")
+end
+
+function shuffle(tbl)
+  for i=#tbl,2,-1 do
+    local j=math.random(i)
+    tbl[i],tbl[j]=tbl[j],tbl[i]
+  end
 end

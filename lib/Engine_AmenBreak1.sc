@@ -325,7 +325,7 @@ Engine_AmenBreak1 : CroneEngine {
         // stretch version
         (1..2).do({arg ch;
         SynthDef("slice1"++ch,{
-            arg amp=0,buf1,rate=1, pos=0, drive=1,stretch=0, compression=0, gate=1, duration=100000, pan=0, send_pos=0, lpfIn,hpfIn,res=0.707, attack=0.01,release=0.01; 
+            arg amp=0,buf1,rate=1, pos=0, drive=1,stretch=0, compression=0, gate=1, duration=100000, duration2=1000, pan=0, send_pos=0, lpfIn,hpfIn,res=0.707, attack=0.01,release=0.01; 
             var windowSelect,window,window1,window2,windowStart,windowTrig;
             var snd,snd1,snd2,sndD;
             var windowSeconds=0.1;
@@ -361,12 +361,12 @@ Engine_AmenBreak1 : CroneEngine {
                 ((playRate>0)*(window>(windowStart+windowFrames)))+
                 ((playRate<0)*(window<(windowStart-windowFrames)))
             );
-            snd1=BufRd.ar(2,buf1,window1.mod(frames),1,4);
-            snd2=BufRd.ar(2,buf1,window2.mod(frames),1,4);
+            snd1=BufRd.ar(ch,buf1,window1.mod(frames),1,4);
+            snd2=BufRd.ar(ch,buf1,window2.mod(frames),1,4);
             snd=SelectX.ar(Lag.ar(windowSelect,xfade),[snd1,snd2]);
             SendReply.kr(Impulse.kr(15)*send_pos,'/position',[window.mod(frames) / BufFrames.ir(buf1) * BufDur.ir(buf1)]);
             
-            snd = snd * Env.asr(attack, 1, release).ar(Done.freeSelf, gate * ToggleFF.kr(1-TDelay.kr(DC.kr(1),duration)) );
+            snd = snd * Env.asr(attack, 1, release).ar(Done.freeSelf, gate * ToggleFF.kr(1-TDelay.kr(DC.kr(1),duration2)) );
             snd=Pan2.ar(snd,0.0);
             snd=Pan2.ar(snd[0],1.neg+(2*pan))+Pan2.ar(snd[1],1+(2*pan));
             snd=Balance2.ar(snd[0],snd[1],pan);
@@ -608,6 +608,7 @@ Engine_AmenBreak1 : CroneEngine {
                     res: res,
                     rate: rate*pitch.midiratio,
                     pos: pos,
+                    duration2: (duration_slice / (retrig + 1)),
                     duration: (duration_slice * gate / (retrig + 1)),
                     decimate: decimate,
                     drive: drive,

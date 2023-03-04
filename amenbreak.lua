@@ -168,6 +168,14 @@ function init()
     audiowaveform="/home/we/dust/code/amenbreak/lib/audiowaveform"
   end
 
+  -- add major parameters
+  params_grid()
+  params_layers()
+  params_audioin()
+  params_audioout()
+  params_action()
+  -- params:default()
+
   -- load audio file loops
   loops={}
   for row=1,5 do
@@ -180,17 +188,14 @@ function init()
     for i,fname in ipairs(find_files(folder)) do
       if i<=8 then
         loops[row][i]:load_sample(fname)
+        local _,base_filename,_=string.match(fname,"(.-)([^\\/]-%.?([^%.\\/]*))$")
+        if #base_filename>18 then
+          base_filename=string.sub(base_filename,1,18)
+        end
+        params.params[params.lookup["loop"..row.."_toggle"..i]].name=base_filename
       end
     end
   end
-
-  -- add major parameters
-  params_grid()
-  params_layers()
-  params_audioin()
-  params_audioout()
-  params_action()
-  -- params:default()
 
   local params_menu={
     {id="db",name="volume",min=-96,max=12,exp=false,div=0.1,default=-6,unit="db"},
@@ -410,10 +415,10 @@ function init()
     params:set("punch",0.3)
     tab.print(loops[1][1])
     params:set("punch",0.7)
-    params:set("db",-12)
+    params:set("db",-6)
     params:set("track",79)
-    params:set("track2",52)
-    params:set("pan",0.3)
+    -- params:set("track2",52)
+    -- params:set("pan",0.3)
     -- toggle_clock(true)
   end)
 end
@@ -511,6 +516,7 @@ function toggle_clock(on)
   local switched_direction=false
   local switched_gate=false
   local gate_on=nil
+  local last_db=params:get("db")
   params:set("clock_reset",1)
   -- clock.internal.start(-0.1)
   clock_run=clock.run(function()
@@ -519,13 +525,6 @@ function toggle_clock(on)
       clock.sync(1/2) -- needs to go first
       local track_beats=params:get(params:get("track").."beats")
       clock_beat=clock_beat+1
-
-      -- iterate the loops
-      for row=1,5 do
-        for col=1,8 do
-          loops[row][col]:emit(clock_beat)
-        end
-      end
 
       -- iterate the bass
       if bass_pattern_current>0 then
@@ -675,9 +674,53 @@ function toggle_clock(on)
 
       d.steps=d.steps-1
       -- print(clock_beat,pos_i,d.ci,clock.get_beats())
+      -- if params:get("resetevery")>0 and clock_beat%(params:get("resetevery")*4-math.random(1,2))==0 then
+      --   if math.random()<0.25 then
+      --     params:set("tape_gate",1)
+      --   elseif math.random()<0.25 then
+      --     if params:get("db")>-96 then
+      --       last_db=params:get("db")
+      --     end
+      --     params:set_raw("db",0)
+      --   end
+      -- end
       if params:get("resetevery")>0 and clock_beat%(params:get("resetevery")*4)==0 then
+        -- params:set("tape_gate",0)
+        -- if last_db~=nil then
+        --   params:set("db",last_db)
+        --   last_db=nil
+        -- end
         print("reset every",params:get("resetevery"))
         pos_i=0
+        params:set_raw("track",math.random())
+        if params:get("track2")>0 then
+          params:set_raw("track2",math.random())
+        end
+        params:set("tighter",math.random()<0.25 and 0 or 1)
+
+        -- make random loops
+        local loops_playing={}
+        for loop=2,5 do
+          for toggle=1,8 do
+            local id="loop"..loop.."_toggle"..toggle
+            if params:get(id)==1 then
+              table.insert(loops_playing,id)
+            end
+          end
+        end
+        if #loops_playing>2 then
+          shuffle(loops_playing)
+          params:set(loops_playing[1],0)
+        end
+        local id="loop"..math.random(2,5).."_toggle"..math.random(1,8)
+        params:set(id,1)
+      end
+
+      -- iterate the loops
+      for row=1,5 do
+        for col=1,8 do
+          loops[row][col]:emit(clock_beat)
+        end
       end
     end
   end)
@@ -903,6 +946,9 @@ function params_grid()
       {id="slew",name="fade time",min=0.1,max=20,div=0.1,default=4,unit="sec",kind="loop",row=row},
       {id="oneshot",name="oneshot",min=0,max=1,div=1,default=0,row=row,formatter=function(param) return param:get()==1 and "yes" or "no" end},
     }
+    for i=1,8 do
+      table.insert(ps,{id="toggle"..i,name="toggle "..i,min=0,max=1,div=1,default=0,kind="loop",row=row,toggle=i,formatter=function(param) return param:get()==1 and "playing" or "stopped" end})
+    end
     for _,p in ipairs(ps) do
       table.insert(params_menu,p)
     end
@@ -953,10 +999,18 @@ function params_grid()
     }
     params:set_action("loop"..pram.row.."_"..pram.id,function(v)
       if pram.kind=="loop" then
-        -- set all loops simultaneously
-        for col=1,8 do
-          if loops[pram.row][col].playing then
-            engine.loop_set(loops[pram.row][col].path,pram.id=="db" and "amp" or pram.id,pram.fn and pram.fn(v) or v)
+        if pram.toggle~=nil then
+          if v==1 then
+            loops[pram.row][pram.toggle]:play(true)
+          else
+            loops[pram.row][pram.toggle]:stop()
+          end
+        else
+          -- set all loops simultaneously
+          for col=1,8 do
+            if loops[pram.row][col].playing then
+              engine.loop_set(loops[pram.row][col].path,pram.id=="db" and "amp" or pram.id,pram.fn and pram.fn(v) or v)
+            end
           end
         end
       end

@@ -173,7 +173,9 @@ function GGrid:key_press(row,col,on)
   elseif row>=1 and row<=5 and col>=9 then 
     -- loops
     if on then
-	   loops[row][col-8]:toggle()
+     local id="loop"..row.."_toggle"..(col-8)
+     params:set(id,1-params:get(id))
+	  --  loops[row][col-8]:toggle()
     end
   elseif row>=7 and col>=9 then 
     -- bass keyboard

@@ -230,7 +230,7 @@ function init()
     {id="resetevery",name="reset every",min=0,max=64,exp=false,div=1,default=16,response=1,formatter=function(param) return param:get()==0 and "off" or string.format("%d beats",param:get()) end},
   }
   tighter_gate=1
-  tighter_release=15
+  tighter_release=5
   for _,pram in ipairs(params_menu) do
     params:add{
       type="control",
@@ -393,7 +393,7 @@ function init()
   -- params:set("loop1_db",0)
   -- params:set("loop1_slew",0.05)
   -- params:set("loop1_oneshot",1)
-  params:set("loop1_db",-6)
+  params:set("loop1_db",0)
   params:set("loop1_slew",0.05)
   params:set("loop1_oneshot",1)
   -- debug
@@ -700,7 +700,7 @@ function toggle_clock(on)
 
         -- make random loops
         local loops_playing={}
-        for loop=2,5 do
+        for loop=3,5 do
           for toggle=1,8 do
             local id="loop"..loop.."_toggle"..toggle
             if params:get(id)==1 then
@@ -712,7 +712,7 @@ function toggle_clock(on)
           shuffle(loops_playing)
           params:set(loops_playing[1],0)
         end
-        local id="loop"..math.random(2,5).."_toggle"..math.random(1,8)
+        local id="loop"..math.random(3,5).."_toggle"..math.random(1,8)
         params:set(id,1)
       end
 
@@ -943,7 +943,7 @@ function params_grid()
     local ps={
       {id="db",name="volume",min=-96,max=16,div=0.5,default=-12,unit="dB",kind="loop",row=row,fn=function(x) return util.dbamp(x) end},
       {id="pan",name="pan",min=-1,max=1,div=0.05,default=0,kind="loop",row=row},
-      {id="slew",name="fade time",min=0.1,max=20,div=0.1,default=4,unit="sec",kind="loop",row=row},
+      {id="slew",name="fade time",min=0.05,max=20,div=0.05,default=0.1,unit="sec",kind="loop",row=row},
       {id="oneshot",name="oneshot",min=0,max=1,div=1,default=0,row=row,formatter=function(param) return param:get()==1 and "yes" or "no" end},
     }
     for i=1,8 do
@@ -1098,7 +1098,7 @@ function params_audioout()
     {id="tape_gate",name="tape stop",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
     {id="tape_start_stop",name="tape auto start/stop",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()>0 and "on" or "off" end},
     {id="tape_slow",name="tape slow",min=0,max=2,exp=false,div=0.01,default=0.0,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
-    {id="sidechain_mult",name="sidechain amount",min=0,max=8,exp=false,div=0.1,default=1.0},
+    {id="sidechain_mult",name="sidechain amount",min=0,max=8,exp=false,div=0.1,default=2.0},
     {id="compress_thresh",name="sidechain threshold",min=0,max=1,exp=false,div=0.01,default=0.1},
     {id="compress_level",name="sidechain level",min=0,max=1,exp=false,div=0.01,default=0.1},
     {id="compress_attack",name="sidechain attack",min=0,max=1,exp=false,div=0.001,default=0.01,formatter=function(param) return (param:get()*1000).." ms" end},

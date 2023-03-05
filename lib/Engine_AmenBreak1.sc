@@ -131,9 +131,9 @@ Engine_AmenBreak1 : CroneEngine {
             var snd = PlayBuf.ar(numChannels:1, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop, doneAction: 2);
             snd = snd * env * Lag.kr(amp);
             snd = Pan2.ar(snd,\pan.kr(0));
-            Out.ar(\out.kr(0),\compressible.kr(0)*snd);
+            Out.ar(\out.kr(0),\compressible.kr(1)*snd);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
-            Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);
+            Out.ar(\outnsc.kr(0),(1-\compressible.kr(1))*snd);
             Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);            
         }).send(context.server);
 
@@ -143,9 +143,9 @@ Engine_AmenBreak1 : CroneEngine {
             var snd = PlayBuf.ar(numChannels:2, bufnum: buf, rate: BufRateScale.ir(buf), startPos: startPos*BufFrames.ir(buf), loop: loop, doneAction: 2);
             snd = snd * env * Lag.kr(amp);
             snd = Balance2.ar(snd[0],snd[1],\pan.kr(0));
-            Out.ar(\out.kr(0),\compressible.kr(0)*snd);
+            Out.ar(\out.kr(0),\compressible.kr(1)*snd);
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
-            Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);
+            Out.ar(\outnsc.kr(0),(1-\compressible.kr(1))*snd);
             Out.ar(\outdelay.kr(0),\senddelay.kr(0)*snd);            
         }).send(context.server);
 

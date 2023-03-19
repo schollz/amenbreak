@@ -170,6 +170,10 @@ function GGrid:key_press(row,col,on)
     if on then 
       params:delta("bass_basenote",col==15 and -12 or 12)
     end
+  elseif row==6 and col>=11 then 
+    local v=col-10
+    local vv={1/2,1/3,3/8,2/3}
+    brepeat(on and (vv[v]*clock.get_beat_sec()) or 0)
   elseif row>=1 and row<=5 and col>=9 then 
     -- loops
     if on then

@@ -12,6 +12,7 @@ Engine_AmenBreak1 : CroneEngine {
     var oscs;
     var bufsDelay;
     var in_infinite;
+    var last_position_seconds;
     // AmenBreak1 ^
 
     *new { arg context, doneCallback;
@@ -60,7 +61,7 @@ Engine_AmenBreak1 : CroneEngine {
             oversample=2;
             oversampleDist=1;
         });
-
+        last_position_seconds=0;
 
         in_infinite = 0;
         
@@ -90,7 +91,10 @@ Engine_AmenBreak1 : CroneEngine {
         context.server.sync;
 
 
-        oscs.put("position",OSCFunc({ |msg| NetAddr("127.0.0.1", 10111).sendMsg("progress",msg[3],msg[3]); }, '/position'));
+        oscs.put("position",OSCFunc({ |msg| 
+            last_position_seconds = msg[3].asFloat;
+            NetAddr("127.0.0.1", 10111).sendMsg("progress",msg[3],msg[3]); 
+        }, '/position'));
         oscs.put("lfos",OSCFunc({ |msg| NetAddr("127.0.0.1", 10111).sendMsg("lfos",msg[3],msg[4]); }, '/lfos'));
         
         SynthDef("rise",{|out,duration=1,min=0.1,max=1|
@@ -513,6 +517,7 @@ Engine_AmenBreak1 : CroneEngine {
                     slice_duration2=infinitetime;
                     duration_wait=infinitetime;
                     retrig=1000; // basically infinity
+                    pos=last_position_seconds;
                 });
             });
             if (do_exit<1,{

@@ -806,6 +806,8 @@ Engine_AmenBreak1 : CroneEngine {
             var send_reverb=msg[12];
             var sendTape=msg[13];
             var sendDelay=msg[14];
+            if (in_infinite>0,{},
+            {
             Synth.new("kick",[
                 basefreq: basefreq,
                 ratio: ratio,
@@ -826,6 +828,7 @@ Engine_AmenBreak1 : CroneEngine {
                 sendtape: sendTape,
                 senddelay: sendDelay,
             ],syns.at("main"),\addBefore).onFree({"freed!"});
+            });
         });
 
         this.addCommand("reese_set","sf",{ arg msg;

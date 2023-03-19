@@ -198,7 +198,8 @@ function init()
   end
 
   local params_menu={
-    {id="db",name="volume",min=-96,max=12,exp=false,div=0.1,default=-6,unit="db"},
+    {id="letsgo",name="letsgooooooo",min=0,max=1,exp=false,div=1,default=0,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
+    {id="db",name="volume",min=-96,max=12,exp=false,div=0.1,default=-13,unit="db"},
     {id="punch",name="punch",min=0,max=1,exp=false,div=0.01,default=0,unit="punches"},
     {id="amen",name="amen",min=0,max=1,exp=false,div=0.01,default=0,unit="amens"},
     {id="break",name="break",min=0,max=1,exp=false,div=0.01,default=0,unit="break"},
@@ -227,7 +228,7 @@ function init()
     {id="send_reverb",name="reverb send",min=0,max=1,hide=true,exp=false,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="send_delay",name="delay send",min=0,max=1,exp=false,hide=true,div=0.01,default=0.0,response=1,formatter=function(param) return string.format("%2.0f%%",param:get()*100) end},
     {id="allowstretch",name="allow stretch",min=0,max=1,exp=false,div=1,default=1,response=1,formatter=function(param) return param:get()==1 and "yes" or "no" end},
-    {id="resetevery",name="reset every",min=0,max=64,exp=false,div=1,default=16,response=1,formatter=function(param) return param:get()==0 and "off" or string.format("%d beats",param:get()) end},
+    {id="resetevery",name="reset every",min=0,max=64,exp=false,div=1,default=32,response=1,formatter=function(param) return param:get()==0 and "off" or string.format("%d beats",param:get()) end},
   }
   tighter_gate=1
   tighter_release=5
@@ -394,6 +395,8 @@ function init()
   -- params:set("loop1_slew",0.05)
   -- params:set("loop1_oneshot",1)
   params:set("loop1_db",0)
+  params:set("loop3_db",-16)
+  params:set("loop4_db",-16)
   params:set("loop1_slew",0.05)
   params:set("loop1_oneshot",1)
   -- debug
@@ -415,7 +418,7 @@ function init()
     params:set("punch",0.3)
     tab.print(loops[1][1])
     params:set("punch",0.7)
-    params:set("db",-6)
+    params:set("tighter",1)
     params:set("track",79)
     -- params:set("track2",52)
     -- params:set("pan",0.3)
@@ -692,28 +695,31 @@ function toggle_clock(on)
         -- end
         print("reset every",params:get("resetevery"))
         pos_i=0
-        params:set_raw("track",math.random())
-        if params:get("track2")>0 then
-          params:set_raw("track2",math.random())
-        end
-        params:set("tighter",math.random()<0.25 and 0 or 1)
 
-        -- make random loops
-        local loops_playing={}
-        for loop=3,5 do
-          for toggle=1,8 do
-            local id="loop"..loop.."_toggle"..toggle
-            if params:get(id)==1 then
-              table.insert(loops_playing,id)
+        if params:get("letsgo")>0 then 
+          params:set_raw("track",math.random())
+          if params:get("track2")>0 then
+            params:set_raw("track2",math.random())
+          end
+          params:set("tighter",math.random()<0.25 and 0 or 1)
+  
+          -- make random loops
+          local loops_playing={}
+          for loop=3,5 do
+            for toggle=1,8 do
+              local id="loop"..loop.."_toggle"..toggle
+              if params:get(id)==1 then
+                table.insert(loops_playing,id)
+              end
             end
           end
+          if #loops_playing>2 then
+            shuffle(loops_playing)
+            params:set(loops_playing[1],0)
+          end
+          local id="loop"..math.random(3,5).."_toggle"..math.random(1,8)
+          params:set(id,1)
         end
-        if #loops_playing>2 then
-          shuffle(loops_playing)
-          params:set(loops_playing[1],0)
-        end
-        local id="loop"..math.random(3,5).."_toggle"..math.random(1,8)
-        params:set(id,1)
       end
 
       -- iterate the loops

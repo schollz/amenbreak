@@ -146,9 +146,9 @@ function init()
     if not string.find(fname,"slow") then
       if util.file_exists(_path.audio.."amenbreak/"..fname..".json") then
         table.insert(amen_files,fname)
-        -- if #amen_files==18 then
-        --   break
-        -- end
+        if #amen_files==18 then
+          break
+        end
       end
     end
   end
@@ -724,6 +724,11 @@ function toggle_clock(on)
       end
     end
   end)
+end
+
+function brepeat(t)
+  local d={uselast=1,infinitetime=t,infiniteoff=t==0 and 1 or 0}
+  ws[params:get("track")]:play(d)
 end
 
 function rerun()

@@ -11,6 +11,7 @@ Engine_AmenBreak1 : CroneEngine {
     var bufs; 
     var oscs;
     var bufsDelay;
+    var in_infinite;
     // AmenBreak1 ^
 
     *new { arg context, doneCallback;
@@ -61,6 +62,8 @@ Engine_AmenBreak1 : CroneEngine {
         });
 
 
+        in_infinite = 0;
+        
         n = 512*2;
         mu = 255*2;
         unit = Array.fill(n, {|i| i.linlin(0, n-1, -1, 1) });
@@ -455,7 +458,7 @@ Engine_AmenBreak1 : CroneEngine {
             });
         });
 
-        this.addCommand("slice_on","ssfffffffffffffffffffffffffifi",{ arg msg;
+        this.addCommand("slice_on","ssfffffffffffffffffffffffffififf",{ arg msg;
             var id=msg[1];
             var filename=msg[2];
             var db=msg[3];
@@ -486,10 +489,33 @@ Engine_AmenBreak1 : CroneEngine {
             var snare_file=msg[28];
             var kick=msg[29];
             var kick_file=msg[30];
+            var infinitetime=msg[31];
+            var infiniteoff=msg[32];
             var db_first=db+db_add;
             var db_orig=db_first;
             var do_snare=false;
             var do_kick=false;
+            var slice_duration=(duration_slice * gate / (retrig + 1));
+            var slice_duration2=(duration_slice / (retrig + 1));
+            var duration_wait=(duration_total/ (retrig+1) );
+            var do_exit=0;
+            // if in infinite loop, break out when infinitetime=0;
+            ["in_infinite",in_infinite,"infinitetime",infinitetime].postln;
+            if (in_infinite>0,{
+                if (infiniteoff>0,{
+                    in_infinite=0;
+                });
+                do_exit=1;
+            },{
+                if (infinitetime>0,{
+                    in_infinite=1;
+                    slice_duration=infinitetime*gate;
+                    slice_duration2=infinitetime;
+                    duration_wait=infinitetime;
+                    retrig=1000; // basically infinity
+                });
+            });
+            if (do_exit<1,{
             if (snare>48.neg,{
                 do_snare=true;
             });
@@ -550,7 +576,7 @@ Engine_AmenBreak1 : CroneEngine {
                         res: res,
                         rate: rate*pitch.midiratio,
                         pos: 0,
-                        duration: (duration_slice * gate / (retrig + 1)),
+                        duration: slice_duration,
                         decimate: decimate,
                         drive: drive,
                         compression: compression,
@@ -580,7 +606,7 @@ Engine_AmenBreak1 : CroneEngine {
                         res: res,
                         rate: rate*pitch.midiratio,
                         pos: 0,
-                        duration: (duration_slice * gate / (retrig + 1)),
+                        duration: slice_duration,
                         decimate: decimate,
                         drive: drive,
                         compression: compression,
@@ -609,8 +635,8 @@ Engine_AmenBreak1 : CroneEngine {
                     res: res,
                     rate: rate*pitch.midiratio,
                     pos: pos,
-                    duration2: (duration_slice / (retrig + 1)),
-                    duration: (duration_slice * gate / (retrig + 1)),
+                    duration2: slice_duration2,
+                    duration: slice_duration,
                     decimate: decimate,
                     drive: drive,
                     compression: compression,
@@ -622,12 +648,18 @@ Engine_AmenBreak1 : CroneEngine {
                 ], syns.at("main"), \addBefore));
                 if (retrig>0,{
                     Routine {
+                        block{ |break|
                         (retrig).do{ arg i;
                             var db_next=db+(db_add*(i+1));
                             if (db_next>db_orig,{
                                 db_next=db_orig;
                             });
-                            (duration_total/ (retrig+1) ).wait;
+                            if (in_infinite==0,{
+                                if (infinitetime>0,{
+                                    break.value(0); // break out of loop
+                                });
+                            });
+                            duration_wait.wait;
                             if (do_snare,{
                                 syns.put(id,Synth.new("slice01", [
                                     out: buses.at("busCompressible"),
@@ -644,7 +676,7 @@ Engine_AmenBreak1 : CroneEngine {
                                     amp: (db_next+snare).dbamp,
                                     stretch: 0,
                                     rate: rate*((pitch.sign)*(i+1)+pitch).midiratio,
-                                    duration: duration_slice * gate / (retrig + 1),
+                                    duration: slice_duration,
                                     lpfIn: buses.at("filter"),
                                     hpfIn: buses.at("filterhpf"),
                                     res: res,
@@ -674,7 +706,7 @@ Engine_AmenBreak1 : CroneEngine {
                                     amp: (db_next+kick).dbamp,
                                     stretch: 0,
                                     rate: rate*((pitch.sign)*(i+1)+pitch).midiratio,
-                                    duration: duration_slice * gate / (retrig + 1),
+                                    duration: slice_duration,
                                     lpfIn: buses.at("filter"),
                                     hpfIn: buses.at("filterhpf"),
                                     res: res,
@@ -703,7 +735,7 @@ Engine_AmenBreak1 : CroneEngine {
                                 amp: db_next.dbamp,
                                 stretch: stretch,
                                 rate: rate*((pitch.sign)*(i+1)+pitch).midiratio,
-                                duration: duration_slice * gate / (retrig + 1),
+                                duration: slice_duration,
                                 lpfIn: buses.at("filter"),
                                 hpfIn: buses.at("filterhpf"),
                                 res: res,
@@ -719,12 +751,16 @@ Engine_AmenBreak1 : CroneEngine {
                         };
                         NodeWatcher.register(syns.at(id));
                         this.synthWatch(id.asString.split($_)[0].asString,syns.at(id));
+                    }; // block{|break|}
                     }.play;
                  },{ 
                     NodeWatcher.register(syns.at(id));
                     this.synthWatch(id.asString.split($_)[0].asString,syns.at(id));
                 });
             });
+            },{
+                "skipping".postln;
+            }); // if (do_exit<1)
         });
 
         this.addCommand("load_buffer","s",{ arg msg;

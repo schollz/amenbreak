@@ -260,6 +260,8 @@ function Sample:play(d)
   d.compression=d.compression or params:get("compression")
   d.stretch=d.stretch or params:get("stretch")
   d.send_tape=d.send_tape or 0
+  d.infinitetime=d.infinitetime or 0
+  d.infiniteoff=d.infiniteoff or 0
   local pos=self.cursors[d.ci]
   if d.duration==nil then
     local start=pos
@@ -310,7 +312,7 @@ function Sample:play(d)
     d.compressing,
     d.reverb,d.drive,d.compression,
     d.watch,d.attack,d.release,d.stretch,d.send_tape,d.delay,d.res,
-  d.snare,d.snare_file,d.kick,d.kick_file)
+  d.snare,d.snare_file,d.kick,d.kick_file,d.infinitetime,d.infiniteoff)
   if params:get("track2")>0 then
     engine.slice_on(
       params:get("track2"),
@@ -331,7 +333,7 @@ function Sample:play(d)
       d.compressing,
       d.reverb,d.drive,d.compression,
       0,d.attack,d.release,d.stretch,d.send_tape,d.delay,d.res,
-    d.snare,d.snare_file,d.kick,d.kick_file)
+    d.snare,d.snare_file,d.kick,d.kick_file,d.infinitetime,d.infiniteoff)
   end
 
   if params:get("kick_db")+self.kick[d.ci]>-36 then

@@ -194,7 +194,39 @@ Engine_AmenBreak1 : CroneEngine {
             Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
             Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);
         }).send(context.server);
-        
+
+        SynthDef(\glitch,{
+            arg amp=1;
+            var snd;
+            snd = SinOsc.ar((SinOsc.ar(\modFreq.kr(3240)) * Env.perc(0.01,2).kr * \index.kr(3000) + \carrierFreq.kr(1000)));
+            snd = snd + PitchShift.ar(snd, Rand(0.03, 0.06), 2);
+            snd = snd * EnvGen.ar(Env.new([0,1,1,0],[0.001,\duration.kr(1),0.01]), doneAction:2);
+            snd = snd * -18.dbamp ! 2;
+            snd = Pan2.ar(snd, \pan.kr(0)) * amp;
+            Out.ar(\out.kr(0),\compressible.kr(0)*snd);
+            Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
+            Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);
+         }).send(context.server);
+
+        SynthDef(\bass,{
+            arg freq=300,amp=1;
+            var snd;
+            snd = SinOsc.ar(Env([freq,freq/3,freq/5].cpsmidi, [0.1,3], -4).ar.midicps * [-0.1, 0, 0.1].midiratio);
+            snd = snd * Env.perc(0, 5).ar;
+            snd = snd + (snd * 4).fold2;
+            snd = RLPF.ar(snd, 3000 * (1 + Env.perc(0.3, 1).ar), 0.3);
+            snd = snd + (snd * 3).fold2;
+            snd = RLPF.ar(snd, 1000 * (1 + Env.perc(0.1, 1).ar), 0.3);
+            snd = snd + (snd * 3).fold2;
+            snd = snd * Env.perc(0.001, 3.0).ar(Done.freeSelf);
+            snd = snd * -24.dbamp * amp;
+            snd = Splay.ar(snd,0.3);
+            snd = snd * EnvGen.ar(Env.new([1,1,0],[\duration.kr(1),0.5]),doneAction:2);
+            Out.ar(\out.kr(0),\compressible.kr(0)*snd);
+            Out.ar(\outsc.kr(0),\compressing.kr(0)*snd);
+            Out.ar(\outnsc.kr(0),(1-\compressible.kr(0))*snd);
+         }).send(context.server);
+
         SynthDef("lfos", {
             5.do({ arg i;
                 var period=Rand(1*(i+1),2*(i+1)*(i+1));
@@ -518,6 +550,43 @@ Engine_AmenBreak1 : CroneEngine {
                     duration_wait=infinitetime;
                     retrig=1000; // basically infinity
                     pos=last_position_seconds;
+                });
+            });
+            if (100.rand<20,{
+                "glitch".postln;
+                Synth.new(\glitch, [
+                        amp: db_first.dbamp,
+                        out: buses.at("busCompressible"),
+                        outsc: buses.at("busCompressing"),
+                        outnsc: buses.at("busNotCompressible"),
+                        outdelay: buses.at("busDelay"),
+                        compressible: compressible,
+                        compressing: compressing,
+                        sendreverb: send_reverb,
+                        modFreq: exprand(100,1000),
+                        carrierFreq: exprand(100, 1000),
+                        index: rrand(100,8000),
+                        pan: rrand(-0.9,0.9),
+                        duration: slice_duration2.postln*(2.rand+1),
+                        rampup: 2.rand,
+                    ], syns.at("main"), \addBefore);
+                do_exit=1;
+            },{
+                if (100.rand<20,{
+                    "bass".postln;
+                    Synth.new(\bass, [
+                        amp: db_first.dbamp,
+                        out: buses.at("busCompressible"),
+                        outsc: buses.at("busCompressing"),
+                        outnsc: buses.at("busNotCompressible"),
+                        compressible: compressible,
+                        compressing: compressing,
+                        sendreverb: send_reverb,
+                        freq: rrand(100,400),
+                        duration: slice_duration2*(4.rand+1),
+                        pan: rrand(-0.9,0.9),
+                    ], syns.at("main"), \addBefore);
+                    do_exit=1;
                 });
             });
             if (do_exit<1,{

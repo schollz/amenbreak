@@ -80,7 +80,7 @@ bass_sequenced=-1
 UI=require 'ui'
 loaded_files=0
 Needs_Restart=false
-Engine_Exists=os.execute('test -n "$(find /home/we/.local/share/SuperCollider/Extensions/ -name AnalogTape_scsynth.so)"')
+Engine_Exists=os.execute('test -n "$(find /home/we/.local/share/SuperCollider/Extensions/ -name ignore -prune -o -name AnalogTape_scsynth.so -print)"')
 engine.name=Engine_Exists and 'AmenBreak1' or nil
 
 -- other stuff
